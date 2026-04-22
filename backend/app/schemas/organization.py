@@ -88,7 +88,6 @@ class AuditLogOut(BaseModel):
 
 
 class FeedbackBase(BaseModel):
-    student_id: str
     class_id: str
     rating: float
     comment: str = ""
@@ -99,6 +98,7 @@ class FeedbackCreate(FeedbackBase):
 
 
 class FeedbackOut(FeedbackBase):
+    student_id: str
     id: str = Field(alias="_id")
     created_at: datetime
 

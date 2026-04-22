@@ -89,26 +89,6 @@ export default function TeacherAttendancePage() {
     );
   };
 
-  const submitAttendance = async () => {
-    if (!selectedClass) return;
-    try {
-      setSubmitting(true);
-      const records = students.map((s) => ({
-        student_id: s.enrollment.student_id,
-        status: s.status.toUpperCase(),
-      }));
-      await api.post(`/teacher/attendance/${selectedClass}`, null, {
-        params: { date },
-        data: records,
-      });
-      // FastAPI expects `records` in body; axios with null body won't send. Use post with body as records.
-    } catch (e) {
-      // fallback implemented below
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const submitAttendanceFixed = async () => {
     if (!selectedClass) return;
     const selectedDate = new Date(`${date}T00:00:00`);

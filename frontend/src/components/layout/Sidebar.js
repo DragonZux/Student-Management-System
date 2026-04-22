@@ -1,11 +1,11 @@
 "use client";
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { 
   Users, GraduationCap, BookOpen, Calendar, 
-  ClipboardList, Settings, LogOut, LayoutDashboard,
+  ClipboardList, LogOut, LayoutDashboard,
   Building2, Wallet, Bell, FileText, UserCircle, MessageSquare, ClipboardCheck
 } from 'lucide-react';
 import styles from './Sidebar.module.css';
@@ -17,6 +17,8 @@ const navItems = {
     { name: 'Giảng viên', path: '/admin/teachers', icon: GraduationCap },
     { name: 'Môn học', path: '/admin/courses', icon: BookOpen },
     { name: 'Lớp học', path: '/admin/classes', icon: Building2 },
+    { name: 'Khoa/Bộ môn', path: '/admin/departments', icon: ClipboardList },
+    { name: 'Phòng học', path: '/admin/classrooms', icon: Calendar },
     { name: 'Kỳ thi', path: '/exams', icon: ClipboardCheck },
     { name: 'Tài chính', path: '/admin/finance', icon: Wallet },
     { name: 'Nhật ký hệ thống', path: '/admin/audit', icon: FileText },
@@ -26,6 +28,7 @@ const navItems = {
     { name: 'Điểm danh', path: '/teacher/attendance', icon: ClipboardList },
     { name: 'Bài tập', path: '/teacher/assignments', icon: BookOpen },
     { name: 'Chấm điểm', path: '/teacher/grading', icon: GraduationCap },
+    { name: 'Phản hồi lớp học', path: '/teacher/feedback', icon: MessageSquare },
     { name: 'Kỳ thi', path: '/exams', icon: ClipboardCheck },
   ],
   student: [
@@ -45,7 +48,7 @@ const navItems = {
 export default function Sidebar({ role = 'admin' }) {
   const pathname = usePathname();
   const { logout } = useAuth();
-  const items = navItems[role] || [];
+  const items = useMemo(() => navItems[role] || [], [role]);
 
   return (
     <aside className={styles.sidebar}>

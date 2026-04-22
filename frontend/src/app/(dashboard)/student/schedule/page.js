@@ -8,6 +8,7 @@ export default function StudentSchedulePage() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,12 +53,40 @@ export default function StudentSchedulePage() {
     }));
   }, [classes]);
 
+  const exportSchedule = async () => {
+    try {
+      setExporting(true);
+      const response = await api.get('/student/my-schedule/export', {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'student-schedule.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Failed to export schedule', e);
+      setError(e.response?.data?.detail || 'Không thể xuất thời khóa biểu');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1>Thời khóa biểu hàng tuần</h1>
-        <button className="glass" style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-          Xuất PDF
+        <button
+          className="glass"
+          onClick={exportSchedule}
+          disabled={loading || exporting}
+          style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', cursor: loading || exporting ? 'not-allowed' : 'pointer' }}
+        >
+          {exporting ? 'Đang xuất...' : 'Xuất PDF'}
         </button>
       </div>
 

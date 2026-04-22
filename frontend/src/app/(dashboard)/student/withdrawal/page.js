@@ -57,8 +57,9 @@ export default function WithdrawalPage() {
     }
     try {
       setSubmitting(true);
-      // Backend currently doesn't accept reason; we record it locally + use audit logs for trace.
-      await api.post(`/student/withdraw/${selectedEnrollment}`);
+      await api.post(`/student/withdraw/${selectedEnrollment}`, {
+        reason: reason.trim(),
+      });
       setReason('');
       await load();
       setSubmitMessage('Đã gửi yêu cầu rút học phần thành công.');

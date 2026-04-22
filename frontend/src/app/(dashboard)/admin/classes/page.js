@@ -65,14 +65,17 @@ export default function ClassesPage() {
   }, [teachers]);
 
   const normalizeSchedule = (text) => {
-    // Accept: "Monday 08:00-10:00; Wednesday 08:00-10:00"
+    // Accept: "Monday 08:00-10:00; Thu 2 08:00-10:00"
     const items = String(text || '')
       .split(';')
       .map((s) => s.trim())
       .filter(Boolean)
       .map((chunk) => {
-        const [dayPart, timePart] = chunk.split(/\s+/, 2);
-        const [start, end] = (timePart || '').split('-', 2);
+        const match = chunk.match(/^(.*)\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
+        if (!match) return null;
+        const dayPart = match[1].trim();
+        const start = match[2];
+        const end = match[3];
         if (!dayPart || !start || !end) return null;
         return { day: dayPart, start, end };
       })

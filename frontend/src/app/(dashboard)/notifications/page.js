@@ -41,6 +41,40 @@ export default function NotificationsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return undefined;
+    const wsBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api')
+      .replace('http://', 'ws://')
+      .replace('https://', 'wss://')
+      .replace(/\/api\/?$/, '');
+    const ws = new WebSocket(`${wsBaseUrl}/api/notifications/ws?token=${encodeURIComponent(token)}`);
+
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload?.type !== 'notification' || !payload.data) return;
+        const incoming = payload.data;
+        setNotifications((prev) => [
+          {
+            _id: incoming.id,
+            title: incoming.title,
+            message: incoming.message,
+            created_at: incoming.created_at,
+            read: false,
+          },
+          ...(prev || []),
+        ]);
+      } catch (err) {
+        console.error('Invalid notification websocket message', err);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   const items = useMemo(() => {
     return (notifications || []).map((n) => ({
       ...n,
@@ -79,7 +113,7 @@ export default function NotificationsPage() {
             <div style={{ 
               padding: '0.5rem', background: n.type === 'warning' ? '#fef9c3' : '#dcfce7', borderRadius: 'var(--radius)' 
             }}>
-              {n.type === 'warning' ? <Info size={20} color="#854d0e" /> : <Bell size={20} color="#166534" />}
+              {!n.read ? <Info size={20} color="#854d0e" /> : <CheckCircle size={20} color="#166534" />}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>

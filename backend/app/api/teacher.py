@@ -11,6 +11,65 @@ import uuid
 
 router = APIRouter(dependencies=[Depends(check_teacher_role)])
 
+
+@router.get("/dashboard-summary")
+async def get_teacher_dashboard_summary(teacher: dict = Depends(check_teacher_role)):
+    db = get_database()
+    classes = await db.classes.find({"teacher_id": teacher["_id"]}).to_list(1000)
+    class_ids = [item["_id"] for item in classes]
+    course_ids = {item.get("course_id") for item in classes if item.get("course_id")}
+    courses = await db.courses.find({"_id": {"$in": list(course_ids)}}).to_list(1000) if course_ids else []
+    course_by_id = {item["_id"]: item for item in courses}
+
+    assignments = await db.assignments.find({"class_id": {"$in": class_ids}}).to_list(2000) if class_ids else []
+    assignment_ids = [item["_id"] for item in assignments]
+    submissions = await db.submissions.find({"assignment_id": {"$in": assignment_ids}}).to_list(5000) if assignment_ids else []
+    enrollments = await db.enrollments.find({"class_id": {"$in": class_ids}}).to_list(5000) if class_ids else []
+    feedback_count = await db.feedback.count_documents({"class_id": {"$in": class_ids}}) if class_ids else 0
+
+    submission_map = {}
+    for submission in submissions:
+        submission_map.setdefault(submission["assignment_id"], []).append(submission)
+
+    pending_grading = 0
+    for assignment in assignments:
+        pending_grading += len(submission_map.get(assignment["_id"], []))
+
+    graded_count = sum(1 for item in enrollments if item.get("grade") is not None)
+    completion_rate = round((graded_count / len(enrollments)) * 100, 2) if enrollments else 0
+
+    today_idx = datetime.utcnow().weekday()
+    day_labels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    today_label = day_labels[today_idx]
+    today_classes = []
+    for cls in classes:
+        for slot in cls.get("schedule", []):
+            if slot.get("day") == today_label:
+                course = course_by_id.get(cls.get("course_id"))
+                today_classes.append(
+                    {
+                        "class_id": cls["_id"],
+                        "course_code": course.get("code") if course else None,
+                        "course_title": course.get("title") if course else None,
+                        "room": cls.get("room"),
+                        "start": slot.get("start"),
+                        "end": slot.get("end"),
+                    }
+                )
+    today_classes.sort(key=lambda item: str(item.get("start") or ""))
+
+    return {
+        "total_classes": len(classes),
+        "total_assignments": len(assignments),
+        "pending_grading": pending_grading,
+        "feedback_count": feedback_count,
+        "graded_count": graded_count,
+        "enrollment_count": len(enrollments),
+        "completion_rate": completion_rate,
+        "today": today_label,
+        "today_classes": today_classes,
+    }
+
 @router.get("/my-classes")
 async def list_my_classes(teacher: dict = Depends(check_teacher_role)):
     db = get_database()
