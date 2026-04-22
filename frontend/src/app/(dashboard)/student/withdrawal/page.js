@@ -62,7 +62,7 @@ export default function WithdrawalPage() {
       });
       setReason('');
       await load();
-      setSubmitMessage('Đã gửi yêu cầu rút học phần thành công.');
+      setSubmitMessage('Đã gửi yêu cầu rút học phần thành công. Vui lòng chờ quản trị viên phê duyệt.');
     } catch (e) {
       console.error('Withdrawal failed', e);
       setSubmitError(e.response?.data?.detail || 'Rút học phần thất bại');
@@ -72,81 +72,109 @@ export default function WithdrawalPage() {
   };
 
   return (
-    <div>
-      <h1>Yêu cầu rút học phần</h1>
-      <p style={{ marginBottom: '2rem' }}>Gửi yêu cầu chính thức để rút khỏi một học phần đã đăng ký.</p>
+    <div className="animate-in">
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h1 style={{ marginBottom: '0.5rem' }}>Yêu cầu rút học phần</h1>
+        <p style={{ fontSize: '1.1rem' }}>Gửi yêu cầu chính thức để rút khỏi một học phần đã đăng ký.</p>
+      </div>
 
-      <Card className="glass">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: 'var(--radius)', marginBottom: '2rem' }}>
-          <AlertCircle color="#9a3412" />
-            <p style={{ margin: 0, fontSize: '0.875rem', color: '#9a3412' }}>
-            Cảnh báo: Rút học phần có thể ảnh hưởng đến học bổng và tiến độ học tập. Hãy trao đổi với cố vấn học tập.
-          </p>
+      <div className="grid grid-cols-3" style={{ gap: '2rem' }}>
+        <div style={{ gridColumn: 'span 2' }}>
+          <Card className="glass" style={{ padding: '2.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.25rem', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '1.25rem', marginBottom: '2.5rem' }}>
+              <div style={{ padding: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '0.75rem' }}>
+                <AlertCircle color="#d97706" size={24} />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 700, color: '#92400e' }}>Lưu ý quan trọng</p>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#b45309' }}>
+                  Việc rút học phần có thể ảnh hưởng đến học bổng và tiến độ học tập. Vui lòng cân nhắc kỹ.
+                </p>
+              </div>
+            </div>
+
+            <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>
+            <InlineMessage variant="success" style={{ marginBottom: '1.5rem' }}>{submitMessage}</InlineMessage>
+            <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{submitError}</InlineMessage>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Học phần muốn rút</label>
+                <select
+                  value={selectedEnrollment}
+                  onChange={(e) => setSelectedEnrollment(e.target.value)}
+                  style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', fontSize: '1rem' }}
+                  className="input-hover"
+                >
+                  {withdrawable.length === 0 && <option value="">Không có học phần nào khả dụng để rút</option>}
+                  {withdrawable.map((e) => (
+                    <option key={e._id} value={e._id}>
+                      {e.course?.code} - {e.course?.title} ({e.class_id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Lý do rút học phần</label>
+                <textarea 
+                  value={reason} 
+                  onChange={(e) => setReason(e.target.value)} 
+                  style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', minHeight: '160px', fontSize: '1rem', resize: 'vertical' }} 
+                  placeholder="Vui lòng nêu lý do chi tiết..."
+                  className="input-hover"
+                ></textarea>
+              </div>
+
+              <button 
+                className="btn-primary"
+                style={{ 
+                  padding: '1.125rem', background: '#e11d48', color: 'white', border: 'none', borderRadius: '1.125rem', fontWeight: 800, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', fontSize: '1.05rem',
+                  boxShadow: '0 10px 20px -5px rgba(225, 29, 72, 0.3)'
+                }}
+                onClick={submit}
+                disabled={loading || submitting || !selectedEnrollment}
+              >
+                <LogOut size={20} /> {submitting ? 'Đang xử lý...' : 'Gửi yêu cầu rút học phần ngay'}
+              </button>
+            </div>
+          </Card>
         </div>
-
-        {loading ? <div style={{ padding: '1rem' }}>Đang tải...</div> : null}
-        <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{error}</InlineMessage>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <InlineMessage variant="success">{submitMessage}</InlineMessage>
-          <InlineMessage variant="error">{submitError}</InlineMessage>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Chọn học phần</label>
-            <select
-              value={selectedEnrollment}
-              onChange={(e) => setSelectedEnrollment(e.target.value)}
-              style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-            >
-              {withdrawable.map((e) => (
-                <option key={e._id} value={e._id}>
-                  {(e.course?.code || 'Course')}: {e.course?.title || e.class_id}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Lý do rút học phần</label>
-            <textarea value={reason} onChange={(e) => setReason(e.target.value)} style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', minHeight: '120px' }} placeholder="Vui lòng nêu lý do..."></textarea>
-          </div>
-          <button style={{ 
-            padding: '1rem', background: '#991b1b', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontWeight: 700, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-          }}
-          onClick={submit}
-          disabled={loading || submitting || !selectedEnrollment}
-          >
-            <LogOut size={18} /> {submitting ? 'Đang gửi...' : 'Gửi yêu cầu rút học phần'}
-          </button>
-        </div>
-      </Card>
-      <div style={{ marginTop: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>Lịch sử yêu cầu rút học phần</h2>
-        <div className="grid grid-cols-1" style={{ gap: '1rem' }}>
-          {enrollments.filter(e => e.status === 'withdrawal_pending' || e.status === 'withdrawn').map(e => (
-            <Card key={e._id} className="glass">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '1.375rem', fontWeight: 800, margin: '0 0 0.5rem' }}>Lịch sử yêu cầu</h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {enrollments.filter(e => e.status === 'withdrawal_pending' || e.status === 'withdrawn').map(e => (
+              <Card key={e._id} className="glass" style={{ padding: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                  <div style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.03)', borderRadius: '0.75rem' }}>
+                    <FileText size={20} color="var(--primary)" />
+                  </div>
+                  <span className={`badge ${e.status === 'withdrawn' ? 'badge-success' : 'badge-warning'}`}>
+                    {e.status === 'withdrawn' ? 'Đã duyệt' : 'Đang chờ'}
+                  </span>
+                </div>
                 <div>
-                  <h4 style={{ margin: 0 }}>{e.course?.code}: {e.course?.title}</h4>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Lý do: {e.withdrawal_reason}</p>
+                  <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem', fontWeight: 800 }}>{e.course?.code}: {e.course?.title}</h4>
+                  <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.02)', borderRadius: '0.75rem', fontSize: '0.875rem' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--muted-foreground)' }}>Lý do:</span> {e.withdrawal_reason}
+                  </div>
                 </div>
-                <div style={{ 
-                  padding: '0.25rem 0.75rem', 
-                  borderRadius: '99px', 
-                  fontSize: '0.75rem', 
-                  fontWeight: 600,
-                  background: e.status === 'withdrawn' ? '#dcfce7' : '#fef3c7',
-                  color: e.status === 'withdrawn' ? '#166534' : '#92400e'
-                }}>
-                  {e.status === 'withdrawn' ? 'Đã rút' : 'Đang chờ duyệt'}
-                </div>
+              </Card>
+            ))}
+            
+            {enrollments.filter(e => e.status === 'withdrawal_pending' || e.status === 'withdrawn').length === 0 && (
+              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '1.5rem', border: '2px dashed var(--border)' }}>
+                <p style={{ color: 'var(--muted-foreground)', fontWeight: 600, margin: 0 }}>Bạn chưa có yêu cầu nào.</p>
               </div>
-            </Card>
-          ))}
-          {enrollments.filter(e => e.status === 'withdrawal_pending' || e.status === 'withdrawn').length === 0 && (
-            <p style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>Bạn chưa có yêu cầu rút học phần nào.</p>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
+  );
+}
   );
 }
