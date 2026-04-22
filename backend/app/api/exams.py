@@ -106,6 +106,14 @@ async def record_exam_grade(exam_id: str, payload: ExamGrade, teacher: dict = De
 @router.delete("/{exam_id}")
 async def delete_exam(exam_id: str, teacher: dict = Depends(check_teacher_or_admin)):
     db = get_database()
+    exam = await db.exams.find_one({"_id": exam_id})
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
+    if teacher["role"] == UserRole.TEACHER:
+        target_class = await db.classes.find_one({"_id": exam["class_id"], "teacher_id": teacher["_id"]})
+        if not target_class:
+            raise HTTPException(status_code=403, detail="You do not teach this class")
+
     result = await db.exams.delete_one({"_id": exam_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Exam not found")

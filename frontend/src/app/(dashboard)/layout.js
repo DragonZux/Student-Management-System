@@ -1,20 +1,34 @@
 "use client";
 import Sidebar from '@/components/layout/Sidebar';
-import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useEffect, useMemo } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
-  const [role, setRole] = useState('admin');
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const role = useMemo(() => {
+    if (pathname.startsWith('/teacher')) return 'teacher';
+    if (pathname.startsWith('/student')) return 'student';
+    if (pathname.startsWith('/admin')) return 'admin';
+    return user?.role || 'admin';
+  }, [pathname, user?.role]);
 
   useEffect(() => {
-    // Detect role from pathname for demonstration
-    if (pathname.startsWith('/admin')) setRole('admin');
-    else if (pathname.startsWith('/teacher')) setRole('teacher');
-    else if (pathname.startsWith('/student')) setRole('student');
-  }, [pathname]);
+    if (loading || !user?.role) return;
+    if (pathname.startsWith('/admin') && user.role !== 'admin') {
+      router.replace(`/${user.role}`);
+      return;
+    }
+    if (pathname.startsWith('/teacher') && user.role !== 'teacher') {
+      router.replace(`/${user.role}`);
+      return;
+    }
+    if (pathname.startsWith('/student') && user.role !== 'student') {
+      router.replace(`/${user.role}`);
+    }
+  }, [loading, pathname, router, user?.role]);
 
   return (
     <div className="dashboard-layout">

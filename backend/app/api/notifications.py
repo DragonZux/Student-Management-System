@@ -55,15 +55,29 @@ async def _broadcast_to_user(user_id: str, payload: dict):
 async def get_my_notifications(user: dict = Depends(get_current_user)):
     db = get_database()
     notifications = await db.notifications.find({"user_id": user["_id"]}).sort("created_at", -1).to_list(100)
-    return notifications
+    normalized = []
+    for item in notifications:
+        normalized.append(
+            {
+                "_id": str(item.get("_id", "")),
+                "user_id": str(item.get("user_id", user["_id"])),
+                "title": item.get("title") or "Thông báo hệ thống",
+                "message": item.get("message") or "",
+                "read": bool(item.get("read", False)),
+                "created_at": item.get("created_at") or datetime.utcnow(),
+            }
+        )
+    return normalized
 
 @router.post("/{notification_id}/read")
 async def mark_as_read(notification_id: str, user: dict = Depends(get_current_user)):
     db = get_database()
-    await db.notifications.update_one(
+    result = await db.notifications.update_one(
         {"_id": notification_id, "user_id": user["_id"]},
         {"$set": {"read": True}}
     )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
     await log_audit_event(
         action="notification.mark_read",
         actor_id=user["_id"],

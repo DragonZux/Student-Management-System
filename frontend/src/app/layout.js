@@ -7,6 +7,7 @@ export const metadata = {
 }
 
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import PopupHost from '@/components/providers/PopupHost';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -18,6 +19,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
+          <PopupHost />
           {children}
         </AuthProvider>
       </body>

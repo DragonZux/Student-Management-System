@@ -39,31 +39,24 @@ async def register(user_in: UserCreate):
 
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    print(f"DEBUG: Login attempt for user: {form_data.username}")
     db = get_database()
     try:
         user = await db.users.find_one({"email": form_data.username})
         if not user:
-            print(f"DEBUG: User not found: {form_data.username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        print(f"DEBUG: User found, verifying password for: {user['email']}")
         if not verify_password(form_data.password, user["hashed_password"]):
-            print(f"DEBUG: Password verification failed for: {user['email']}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        print(f"DEBUG: Password verified, creating token for: {user['_id']}")
         access_token = create_access_token(subject=user["_id"])
-        
-        print(f"DEBUG: Logging audit event for: {user['_id']}")
         await log_audit_event(
             action="auth.login",
             actor_id=user["_id"],
