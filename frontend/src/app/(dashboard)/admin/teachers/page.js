@@ -30,6 +30,7 @@ function getErrorMessage(error, fallback) {
 
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
@@ -43,8 +44,12 @@ export default function TeachersPage() {
   };
 
   const load = async () => {
-    const res = await api.get('/admin/users?role=teacher');
-    setTeachers(res.data || []);
+    const [userRes, deptRes] = await Promise.all([
+      api.get('/admin/users?role=teacher'),
+      api.get('/admin/departments')
+    ]);
+    setTeachers(userRes.data || []);
+    setDepartments(deptRes.data || []);
   };
 
   useEffect(() => {
@@ -79,7 +84,12 @@ export default function TeachersPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ full_name: '', email: '', password: 'teacher123', department: '' });
+    setForm({ 
+      full_name: '', 
+      email: '', 
+      password: 'teacher123', 
+      department: departments?.[0]?.name || '' 
+    });
     setFormError('');
     setShowForm(true);
   };
@@ -157,7 +167,7 @@ export default function TeachersPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Quản lý giảng viên</h1>
+        <h1>Quản lý giảng viên (Cập nhật)</h1>
         <button className="glass" style={{ 
           padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)', 
           background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer',
@@ -180,7 +190,16 @@ export default function TeachersPage() {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Khoa/Bộ môn</label>
-              <input value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
+              <select 
+                value={form.department} 
+                onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} 
+                style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }}
+              >
+                <option value="">-- Chọn Khoa --</option>
+                {(departments || []).map((d) => (
+                  <option key={d._id} value={d.name}>{d.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Email</label>

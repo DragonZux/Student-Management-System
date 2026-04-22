@@ -166,6 +166,12 @@ class ExamGrade(BaseModel):
     graded_at: Optional[datetime] = None
 
 
+class ExamSubmission(BaseModel):
+    student_id: str
+    content: str
+    submitted_at: datetime
+
+
 class ExamBase(BaseModel):
     class_id: str
     title: str
@@ -174,6 +180,7 @@ class ExamBase(BaseModel):
     duration_minutes: int
     max_score: float = 100.0
     grades: List[ExamGrade] = Field(default_factory=list)
+    submissions: List[ExamSubmission] = Field(default_factory=list)
 
 
 class ExamCreate(ExamBase):
@@ -188,6 +195,7 @@ class ExamUpdate(BaseModel):
     duration_minutes: Optional[int] = None
     max_score: Optional[float] = None
     grades: Optional[List[ExamGrade]] = None
+    submissions: Optional[List[ExamSubmission]] = None
 
 
 class ExamOut(ExamBase):

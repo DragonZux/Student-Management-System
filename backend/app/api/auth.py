@@ -93,6 +93,11 @@ async def get_my_profile(current_user: dict = Depends(get_current_user)):
 async def update_my_profile(payload: ProfileUpdate, current_user: dict = Depends(get_current_user)):
     db = get_database()
     updatable = payload.model_dump(exclude_none=True)
+    # Prevent users from changing their own department, status, or active status via /me
+    updatable.pop("department", None)
+    updatable.pop("status", None)
+    updatable.pop("is_active", None)
+    
     if not updatable:
         return current_user
 

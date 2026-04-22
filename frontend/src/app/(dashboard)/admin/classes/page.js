@@ -10,6 +10,7 @@ export default function ClassesPage() {
   const [classes, setClasses] = useState([]);
   const [courses, setCourses] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [classrooms, setClassrooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
@@ -25,14 +26,21 @@ export default function ClassesPage() {
   });
 
   const load = async () => {
-    const [clsRes, courseRes, teacherRes] = await Promise.all([
-      api.get('/admin/classes'),
-      api.get('/admin/courses'),
-      api.get('/admin/users?role=teacher'),
-    ]);
-    setClasses(clsRes.data || []);
-    setCourses(courseRes.data || []);
-    setTeachers(teacherRes.data || []);
+    try {
+      const [clsRes, courseRes, teacherRes, roomRes] = await Promise.all([
+        api.get('/admin/classes'),
+        api.get('/admin/courses'),
+        api.get('/admin/users?role=teacher'),
+        api.get('/admin/classrooms'),
+      ]);
+      setClasses(clsRes.data || []);
+      setCourses(courseRes.data || []);
+      setTeachers(teacherRes.data || []);
+      setClassrooms(roomRes.data || []);
+    } catch (e) {
+      console.error('Failed to load data', e);
+      throw e;
+    }
   };
 
   useEffect(() => {
@@ -43,8 +51,7 @@ export default function ClassesPage() {
         setError('');
         await load();
       } catch (e) {
-        console.error('Failed to load classes', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách lớp');
+        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được dữ liệu hệ thống');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -65,7 +72,6 @@ export default function ClassesPage() {
   }, [teachers]);
 
   const normalizeSchedule = (text) => {
-    // Accept: "Monday 08:00-10:00; Thu 2 08:00-10:00"
     const items = String(text || '')
       .split(';')
       .map((s) => s.trim())
@@ -90,8 +96,8 @@ export default function ClassesPage() {
       course_id: courses?.[0]?._id || '',
       teacher_id: teachers?.[0]?._id || '',
       semester: '2026-Spring',
-      room: '',
-      capacity: 30,
+      room: classrooms?.[0]?.code || '',
+      capacity: classrooms?.[0]?.capacity || 30,
       scheduleText: 'Monday 08:00-10:00',
     });
     setShowForm(true);
@@ -120,29 +126,8 @@ export default function ClassesPage() {
       capacity: Number(form.capacity),
       schedule: normalizeSchedule(form.scheduleText),
     };
-    const missing = [];
-    if (!payload.course_id) missing.push('Môn học');
-    if (!payload.teacher_id) missing.push('Giảng viên');
-    if (!String(payload.semester || '').trim()) missing.push('Học kỳ');
-    if (!String(payload.room || '').trim()) missing.push('Phòng học');
-    if (missing.length > 0) {
-      popupValidationError(setFormError, `Vui lòng nhập: ${missing.join(', ')}.`);
-      return;
-    }
-    if (!payload.schedule || payload.schedule.length === 0) {
-      popupValidationError(setFormError, 'Vui lòng nhập lịch học hợp lệ, ví dụ: Monday 08:00-10:00.');
-      return;
-    }
-    if (String(payload.semester).trim().length < 4) {
-      popupValidationError(setFormError, 'Học kỳ cần ít nhất 4 ký tự, ví dụ: 2026-Spring.');
-      return;
-    }
-    if (!payload.capacity || payload.capacity <= 0) {
-      popupValidationError(setFormError, 'Sức chứa phải là số lớn hơn 0.');
-      return;
-    }
-    if (!isInRange(payload.capacity, 1, 1000)) {
-      popupValidationError(setFormError, 'Sức chứa phải trong khoảng 1 đến 1000.');
+    if (!payload.course_id || !payload.teacher_id || !payload.room || !payload.semester) {
+      popupValidationError(setFormError, 'Vui lòng điền đầy đủ các trường bắt buộc.');
       return;
     }
     try {
@@ -151,27 +136,24 @@ export default function ClassesPage() {
       setShowForm(false);
       await load();
     } catch (e) {
-      console.error('Failed to save class', e);
       setFormError(e.response?.data?.detail || 'Lưu lớp thất bại');
     }
   };
 
   const remove = async (cls) => {
-    if (!confirm(`Delete class ${cls._id}?`)) return;
+    if (!confirm(`Xóa lớp này?`)) return;
     try {
-      setError('');
       await api.delete(`/admin/classes/${cls._id}`);
       await load();
     } catch (e) {
-      console.error('Failed to delete class', e);
       setError(e.response?.data?.detail || 'Xóa lớp thất bại');
     }
   };
 
   return (
-    <div>
+    <div style={{ padding: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Lớp học & phân công giảng viên</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Lớp học & Phân công (Cập nhật)</h1>
         <button className="glass" style={{ 
           padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)', 
           background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer',
@@ -184,98 +166,95 @@ export default function ClassesPage() {
       </div>
 
       {showForm ? (
-        <Card className="glass" title={editing ? 'Sửa lớp' : 'Tạo lớp'}>
+        <Card className="glass" title={editing ? 'Cập nhật thông tin lớp' : 'Tạo lớp học mới'}>
           <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{formError}</InlineMessage>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Môn học</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Môn học</label>
               <select value={form.course_id} onChange={(e) => setForm((p) => ({ ...p, course_id: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <option value="">-- Chọn môn học --</option>
                 {(courses || []).map((c) => (
                   <option key={c._id} value={c._id}>{c.code} - {c.title}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Giảng viên</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Giảng viên</label>
               <select value={form.teacher_id} onChange={(e) => setForm((p) => ({ ...p, teacher_id: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <option value="">-- Chọn giảng viên --</option>
                 {(teachers || []).map((t) => (
-                  <option key={t._id} value={t._id}>{t.full_name} ({t.email})</option>
+                  <option key={t._id} value={t._id}>{t.full_name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Học kỳ</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Học kỳ</label>
               <input value={form.semester} onChange={(e) => setForm((p) => ({ ...p, semester: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Phòng học</label>
-              <input value={form.room} onChange={(e) => setForm((p) => ({ ...p, room: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Phòng học</label>
+              <select 
+                value={form.room} 
+                onChange={(e) => {
+                  const rCode = e.target.value;
+                  const rObj = classrooms.find(r => r.code === rCode);
+                  setForm(p => ({ ...p, room: rCode, capacity: rObj ? rObj.capacity : p.capacity }));
+                }} 
+                style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }}
+              >
+                <option value="">-- Chọn phòng học --</option>
+                {(classrooms || []).map((rm) => (
+                  <option key={rm._id} value={rm.code}>{rm.code} ({rm.building} - Sức chứa: {rm.capacity})</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Sức chứa</label>
-              <input type="number" min="1" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Sức chứa</label>
+              <input type="number" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{'Lịch học (ví dụ: "Thứ 2 08:00-10:00; Thứ 4 08:00-10:00")'}</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Lịch học (VD: Monday 08:00-10:00)</label>
               <input value={form.scheduleText} onChange={(e) => setForm((p) => ({ ...p, scheduleText: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
             </div>
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-            <button onClick={() => setShowForm(false)} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', fontWeight: 600 }}>Hủy</button>
-            <button onClick={submit} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>Lưu</button>
+          <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <button onClick={() => setShowForm(false)} style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer' }}>Hủy</button>
+            <button onClick={submit} style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>Lưu lớp</button>
           </div>
         </Card>
       ) : null}
 
-      {loading ? <div style={{ padding: '1rem' }}>Đang tải...</div> : null}
-      <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{error}</InlineMessage>
-
-      <div className="grid grid-cols-2">
-        {(classes || []).map((cls) => {
-          const crs = courseById.get(cls.course_id);
-          const tch = teacherById.get(cls.teacher_id);
-          const title = `${crs?.code || 'Môn học'} - ${crs?.title || cls.course_id}`;
-          const schedule = (cls.schedule || []).map((s) => `${s.day} ${s.start}-${s.end}`).join(', ');
-          const capacity = `${cls.current_enrollment ?? 0}/${cls.capacity ?? 0}`;
-          return (
-          <Card key={cls._id} title={title} className="glass">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <User size={18} color="var(--primary)" />
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Giảng viên</div>
-                  <div style={{ fontWeight: 600 }}>{tch?.full_name || cls.teacher_id}</div>
-                </div>
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <MapPin size={18} color="var(--primary)" />
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Địa điểm</div>
-                    <div style={{ fontWeight: 600 }}>{cls.room}</div>
+      <div style={{ marginTop: '2rem' }}>
+        {loading ? <div>Đang tải dữ liệu...</div> : (
+          <div className="grid grid-cols-2">
+            {(classes || []).map((cls) => {
+              const crs = courseById.get(cls.course_id);
+              const tch = teacherById.get(cls.teacher_id);
+              return (
+                <Card key={cls._id} title={`${crs?.code || ''} - ${crs?.title || 'Môn học'}`} className="glass">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <User size={16} /> <span style={{ fontWeight: 500 }}>{tch?.full_name || 'Chưa phân công'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <MapPin size={16} /> <span>Phòng: <strong>{cls.room}</strong></span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Clock size={16} /> <span>{cls.schedule?.map(s => `${s.day} ${s.start}-${s.end}`).join(', ') || 'Chưa có lịch'}</span>
+                    </div>
+                    <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
+                      <span style={{ fontSize: '0.875rem' }}>Sức chứa: {cls.current_enrollment}/{cls.capacity}</span>
+                      <div>
+                        <button onClick={() => openEdit(cls)} style={{ marginRight: '1rem', color: 'var(--primary)', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600 }}>Sửa</button>
+                        <button onClick={() => remove(cls)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600 }}>Xóa</button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Clock size={18} color="var(--primary)" />
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Lịch học</div>
-                    <div style={{ fontWeight: 600 }}>{schedule || '—'}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Sức chứa: <strong>{capacity}</strong></span>
-                <div>
-                  <button onClick={() => openEdit(cls)} style={{ color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, marginRight: '0.75rem' }}>Sửa</button>
-                  <button onClick={() => remove(cls)} style={{ color: '#991b1b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 800 }}>Xóa</button>
-                </div>
-              </div>
-            </div>
-          </Card>
-          );
-        })}
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

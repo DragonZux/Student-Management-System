@@ -308,25 +308,32 @@ async def withdraw_course(enrollment_id: str, payload: dict, student: dict = Dep
     if not enrollment:
         raise HTTPException(status_code=404, detail="Enrollment not found")
     if enrollment.get("status") != "enrolled":
-        raise HTTPException(status_code=400, detail="Only active enrollments can be withdrawn")
+        raise HTTPException(status_code=400, detail="Only active enrollments can request withdrawal")
+    
     reason = str(payload.get("reason", "")).strip()
     if len(reason) < 10:
         raise HTTPException(status_code=400, detail="Withdrawal reason must be at least 10 characters")
 
+    # Set status to pending instead of withdrawn
     await db.enrollments.update_one(
         {"_id": enrollment_id},
-        {"$set": {"status": "withdrawn", "withdrawn_at": datetime.utcnow(), "withdrawal_reason": reason}},
+        {"$set": {
+            "status": "withdrawal_pending", 
+            "withdrawal_requested_at": datetime.utcnow(), 
+            "withdrawal_reason": reason
+        }},
     )
-    await db.classes.update_one({"_id": enrollment["class_id"]}, {"$inc": {"current_enrollment": -1}})
+    # We DO NOT decrement current_enrollment here. Admin will do it upon approval.
+    
     await log_audit_event(
-        action="student.withdraw_course",
+        action="student.request_withdrawal",
         actor_id=student["_id"],
         actor_role=student["role"],
         target_type="enrollment",
         target_id=enrollment_id,
         metadata={"class_id": enrollment["class_id"], "reason": reason},
     )
-    return {"message": "Course withdrawn successfully"}
+    return {"message": "Withdrawal request submitted for approval"}
 
 @router.post("/feedback")
 async def submit_feedback(payload: FeedbackCreate, student: dict = Depends(check_student_role)):

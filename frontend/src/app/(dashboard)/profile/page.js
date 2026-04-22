@@ -168,9 +168,19 @@ export default function ProfilePage() {
                   <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Khoa/Bộ môn</label>
                   <input
                     value={profileForm.department}
-                    onChange={(e) => setProfileForm((p) => ({ ...p, department: e.target.value }))}
-                    style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }}
+                    readOnly
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.625rem', 
+                      borderRadius: '8px', 
+                      border: '1px solid var(--border)',
+                      background: 'var(--muted)',
+                      cursor: 'not-allowed',
+                      opacity: 0.8
+                    }}
+                    title="Liên hệ Quản trị viên để thay đổi Khoa/Bộ môn"
                   />
+                  <div style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>* Chỉ Quản trị viên mới có quyền thay đổi</div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Trạng thái tài khoản</label>
