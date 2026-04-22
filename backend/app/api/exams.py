@@ -27,21 +27,19 @@ async def list_exams(current_user: dict = Depends(get_current_user)):
 
 
 @router.post("/", response_model=ExamOut)
-async def create_exam(payload: ExamCreate, teacher: dict = Depends(check_teacher_or_admin)):
+async def create_exam(payload: ExamCreate, admin: dict = Depends(check_admin_role)):
     db = get_database()
     target_class = await db.classes.find_one({"_id": payload.class_id})
     if not target_class:
         raise HTTPException(status_code=404, detail="Class not found")
-    if teacher["role"] == UserRole.TEACHER and target_class.get("teacher_id") != teacher["_id"]:
-        raise HTTPException(status_code=403, detail="You do not teach this class")
 
     exam = payload.model_dump()
     exam.update({"_id": str(uuid.uuid4()), "created_at": datetime.utcnow()})
     await db.exams.insert_one(exam)
     await log_audit_event(
-        action="teacher.create_exam",
-        actor_id=teacher["_id"],
-        actor_role=teacher["role"],
+        action="admin.create_exam",
+        actor_id=admin["_id"],
+        actor_role=admin["role"],
         target_type="exam",
         target_id=exam["_id"],
         metadata={"class_id": payload.class_id},
@@ -50,15 +48,11 @@ async def create_exam(payload: ExamCreate, teacher: dict = Depends(check_teacher
 
 
 @router.patch("/{exam_id}", response_model=ExamOut)
-async def update_exam(exam_id: str, payload: ExamUpdate, teacher: dict = Depends(check_teacher_or_admin)):
+async def update_exam(exam_id: str, payload: ExamUpdate, admin: dict = Depends(check_admin_role)):
     db = get_database()
     current = await db.exams.find_one({"_id": exam_id})
     if not current:
         raise HTTPException(status_code=404, detail="Exam not found")
-    if teacher["role"] == UserRole.TEACHER:
-        target_class = await db.classes.find_one({"_id": current["class_id"], "teacher_id": teacher["_id"]})
-        if not target_class:
-            raise HTTPException(status_code=403, detail="You do not teach this class")
 
     updatable = payload.model_dump(exclude_none=True)
     if not updatable:
@@ -66,9 +60,9 @@ async def update_exam(exam_id: str, payload: ExamUpdate, teacher: dict = Depends
     await db.exams.update_one({"_id": exam_id}, {"$set": updatable})
     updated = await db.exams.find_one({"_id": exam_id})
     await log_audit_event(
-        action="exam.update",
-        actor_id=teacher["_id"],
-        actor_role=teacher["role"],
+        action="admin.update_exam",
+        actor_id=admin["_id"],
+        actor_role=admin["role"],
         target_type="exam",
         target_id=exam_id,
         metadata={"fields": list(updatable.keys())},
@@ -103,24 +97,65 @@ async def record_exam_grade(exam_id: str, payload: ExamGrade, teacher: dict = De
     return {"message": "Exam grade recorded"}
 
 
-@router.delete("/{exam_id}")
-async def delete_exam(exam_id: str, teacher: dict = Depends(check_teacher_or_admin)):
+@router.post("/{exam_id}/submit")
+async def record_exam_submission(exam_id: str, payload: dict, student: dict = Depends(get_current_user)):
     db = get_database()
     exam = await db.exams.find_one({"_id": exam_id})
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
-    if teacher["role"] == UserRole.TEACHER:
-        target_class = await db.classes.find_one({"_id": exam["class_id"], "teacher_id": teacher["_id"]})
-        if not target_class:
-            raise HTTPException(status_code=403, detail="You do not teach this class")
+    
+    # 1. Check enrollment
+    enrollment = await db.enrollments.find_one({"student_id": student["_id"], "class_id": exam["class_id"]})
+    if not enrollment:
+        raise HTTPException(status_code=403, detail="You are not enrolled in the class for this exam")
+
+    # 2. Check timing (optional but recommended)
+    # scheduled_at = exam["scheduled_at"]
+    # ... logic to check if current time is within duration ...
+
+    content = payload.get("content")
+    if not content or not str(content).strip():
+        raise HTTPException(status_code=400, detail="Submission content cannot be empty")
+
+    submission = {
+        "student_id": student["_id"],
+        "content": str(content).strip(),
+        "submitted_at": datetime.utcnow()
+    }
+
+    # Add to submissions list (remove previous if exists)
+    submissions = exam.get("submissions", [])
+    submissions = [s for s in submissions if s.get("student_id") != student["_id"]]
+    submissions.append(submission)
+    
+    await db.exams.update_one({"_id": exam_id}, {"$set": {"submissions": submissions}})
+    
+    await log_audit_event(
+        action="student.submit_exam",
+        actor_id=student["_id"],
+        actor_role=student["role"],
+        target_type="exam",
+        target_id=exam_id,
+        metadata={"content_length": len(submission["content"])},
+    )
+    
+    return {"message": "Exam submitted successfully"}
+
+
+@router.delete("/{exam_id}")
+async def delete_exam(exam_id: str, admin: dict = Depends(check_admin_role)):
+    db = get_database()
+    exam = await db.exams.find_one({"_id": exam_id})
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
 
     result = await db.exams.delete_one({"_id": exam_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Exam not found")
     await log_audit_event(
-        action="exam.delete",
-        actor_id=teacher["_id"],
-        actor_role=teacher["role"],
+        action="admin.delete_exam",
+        actor_id=admin["_id"],
+        actor_role=admin["role"],
         target_type="exam",
         target_id=exam_id,
     )

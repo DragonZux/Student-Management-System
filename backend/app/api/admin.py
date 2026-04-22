@@ -464,7 +464,105 @@ async def list_audit_logs(action: Optional[str] = None, actor_id: Optional[str] 
 
 # --- Feedback/Survey (admin visibility) ---
 
-@router.get("/feedback", response_model=List[FeedbackOut])
-async def list_feedback():
+# --- Withdrawal Requests Management ---
+
+@router.get("/withdrawal-requests", response_model=List[dict])
+async def list_withdrawal_requests():
     db = get_database()
-    return await db.feedback.find().sort("created_at", -1).to_list(1000)
+    # Find all enrollments with pending withdrawal
+    requests = await db.enrollments.find({"status": "withdrawal_pending"}).to_list(1000)
+    
+    # Enrich with student and class/course info
+    enriched = []
+    for req in requests:
+        student = await db.users.find_one({"_id": req["student_id"]})
+        cls = await db.classes.find_one({"_id": req["class_id"]})
+        course = await db.courses.find_one({"_id": cls["course_id"]}) if cls else None
+        
+        enriched.append({
+            "enrollment_id": req["_id"],
+            "student_name": student.get("full_name") if student else "Unknown",
+            "student_email": student.get("email") if student else "Unknown",
+            "course_code": course.get("code") if course else "Unknown",
+            "course_title": course.get("title") if course else "Unknown",
+            "reason": req.get("withdrawal_reason"),
+            "requested_at": req.get("withdrawal_requested_at"),
+            "class_id": req["class_id"]
+        })
+    return enriched
+
+@router.post("/withdrawal-requests/{enrollment_id}/approve")
+async def approve_withdrawal(enrollment_id: str):
+    db = get_database()
+    enrollment = await db.enrollments.find_one({"_id": enrollment_id, "status": "withdrawal_pending"})
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Withdrawal request not found or already processed")
+    
+    # 1. Update enrollment status to withdrawn
+    await db.enrollments.update_one(
+        {"_id": enrollment_id},
+        {"$set": {"status": "withdrawn", "withdrawn_at": datetime.utcnow()}}
+    )
+    
+    # 2. Decrement class current_enrollment
+    await db.classes.update_one(
+        {"_id": enrollment["class_id"]},
+        {"$inc": {"current_enrollment": -1}}
+    )
+    
+    await log_audit_event(
+        action="admin.approve_withdrawal",
+        actor_role=UserRole.ADMIN,
+        target_type="enrollment",
+        target_id=enrollment_id,
+        metadata={"student_id": enrollment["student_id"], "class_id": enrollment["class_id"]},
+    )
+    
+    # 3. Notify student (Optional but good)
+    await db.notifications.insert_one({
+        "_id": str(uuid.uuid4()),
+        "user_id": enrollment["student_id"],
+        "title": "Yêu cầu rút học phần đã được phê duyệt",
+        "message": f"Yêu cầu rút học phần của bạn đã được phê duyệt thành công.",
+        "type": "info",
+        "read": False,
+        "created_at": datetime.utcnow()
+    })
+    
+    return {"message": "Withdrawal approved successfully"}
+
+@router.post("/withdrawal-requests/{enrollment_id}/reject")
+async def reject_withdrawal(enrollment_id: str, payload: dict):
+    db = get_database()
+    enrollment = await db.enrollments.find_one({"_id": enrollment_id, "status": "withdrawal_pending"})
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Withdrawal request not found or already processed")
+    
+    reason = payload.get("reason", "Yêu cầu không được chấp nhận bởi quản trị viên.")
+    
+    # Set status back to enrolled
+    await db.enrollments.update_one(
+        {"_id": enrollment_id},
+        {"$set": {"status": "enrolled"}}
+    )
+    
+    await log_audit_event(
+        action="admin.reject_withdrawal",
+        actor_role=UserRole.ADMIN,
+        target_type="enrollment",
+        target_id=enrollment_id,
+        metadata={"student_id": enrollment["student_id"], "reason": reason},
+    )
+    
+    # Notify student
+    await db.notifications.insert_one({
+        "_id": str(uuid.uuid4()),
+        "user_id": enrollment["student_id"],
+        "title": "Yêu cầu rút học phần bị từ chối",
+        "message": f"Yêu cầu rút học phần của bạn bị từ chối. Lý do: {reason}",
+        "type": "warning",
+        "read": False,
+        "created_at": datetime.utcnow()
+    })
+    
+    return {"message": "Withdrawal request rejected"}

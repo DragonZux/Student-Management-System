@@ -31,6 +31,10 @@ app.add_middleware(
 
 @app.middleware("http")
 async def log_requests(request, call_next):
+    # Skip logging for WebSocket connections to avoid potential protocol upgrade issues
+    if request.headers.get("upgrade", "").lower() == "websocket":
+        return await call_next(request)
+        
     import time
     start_time = time.time()
     response = await call_next(request)

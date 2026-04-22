@@ -9,6 +9,7 @@ import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validati
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
+  const [realDepartments, setRealDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -26,30 +27,35 @@ export default function StudentsPage() {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, student: null });
 
   useEffect(() => {
-    fetchStudents();
+    fetchData();
   }, []);
 
-  const fetchStudents = async () => {
+  const fetchData = async () => {
     try {
-      const response = await api.get('/admin/users?role=student');
-      setStudents(response.data || []);
+      setLoading(true);
+      const [studentRes, deptRes] = await Promise.all([
+        api.get('/admin/users?role=student'),
+        api.get('/admin/departments')
+      ]);
+      setStudents(studentRes.data || []);
+      setRealDepartments(deptRes.data || []);
     } catch (err) {
-      console.error('Failed to fetch students:', err);
-      setError('Không tải được danh sách sinh viên. Vui lòng kiểm tra backend đang chạy.');
+      console.error('Failed to fetch data:', err);
+      setError('Không tải được danh sách dữ liệu. Vui lòng kiểm tra backend.');
     } finally {
       setLoading(false);
     }
   };
 
-  const departments = useMemo(() => {
-    const deps = new Set(students.map(s => s.department).filter(Boolean));
-    return ['all', ...Array.from(deps)];
-  }, [students]);
-
   const openCreate = () => {
     setEditing(null);
     setFormError('');
-    setForm({ full_name: '', email: '', password: '', department: '' });
+    setForm({ 
+      full_name: '', 
+      email: '', 
+      password: '', 
+      department: realDepartments?.[0]?.name || '' 
+    });
     setShowForm(true);
   };
 
@@ -98,7 +104,7 @@ export default function StudentsPage() {
         });
       }
       setShowForm(false);
-      await fetchStudents();
+      await fetchData();
     } catch (err) {
       console.error('Failed to save student:', err);
       setFormError(err.response?.data?.detail || 'Lưu thông tin sinh viên thất bại.');
@@ -114,7 +120,7 @@ export default function StudentsPage() {
     if (!student) return;
     try {
       await api.delete(`/admin/users/${student._id}`);
-      await fetchStudents();
+      await fetchData();
     } catch (err) {
       console.error('Failed to delete student:', err);
       setError(err.response?.data?.detail || 'Xóa sinh viên thất bại.');
@@ -158,7 +164,7 @@ export default function StudentsPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Quản lý sinh viên</h1>
+        <h1>Quản lý sinh viên (Cập nhật)</h1>
         <button className="glass" style={{ 
           padding: '0.75rem 1.5rem', 
           borderRadius: 'var(--radius)', 
@@ -198,7 +204,16 @@ export default function StudentsPage() {
             ) : null}
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Khoa/Bộ môn</label>
-              <input value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
+              <select 
+                value={form.department} 
+                onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} 
+                style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }}
+              >
+                <option value="">-- Chọn Khoa --</option>
+                {(realDepartments || []).map((d) => (
+                  <option key={d._id} value={d.name}>{d.name}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
@@ -241,8 +256,8 @@ export default function StudentsPage() {
               }}
             >
               <option value="all">Tất cả Khoa/Bộ môn</option>
-              {departments.filter(d => d !== 'all').map(dep => (
-                <option key={dep} value={dep}>{dep}</option>
+              {realDepartments.map(dep => (
+                <option key={dep._id} value={dep.name}>{dep.name}</option>
               ))}
             </select>
           </div>

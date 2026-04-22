@@ -119,6 +119,34 @@ export default function WithdrawalPage() {
           </button>
         </div>
       </Card>
+      <div style={{ marginTop: '2rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>Lịch sử yêu cầu rút học phần</h2>
+        <div className="grid grid-cols-1" style={{ gap: '1rem' }}>
+          {enrollments.filter(e => e.status === 'withdrawal_pending' || e.status === 'withdrawn').map(e => (
+            <Card key={e._id} className="glass">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h4 style={{ margin: 0 }}>{e.course?.code}: {e.course?.title}</h4>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Lý do: {e.withdrawal_reason}</p>
+                </div>
+                <div style={{ 
+                  padding: '0.25rem 0.75rem', 
+                  borderRadius: '99px', 
+                  fontSize: '0.75rem', 
+                  fontWeight: 600,
+                  background: e.status === 'withdrawn' ? '#dcfce7' : '#fef3c7',
+                  color: e.status === 'withdrawn' ? '#166534' : '#92400e'
+                }}>
+                  {e.status === 'withdrawn' ? 'Đã rút' : 'Đang chờ duyệt'}
+                </div>
+              </div>
+            </Card>
+          ))}
+          {enrollments.filter(e => e.status === 'withdrawal_pending' || e.status === 'withdrawn').length === 0 && (
+            <p style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>Bạn chưa có yêu cầu rút học phần nào.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -20,6 +20,7 @@ const navItems = {
     { name: 'Khoa/Bộ môn', path: '/admin/departments', icon: ClipboardList },
     { name: 'Phòng học', path: '/admin/classrooms', icon: Calendar },
     { name: 'Kỳ thi', path: '/exams', icon: ClipboardCheck },
+    { name: 'Duyệt rút học phần', path: '/admin/withdrawals', icon: LogOut },
     { name: 'Tài chính', path: '/admin/finance', icon: Wallet },
     { name: 'Nhật ký hệ thống', path: '/admin/audit', icon: FileText },
   ],

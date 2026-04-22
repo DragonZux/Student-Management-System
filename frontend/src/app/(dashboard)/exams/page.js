@@ -28,6 +28,9 @@ export default function ExamsPage() {
   const [myClasses, setMyClasses] = useState([]);
   const [gradeExam, setGradeExam] = useState(null);
   const [gradeForm, setGradeForm] = useState({ student_id: "", score: "", comments: "" });
+  const [takeExam, setTakeExam] = useState(null);
+  const [takeForm, setTakeForm] = useState({ content: "" });
+  const [takeError, setTakeError] = useState("");
 
   const canManage = user?.role === "teacher" || user?.role === "admin";
 
@@ -37,11 +40,18 @@ export default function ExamsPage() {
   }, []);
 
   const loadClasses = useCallback(async () => {
-    if (user?.role === "teacher") {
-      const res = await api.get("/teacher/my-classes");
-      setMyClasses(res.data || []);
-    } else {
-      setMyClasses([]);
+    try {
+      if (user?.role === "teacher") {
+        const res = await api.get("/teacher/my-classes");
+        setMyClasses(res.data || []);
+      } else if (user?.role === "admin") {
+        const res = await api.get("/admin/classes");
+        setMyClasses(res.data || []);
+      } else {
+        setMyClasses([]);
+      }
+    } catch (e) {
+      console.error("Failed to load classes", e);
     }
   }, [user?.role]);
 
@@ -175,6 +185,28 @@ export default function ExamsPage() {
     }
   };
 
+  const submitTake = async () => {
+    if (!takeExam?._id) return;
+    setTakeError("");
+    if (!takeForm.content.trim()) {
+      popupValidationError(setTakeError, "Vui lòng nhập nội dung bài làm.");
+      return;
+    }
+    try {
+      await api.post(`/exams/${takeExam._id}/submit`, {
+        content: takeForm.content.trim(),
+      });
+      setTakeExam(null);
+      setTakeForm({ content: "" });
+      setTakeError("");
+      await load();
+      alert("Nộp bài thi thành công!");
+    } catch (e) {
+      console.error("Submit exam failed", e);
+      setTakeError(e.response?.data?.detail || "Nộp bài thi thất bại");
+    }
+  };
+
   const sorted = useMemo(() => {
     return (exams || [])
       .slice()
@@ -185,7 +217,7 @@ export default function ExamsPage() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <h1>Kỳ thi</h1>
-        {canManage ? (
+        {user?.role === "admin" ? (
           <button
             onClick={() => setShowCreate((v) => !v)}
             style={{
@@ -209,26 +241,18 @@ export default function ExamsPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={{ display: "block", fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Lớp học</label>
-              {user?.role === "teacher" ? (
-                <select
-                  value={createForm.class_id}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, class_id: e.target.value }))}
-                  style={{ width: "100%", padding: "0.625rem", borderRadius: "8px", border: "1px solid var(--border)" }}
-                >
-                  {myClasses.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.course_code || "Môn học"} - {c.course_title || c.course_id}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  value={createForm.class_id}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, class_id: e.target.value }))}
-                  placeholder="mã_lớp"
-                  style={{ width: "100%", padding: "0.625rem", borderRadius: "8px", border: "1px solid var(--border)" }}
-                />
-              )}
+              <select
+                value={createForm.class_id}
+                onChange={(e) => setCreateForm((p) => ({ ...p, class_id: e.target.value }))}
+                style={{ width: "100%", padding: "0.625rem", borderRadius: "8px", border: "1px solid var(--border)" }}
+              >
+                <option value="">-- Chọn lớp học --</option>
+                {myClasses.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.course_code || "Môn học"}: {c.course_title || c.course_id}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label style={{ display: "block", fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Thời gian thi</label>
@@ -325,6 +349,17 @@ export default function ExamsPage() {
                 style={{ width: "100%", padding: "0.625rem", borderRadius: "8px", border: "1px solid var(--border)" }}
               />
             </div>
+            {gradeExam.submissions?.find(s => s.student_id === gradeForm.student_id) && (
+              <div style={{ gridColumn: "1 / -1", marginTop: "1rem", padding: "1rem", background: "var(--muted)", borderRadius: "8px" }}>
+                <label style={{ display: "block", fontSize: "0.75rem", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>Bài làm của sinh viên:</label>
+                <div style={{ whiteSpace: "pre-wrap", fontSize: "0.875rem" }}>
+                  {gradeExam.submissions.find(s => s.student_id === gradeForm.student_id).content}
+                </div>
+                <div style={{ fontSize: "0.7rem", color: "var(--muted-foreground)", marginTop: "0.5rem" }}>
+                  Nộp lúc: {new Date(gradeExam.submissions.find(s => s.student_id === gradeForm.student_id).submitted_at).toLocaleString()}
+                </div>
+              </div>
+            )}
           </div>
           <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
             <button
@@ -343,6 +378,39 @@ export default function ExamsPage() {
         </Card>
       ) : null}
 
+      {takeExam ? (
+        <Card className="glass" title={`Làm bài thi: ${takeExam.title}`}>
+          <InlineMessage variant="error" style={{ marginBottom: "0.75rem" }}>{takeError}</InlineMessage>
+          <div style={{ marginBottom: "1rem" }}>
+            <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>Mô tả: {takeExam.description || "Không có mô tả"}</p>
+            <p style={{ fontSize: "0.875rem", fontWeight: 600 }}>Điểm tối đa: {takeExam.max_score} | Thời lượng: {takeExam.duration_minutes} phút</p>
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>Nội dung bài làm</label>
+            <textarea
+              value={takeForm.content}
+              onChange={(e) => setTakeForm({ content: e.target.value })}
+              placeholder="Nhập câu trả lời hoặc nội dung bài làm của bạn tại đây..."
+              style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", minHeight: "250px" }}
+            />
+          </div>
+          <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+            <button
+              onClick={() => setTakeExam(null)}
+              style={{ padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid var(--border)", background: "transparent", cursor: "pointer" }}
+            >
+              Hủy
+            </button>
+            <button
+              onClick={submitTake}
+              style={{ padding: "0.6rem 1rem", borderRadius: "8px", border: "none", background: "var(--primary)", color: "white", cursor: "pointer", fontWeight: 800 }}
+            >
+              Nộp bài
+            </button>
+          </div>
+        </Card>
+      ) : null}
+
       {loading ? <Card className="glass">Đang tải...</Card> : null}
       {error ? <InlineMessage variant="error" style={{ marginBottom: "0.75rem" }}>{error}</InlineMessage> : null}
       {actionError ? <InlineMessage variant="error" style={{ marginBottom: "0.75rem" }}>{actionError}</InlineMessage> : null}
@@ -350,7 +418,7 @@ export default function ExamsPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         {sorted.map((e) => (
           <Card key={e._id} className="glass" title={e.title} footer={
-            canManage ? (
+            (user?.role === "teacher" || user?.role === "admin") ? (
               <div style={{ display: "flex", gap: "0.75rem" }}>
                 <button
                   onClick={() => openGrade(e)}
@@ -358,13 +426,27 @@ export default function ExamsPage() {
                 >
                   Ghi điểm
                 </button>
-                <button
-                  onClick={() => deleteExam(e)}
-                  style={{ width: "100%", padding: "0.75rem", borderRadius: "var(--radius)", border: "1px solid #fee2e2", background: "#fee2e2", color: "#991b1b", cursor: "pointer", fontWeight: 900 }}
-                >
-                  Delete
-                </button>
+                {user?.role === "admin" && (
+                  <button
+                    onClick={() => deleteExam(e)}
+                    style={{ width: "100%", padding: "0.75rem", borderRadius: "var(--radius)", border: "1px solid #fee2e2", background: "#fee2e2", color: "#991b1b", cursor: "pointer", fontWeight: 900 }}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
+            ) : user?.role === "student" ? (
+              <button
+                onClick={() => { setTakeExam(e); setTakeForm({ content: "" }); }}
+                disabled={e.grades?.some(g => g.student_id === user._id)}
+                style={{ 
+                  width: "100%", padding: "0.75rem", borderRadius: "var(--radius)", 
+                  background: e.grades?.some(g => g.student_id === user._id) ? "var(--muted)" : "var(--primary)", 
+                  color: "white", border: "none", cursor: "pointer", fontWeight: 700 
+                }}
+              >
+                {e.grades?.some(g => g.student_id === user._id) ? "Đã có điểm" : "Làm bài thi"}
+              </button>
             ) : null
           }>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
