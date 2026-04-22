@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { Book, Calendar, Award, Wallet, Bell } from 'lucide-react';
+import { Book, Calendar, Award, Wallet } from 'lucide-react';
 import api from '@/lib/api';
 
 function formatDeadline(value) {
@@ -43,13 +44,13 @@ export default function StudentDashboard() {
       label: 'Lớp học tiếp theo',
       value: summary?.next_class ? `${summary.next_class.course_code || summary.next_class.course_title} @ ${summary.next_class.start || '--:--'}` : 'Chưa có lịch học',
       icon: Calendar,
-      color: 'var(--primary)',
+      color: '#6366f1',
     },
     {
       label: 'GPA hiện tại',
       value: loading ? '...' : String(summary?.gpa ?? 0),
       icon: Award,
-      color: 'var(--secondary)',
+      color: '#a855f7',
     },
     {
       label: 'Bài tập chưa nộp',
@@ -66,20 +67,26 @@ export default function StudentDashboard() {
   ]), [loading, summary]);
 
   return (
-    <div>
-      <h1>Bảng điều khiển sinh viên</h1>
-      <InlineMessage variant="error" style={{ marginTop: '1rem' }}>{error}</InlineMessage>
+    <div className="animate-in">
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h1 style={{ marginBottom: '0.5rem' }}>Bảng điều khiển sinh viên</h1>
+        <p style={{ fontSize: '1.1rem' }}>Chào mừng bạn trở lại. Chúc bạn có một ngày học tập hiệu quả!</p>
+      </div>
 
-      <div className="grid grid-cols-2" style={{ marginTop: '2rem', marginBottom: '2.5rem' }}>
+      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>
+
+      <div className="grid grid-cols-4" style={{ marginBottom: '2.5rem' }}>
         {stats.map((item) => {
           const Icon = item.icon;
           return (
             <Card key={item.label} className="glass">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <Icon size={32} color={item.color} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ padding: '0.75rem', background: `rgba(99, 102, 241, 0.1)`, borderRadius: '1rem', width: 'fit-content' }}>
+                  <Icon size={24} color={item.color} />
+                </div>
                 <div>
-                  <p style={{ margin: 0, fontSize: '0.875rem' }}>{item.label}</p>
-                  <h3 style={{ margin: 0 }}>{item.value}</h3>
+                  <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem' }}>{item.label}</p>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>{item.value}</h3>
                 </div>
               </div>
             </Card>
@@ -87,52 +94,89 @@ export default function StudentDashboard() {
         })}
       </div>
 
-      <div className="grid grid-cols-1">
-        <Card title="Hạn nộp sắp tới" className="glass">
-          {loading ? (
-            <div>Đang tải...</div>
-          ) : summary?.upcoming_deadline ? (
-            <div style={{ padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{summary.upcoming_deadline.title || 'Bài tập'}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-                  {summary.upcoming_deadline.course_code || summary.upcoming_deadline.course_title || 'Không rõ môn học'}
+      <div className="grid grid-cols-3" style={{ gap: '2rem' }}>
+        <div style={{ gridColumn: 'span 2' }}>
+          <Card title="Hạn nộp bài tập sắp tới" className="glass">
+            {loading ? (
+              <div style={{ padding: '2rem', textAlign: 'center' }}>Đang tải dữ liệu...</div>
+            ) : summary?.upcoming_deadline ? (
+              <div style={{ 
+                padding: '1.5rem', 
+                background: 'rgba(0,0,0,0.02)', 
+                borderRadius: '1rem', 
+                border: '1px solid #e2e8f0',
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                gap: '1.5rem' 
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                    <span className="badge badge-danger">Sắp đến hạn</span>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{summary.upcoming_deadline.title || 'Bài tập'}</h3>
+                  </div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#6366f1', marginBottom: '0.5rem' }}>
+                    Môn: {summary.upcoming_deadline.course_code || summary.upcoming_deadline.course_title || 'Không rõ'}
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#64748b' }}>
+                    {summary.upcoming_deadline.description || 'Chưa có mô tả chi tiết cho bài tập này.'}
+                  </p>
                 </div>
-                <div style={{ marginTop: '0.5rem', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-                  {summary.upcoming_deadline.description || 'Chưa có mô tả'}
+                <div style={{ textAlign: 'right', minWidth: '160px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Hạn chót</div>
+                  <div style={{ color: '#991b1b', fontWeight: 800, fontSize: '1rem' }}>
+                    {formatDeadline(summary.upcoming_deadline.deadline)}
+                  </div>
                 </div>
               </div>
-              <div style={{ color: '#991b1b', fontWeight: 600, textAlign: 'right' }}>
-                {formatDeadline(summary.upcoming_deadline.deadline)}
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                🎉 Tuyệt vời! Bạn không có bài tập nào sắp đến hạn.
               </div>
-            </div>
-          ) : (
-            <div>Không có bài tập nào đang chờ nộp.</div>
-          )}
-        </Card>
+            )}
+          </Card>
 
-        <Card title="Tổng quan học tập" className="glass" style={{ marginTop: '1.5rem' }}>
-          {loading ? (
-            <div>Đang tải...</div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              <div style={{ padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Môn đang học</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{summary?.active_courses ?? 0}</div>
+          <Card title="Thao tác nhanh" className="glass" style={{ marginTop: '2rem' }}>
+            <div className="grid grid-cols-3" style={{ gap: '1rem' }}>
+              <Link href="/student/enrollment" className="btn-primary" style={{ background: '#0f172a', justifyContent: 'center' }}>
+                Đăng ký học
+              </Link>
+              <Link href="/student/schedule" className="btn-primary" style={{ background: '#0f172a', justifyContent: 'center' }}>
+                Xem lịch học
+              </Link>
+              <Link href="/exams" className="btn-primary" style={{ background: '#6366f1', justifyContent: 'center' }}>
+                Làm bài thi
+              </Link>
+            </div>
+          </Card>
+        </div>
+
+        <div>
+          <Card title="Tổng quan học lực" className="glass">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{ padding: '1.25rem', background: 'rgba(34, 197, 94, 0.05)', borderRadius: '1rem', border: '1px solid rgba(34, 197, 94, 0.1)' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Môn học đang tham gia</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#166534' }}>{summary?.active_courses ?? 0}</div>
               </div>
-              <div style={{ padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Môn đã hoàn thành</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{summary?.completed_courses ?? 0}</div>
+              
+              <div style={{ padding: '1.25rem', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '1rem', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Môn học đã hoàn thành</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#6366f1' }}>{summary?.completed_courses ?? 0}</div>
               </div>
-              <div style={{ padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                  <Bell size={14} /> Thông báo chưa đọc
+
+              <div style={{ padding: '1.25rem', background: 'rgba(244, 63, 94, 0.05)', borderRadius: '1rem', border: '1px solid rgba(244, 63, 94, 0.1)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase' }}>Thông báo mới</div>
+                  {summary?.unread_notifications > 0 && <span className="badge badge-danger">Mới</span>}
                 </div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{summary?.unread_notifications ?? 0}</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#991b1b' }}>{summary?.unread_notifications ?? 0}</div>
+                <Link href="/notifications" style={{ fontSize: '0.8125rem', color: '#991b1b', fontWeight: 600, textDecoration: 'underline', marginTop: '0.5rem', display: 'block' }}>
+                  Xem tất cả thông báo
+                </Link>
               </div>
             </div>
-          )}
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );

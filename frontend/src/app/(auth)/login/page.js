@@ -1,7 +1,6 @@
 "use client";
 import { useState } from 'react';
 import { GraduationCap, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
@@ -36,123 +35,138 @@ export default function LoginPage() {
     }
   };
 
+  const primaryColor = '#6366f1';
+  const secondaryColor = '#a855f7';
+
   return (
     <div style={{ 
       minHeight: '100vh', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-      padding: '2rem'
+      background: `radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 40%), #f8fafc`,
+      padding: '2rem',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div className="glass" style={{ 
+      {/* Dynamic Background Elements */}
+      <div className="animate-in" style={{ position: 'absolute', top: '15%', left: '10%', width: '300px', height: '300px', background: primaryColor, filter: 'blur(120px)', borderRadius: '50%', opacity: 0.1, animationDuration: '3s' }} />
+      <div className="animate-in" style={{ position: 'absolute', bottom: '15%', right: '10%', width: '350px', height: '350px', background: secondaryColor, filter: 'blur(120px)', borderRadius: '50%', opacity: 0.1, animationDuration: '4s' }} />
+
+      <div className="glass animate-in" style={{ 
         width: '100%', 
-        maxWidth: '440px', 
-        padding: '3rem', 
-        borderRadius: '1.5rem',
-        background: 'rgba(255, 255, 255, 0.9)',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        maxWidth: '480px', 
+        padding: '4rem', 
+        background: 'rgba(255, 255, 255, 0.4)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.5)',
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        borderRadius: '2.5rem'
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
           <div style={{ 
-            width: '64px', 
-            height: '64px', 
-            background: 'var(--primary)', 
-            borderRadius: '1rem', 
+            width: '80px', 
+            height: '80px', 
+            background: `linear-gradient(135deg, ${primaryColor} 0%, #4338ca 100%)`, 
+            borderRadius: '1.5rem', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
-            margin: '0 auto 1rem',
-            color: 'white'
+            margin: '0 auto 1.75rem',
+            color: 'white',
+            boxShadow: '0 20px 40px -10px rgba(99, 102, 241, 0.5)',
+            transform: 'rotate(-5deg)'
           }}>
-            <GraduationCap size={36} />
+            <GraduationCap size={44} />
           </div>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#0f172a' }}>Chào mừng trở lại</h1>
-          <p style={{ marginTop: '0.5rem' }}>Vui lòng nhập thông tin để đăng nhập</p>
+          <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.04em', background: `linear-gradient(135deg, #0f172a 0%, ${primaryColor} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Hệ thống SMS</h1>
+          <p style={{ marginTop: '0.75rem', color: '#64748b', fontWeight: 600, fontSize: '1.05rem' }}>Đăng nhập để bắt đầu phiên học tập</p>
         </div>
 
-        <InlineMessage variant="error" style={{ marginBottom: '1.5rem', textAlign: 'center' }}>{error}</InlineMessage>
+        <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>Địa chỉ email</label>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            <label style={{ fontSize: '0.8125rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>Email nội bộ</label>
             <div style={{ position: 'relative' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+              <Mail size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input 
                 type="email" 
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ten@truong.edu.vn" 
+                placeholder="username@university.edu.vn" 
                 style={{ 
                   width: '100%', 
-                  padding: '0.75rem 1rem 0.75rem 2.75rem', 
-                  borderRadius: 'var(--radius)', 
-                  border: '1px solid var(--border)',
-                  background: 'white'
+                  padding: '1rem 1rem 1rem 3.25rem',
+                  borderRadius: '1.25rem',
+                  background: 'rgba(255,255,255,0.5)',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease'
                 }} 
+                className="input-hover"
               />
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>Mật khẩu</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            <label style={{ fontSize: '0.8125rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>Mật khẩu bảo mật</label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+              <Lock size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input 
                 type="password" 
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••" 
+                placeholder="••••••••••••" 
                 style={{ 
                   width: '100%', 
-                  padding: '0.75rem 1rem 0.75rem 2.75rem', 
-                  borderRadius: 'var(--radius)', 
-                  border: '1px solid var(--border)',
-                  background: 'white'
+                  padding: '1rem 1rem 1rem 3.25rem',
+                  borderRadius: '1.25rem',
+                  background: 'rgba(255,255,255,0.5)',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease'
                 }} 
+                className="input-hover"
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8125rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-              <input type="checkbox" style={{ accentColor: 'var(--primary)' }} />
-              <span>Ghi nhớ đăng nhập</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontWeight: 600 }}>
+              <input type="checkbox" style={{ width: '1.125rem', height: '1.125rem', accentColor: primaryColor, borderRadius: '4px' }} />
+              <span>Duy trì đăng nhập</span>
             </label>
-            <a href="#" style={{ color: 'var(--primary)', fontWeight: 600 }}>Quên mật khẩu?</a>
+            <a href="#" style={{ color: primaryColor, fontWeight: 800, textDecoration: 'none' }}>Quên mật khẩu?</a>
           </div>
 
           <button 
             type="submit"
             disabled={isSubmitting}
+            className="btn-primary"
             style={{ 
-              background: 'var(--primary)', 
-              color: 'white', 
-              padding: '0.875rem', 
-              borderRadius: 'var(--radius)', 
-              textAlign: 'center',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
+              width: '100%', 
+              padding: '1.125rem', 
               justifyContent: 'center',
-              gap: '0.5rem',
+              fontSize: '1.125rem',
+              fontWeight: 800,
               marginTop: '0.5rem',
-              boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)',
-              border: 'none',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              opacity: isSubmitting ? 0.7 : 1
+              borderRadius: '1.25rem',
+              boxShadow: '0 15px 30px -5px rgba(99, 102, 241, 0.4)'
             }}
           >
-            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : 'Đăng nhập'}
-            {!isSubmitting && <ArrowRight size={18} />}
+            {isSubmitting ? <Loader2 className="animate-spin" size={24} /> : 'Xác nhận Đăng nhập'}
+            {!isSubmitting && <ArrowRight size={24} />}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.875rem' }}>
-          Chưa có tài khoản? <a href="#" style={{ color: 'var(--primary)', fontWeight: 600 }}>Liên hệ quản trị viên</a>
-        </p>
+        <div style={{ textAlign: 'center', marginTop: '3rem', fontSize: '0.9375rem', color: '#64748b' }}>
+          Hệ thống được bảo mật bởi phòng CNTT. <br/>
+          <a href="#" style={{ color: primaryColor, fontWeight: 800, marginTop: '0.5rem', display: 'inline-block' }}>Liên hệ hỗ trợ kỹ thuật</a>
+        </div>
       </div>
     </div>
   );

@@ -128,111 +128,142 @@ export default function CoursesPage() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Môn học & tiên quyết</h1>
-        <button className="glass" style={{ 
-          padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)', 
-          background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600
-        }}
-        onClick={openCreate}
-        >
+    <div className="animate-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+        <div>
+          <h1 style={{ marginBottom: '0.5rem' }}>Quản lý Danh mục Học phần</h1>
+          <p style={{ fontSize: '1.1rem' }}>Thiết lập cấu trúc môn học, tín chỉ và các điều kiện học phần tiên quyết.</p>
+        </div>
+        <button className="btn-primary" onClick={openCreate}>
           <Plus size={18} />
-          Thêm môn học
+          Thêm học phần mới
         </button>
       </div>
 
-      <div className="grid grid-cols-1">
-        <Card>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Tìm theo mã / tên..."
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem 0.75rem 2.5rem',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--background)',
-                }}
-              />
+      {showForm ? (
+        <Card className="glass animate-in" title={editing ? 'Cập nhật nội dung học phần' : 'Khởi tạo học phần mới'}>
+          <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Mã học phần</label>
+              <input value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))} placeholder="Ví dụ: CS101" style={{ width: '100%' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Số tín chỉ (Credits)</label>
+              <input type="number" min="1" value={form.credits} onChange={(e) => setForm((p) => ({ ...p, credits: e.target.value }))} style={{ width: '100%' }} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Tên học phần chi tiết</label>
+              <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Ví dụ: Cấu trúc dữ liệu và Giải thuật" style={{ width: '100%' }} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Mã học phần tiên quyết (phân cách bằng dấu phẩy)</label>
+              <input value={form.prerequisites} onChange={(e) => setForm((p) => ({ ...p, prerequisites: e.target.value }))} placeholder="Ví dụ: CS100, CS101" style={{ width: '100%' }} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Mô tả tóm tắt nội dung</label>
+              <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Nhập tóm tắt chương trình học..." style={{ width: '100%', minHeight: 120 }} />
             </div>
           </div>
-
-          {showForm ? (
-            <div style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>{editing ? 'Sửa môn học' : 'Tạo môn học'}</div>
-              <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{formError}</InlineMessage>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Mã môn</label>
-                  <input value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Số tín chỉ</label>
-                  <input type="number" min="1" value={form.credits} onChange={(e) => setForm((p) => ({ ...p, credits: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Tên môn</label>
-                  <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Môn tiên quyết (cách nhau bằng dấu phẩy)</label>
-                  <input value={form.prerequisites} onChange={(e) => setForm((p) => ({ ...p, prerequisites: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Mô tả</label>
-                  <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)', minHeight: 80 }} />
-                </div>
-              </div>
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                <button onClick={() => setShowForm(false)} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', fontWeight: 600 }}>Hủy</button>
-                <button onClick={submit} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>Lưu</button>
-              </div>
-            </div>
-          ) : null}
-
-          {loading ? <div style={{ padding: '1rem' }}>Đang tải...</div> : null}
-          <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{error}</InlineMessage>
-
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                <th style={{ padding: '1rem', color: 'var(--muted-foreground)' }}>Code</th>
-                <th style={{ padding: '1rem', color: 'var(--muted-foreground)' }}>Tên môn</th>
-                <th style={{ padding: '1rem', color: 'var(--muted-foreground)' }}>Credits</th>
-                <th style={{ padding: '1rem', color: 'var(--muted-foreground)' }}>Môn tiên quyết</th>
-                <th style={{ padding: '1rem' }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((course) => (
-                <tr key={course._id || course.code} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '1rem', fontWeight: 700 }}>{course.code}</td>
-                  <td style={{ padding: '1rem', fontWeight: 500 }}>{course.title}</td>
-                  <td style={{ padding: '1rem' }}>{course.credits}</td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{ 
-                      padding: '0.25rem 0.5rem', background: 'var(--muted)', borderRadius: '4px', fontSize: '0.75rem' 
-                    }}>
-                      {(course.prerequisites && course.prerequisites.length > 0) ? course.prerequisites.join(', ') : 'Không có'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'right' }}>
-                    <button onClick={() => openEdit(course)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, marginRight: '0.75rem' }}>Sửa</button>
-                    <button onClick={() => remove(course)} style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', fontWeight: 700 }}>Xóa</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!loading && !error && filtered.length === 0 ? <div style={{ padding: '1rem' }}>Không tìm thấy môn học nào.</div> : null}
+          <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+            <button onClick={() => setShowForm(false)} className="btn-primary" style={{ background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}>Hủy bỏ</button>
+            <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận thêm'}</button>
+          </div>
         </Card>
+      ) : null}
+
+      <div className="glass" style={{ padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '2.5rem', border: '1px solid var(--glass-border)' }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm kiếm học phần theo mã hoặc tên môn học..."
+            style={{
+              width: '100%',
+              padding: '0.875rem 1rem 0.875rem 3.25rem',
+              borderRadius: '1rem',
+              border: '1px solid var(--border)',
+              background: 'var(--background)',
+              fontSize: '1rem'
+            }}
+          />
+        </div>
       </div>
+
+      <Card title={`Danh sách Học phần (${filtered.length})`}>
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem 0', gap: '1rem' }}>
+            <div className="animate-spin" style={{ width: '40px', height: '40px', border: '4px solid var(--muted)', borderTopColor: 'var(--primary)', borderRadius: '50%' }} />
+            <p style={{ color: 'var(--muted-foreground)', fontWeight: 500 }}>Đang truy xuất dữ liệu đào tạo...</p>
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <InlineMessage variant="error">{error}</InlineMessage>
+            <button onClick={load} className="btn-primary" style={{ marginTop: '1.5rem' }}>Tải lại dữ liệu</button>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto', margin: '0 -1.5rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', background: 'rgba(0,0,0,0.02)' }}>
+                  <th style={{ padding: '1.25rem 1.5rem', color: 'var(--muted-foreground)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mã môn</th>
+                  <th style={{ padding: '1.25rem 1.5rem', color: 'var(--muted-foreground)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tên Học phần</th>
+                  <th style={{ padding: '1.25rem 1.5rem', color: 'var(--muted-foreground)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tín chỉ</th>
+                  <th style={{ padding: '1.25rem 1.5rem', color: 'var(--muted-foreground)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Môn tiên quyết</th>
+                  <th style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '4rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                          <BookOpen size={40} style={{ opacity: 0.2 }} />
+                          <p>Không có dữ liệu học phần nào được tìm thấy.</p>
+                       </div>
+                    </td>
+                  </tr>
+                ) : filtered.map((course) => (
+                  <tr key={course._id || course.code} className="table-row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <code style={{ background: 'var(--muted)', padding: '0.35rem 0.65rem', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 800, color: 'var(--primary)' }}>
+                        {course.code}
+                      </code>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <div style={{ fontWeight: 700, fontSize: '1.0625rem', color: 'var(--foreground)' }}>{course.title}</div>
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)', marginTop: '0.25rem', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {course.description || 'Chưa có mô tả chi tiết học phần.'}
+                      </div>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <span className="badge badge-warning" style={{ fontSize: '0.875rem', minWidth: '40px', textAlign: 'center' }}>{course.credits} TC</span>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      {(course.prerequisites && course.prerequisites.length > 0) ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {course.prerequisites.map((p, i) => (
+                            <span key={i} className="badge badge-primary" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', border: 'none', fontSize: '0.75rem' }}>{p}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', fontStyle: 'italic' }}>Không có</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                         <button onClick={() => openEdit(course)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.8125rem' }}>Sửa</button>
+                         <button onClick={() => remove(course)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.8125rem' }}>Xóa</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

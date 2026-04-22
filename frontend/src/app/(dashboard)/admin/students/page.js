@@ -162,100 +162,91 @@ export default function StudentsPage() {
   }, [keyword, departmentFilter]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Quản lý sinh viên (Cập nhật)</h1>
-        <button className="glass" style={{ 
-          padding: '0.75rem 1.5rem', 
-          borderRadius: 'var(--radius)', 
-          background: 'var(--primary)', 
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontWeight: 600
-        }}
-        onClick={openCreate}
-        >
+    <div className="animate-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+        <div>
+          <h1 style={{ marginBottom: '0.5rem' }}>Hệ thống Quản lý Sinh viên</h1>
+          <p style={{ fontSize: '1.1rem' }}>Quản lý thông tin cá nhân, hồ sơ học tập và phân quyền sinh viên.</p>
+        </div>
+        <button className="btn-primary" onClick={openCreate}>
           <UserPlus size={18} />
-          Thêm sinh viên
+          Thêm sinh viên mới
         </button>
       </div>
 
       {showForm ? (
-        <Card className="glass" title={editing ? 'Sửa sinh viên' : 'Thêm sinh viên'}>
-          <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{formError}</InlineMessage>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <Card className="glass animate-in" title={editing ? 'Cập nhật thông tin sinh viên' : 'Ghi danh sinh viên mới'}>
+          <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Họ tên</label>
-              <input value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Họ và tên</label>
+              <input value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="Ví dụ: Nguyễn Văn A" style={{ width: '100%' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Email</label>
-              <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Địa chỉ Email</label>
+              <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="student@university.edu.vn" style={{ width: '100%' }} />
             </div>
             {!editing ? (
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Mật khẩu</label>
-                <input type="password" value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Mật khẩu khởi tạo</label>
+                <input type="password" value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} placeholder="Tối thiểu 8 ký tự" style={{ width: '100%' }} />
               </div>
             ) : null}
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Khoa/Bộ môn</label>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Khoa / Bộ môn trực thuộc</label>
               <select 
                 value={form.department} 
                 onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} 
-                style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }}
+                style={{ width: '100%' }}
               >
-                <option value="">-- Chọn Khoa --</option>
+                <option value="">-- Lựa chọn Khoa --</option>
                 {(realDepartments || []).map((d) => (
                   <option key={d._id} value={d.name}>{d.name}</option>
                 ))}
               </select>
             </div>
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-            <button onClick={() => setShowForm(false)} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', fontWeight: 600 }}>Hủy</button>
-            <button onClick={submit} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>{editing ? 'Cập nhật' : 'Tạo mới'}</button>
+          <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <button onClick={() => setShowForm(false)} className="btn-primary" style={{ background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}>Hủy bỏ</button>
+            <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận thêm'}</button>
           </div>
         </Card>
       ) : null}
 
-      <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius)', marginBottom: '2rem' }}>
+      <div className="glass" style={{ padding: '1.25rem', borderRadius: '1.25rem', marginBottom: '2rem', border: '1px solid var(--glass-border)' }}>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 2, minWidth: '250px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+          <div style={{ position: 'relative', flex: 3, minWidth: '300px' }}>
+            <Search size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
             <input 
               type="text" 
-              placeholder="Tìm kiếm sinh viên (Tên, Email, ID)..."
+              placeholder="Tìm kiếm sinh viên theo tên, email hoặc mã số..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               style={{ 
                 width: '100%', 
-                padding: '0.75rem 1rem 0.75rem 2.5rem', 
-                borderRadius: 'var(--radius)', 
+                padding: '0.875rem 1rem 0.875rem 3rem', 
+                borderRadius: '1rem',
                 border: '1px solid var(--border)',
-                background: 'var(--background)'
+                background: 'var(--background)',
+                fontSize: '0.95rem'
               }} 
             />
           </div>
-          <div style={{ position: 'relative', flex: 1, minWidth: '150px' }}>
-            <Filter size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+          <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+            <Filter size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)', pointerEvents: 'none' }} />
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
               style={{ 
                 width: '100%', 
-                padding: '0.75rem 1rem 0.75rem 2.5rem', 
-                borderRadius: 'var(--radius)', 
+                padding: '0.875rem 1rem 0.875rem 2.75rem', 
+                borderRadius: '1rem',
                 border: '1px solid var(--border)',
                 background: 'var(--background)',
-                appearance: 'none'
+                fontSize: '0.95rem'
               }}
             >
-              <option value="all">Tất cả Khoa/Bộ môn</option>
+              <option value="all">Tất cả Khoa</option>
               {realDepartments.map(dep => (
                 <option key={dep._id} value={dep.name}>{dep.name}</option>
               ))}
@@ -265,119 +256,151 @@ export default function StudentsPage() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem 0', gap: '1rem' }}>
           <Loader2 className="animate-spin" size={48} color="var(--primary)" />
+          <p style={{ color: 'var(--muted-foreground)', fontWeight: 500 }}>Đang truy xuất dữ liệu sinh viên...</p>
         </div>
       ) : error ? (
-        <div style={{ textAlign: 'center', padding: '4rem', color: '#991b1b' }}>
-          {error}
-        </div>
+        <Card className="glass" style={{ border: '1px solid #fecaca', background: 'rgba(254, 202, 202, 0.05)' }}>
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#991b1b' }}>
+            <InlineMessage variant="error">{error}</InlineMessage>
+            <button onClick={fetchData} className="btn-primary" style={{ marginTop: '1.5rem', background: '#991b1b' }}>Thử lại</button>
+          </div>
+        </Card>
       ) : (
-        <>
-          <Card title={`Danh sách sinh viên (${filteredStudents.length})`}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                    <th style={{ padding: '1rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>Mã SV</th>
-                    <th style={{ padding: '1rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>Họ tên</th>
-                    <th style={{ padding: '1rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>Email</th>
-                    <th style={{ padding: '1rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>Khoa</th>
-                    <th style={{ padding: '1rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>Vai trò</th>
-                    <th style={{ padding: '1rem' }}></th>
+        <Card title={`Dữ liệu Sinh viên (${filteredStudents.length})`}>
+          <div style={{ overflowX: 'auto', margin: '0 -1.5rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', background: 'rgba(0,0,0,0.02)' }}>
+                  <th style={{ padding: '1.25rem 1.5rem', color: 'var(--muted-foreground)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mã số</th>
+                  <th style={{ padding: '1.25rem 1.5rem', color: 'var(--muted-foreground)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin Sinh viên</th>
+                  <th style={{ padding: '1.25rem 1.5rem', color: 'var(--muted-foreground)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Khoa trực thuộc</th>
+                  <th style={{ padding: '1.25rem 1.5rem', color: 'var(--muted-foreground)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Trạng thái</th>
+                  <th style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '4rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                        <Search size={40} style={{ opacity: 0.2 }} />
+                        <p>Không tìm thấy sinh viên nào phù hợp với yêu cầu.</p>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {paginatedStudents.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                        Không tìm thấy sinh viên nào phù hợp.
-                      </td>
-                    </tr>
-                  ) : paginatedStudents.map((student) => (
-                    <tr key={student._id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '1rem', fontWeight: 500 }}>{student._id.substring(0, 8)}</td>
-                      <td style={{ padding: '1rem' }}>
-                        <div style={{ fontWeight: 600 }}>{student.full_name || 'N/A'}</div>
-                      </td>
-                      <td style={{ padding: '1rem' }}>{student.email}</td>
-                      <td style={{ padding: '1rem' }}>{student.department || '-'}</td>
-                      <td style={{ padding: '1rem' }}>
-                        <span style={{ 
-                          padding: '0.25rem 0.75rem', 
-                          borderRadius: '99px', 
-                          fontSize: '0.75rem', 
-                          fontWeight: 600,
-                          background: '#dcfce7',
-                          color: '#166534'
-                        }}>
-                          {student.role}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        <button onClick={() => openEdit(student)} style={{ color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, marginRight: '0.75rem' }}>Sửa</button>
-                        <button onClick={() => handleDeleteClick(student)} style={{ color: '#991b1b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Xóa</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ) : paginatedStudents.map((student) => (
+                  <tr key={student._id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <code style={{ background: 'var(--muted)', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', fontSize: '0.8125rem', fontWeight: 600 }}>
+                        {student._id.substring(0, 8).toUpperCase()}
+                      </code>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--foreground)', marginBottom: '0.25rem' }}>{student.full_name || 'N/A'}</div>
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>{student.email}</div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <span style={{ fontSize: '0.9375rem', fontWeight: 500 }}>{student.department || 'Chưa phân khoa'}</span>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <span className="badge badge-primary" style={{ textTransform: 'capitalize' }}>
+                        {student.role}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                        <button onClick={() => openEdit(student)} className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8125rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none' }}>Sửa</button>
+                        <button onClick={() => handleDeleteClick(student)} className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8125rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none' }}>Xóa</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                gap: '1rem', 
-                padding: '1.5rem',
-                borderTop: '1px solid var(--border)' 
-              }}>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '1.5rem',
+              borderTop: '1px solid var(--border)',
+              marginTop: '1rem'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
+                Hiển thị <b>{paginatedStudents.length}</b> trên <b>{filteredStudents.length}</b> sinh viên
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
+                  className="btn-primary"
                   style={{
                     padding: '0.5rem',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border)',
                     background: 'transparent',
-                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                    opacity: currentPage === 1 ? 0.5 : 1
+                    border: '1px solid var(--border)',
+                    color: 'var(--foreground)',
+                    opacity: currentPage === 1 ? 0.3 : 1,
+                    boxShadow: 'none'
                   }}
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                  Trang {currentPage} / {totalPages}
-                </span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '0.5rem',
+                        border: 'none',
+                        background: currentPage === i + 1 ? 'var(--primary)' : 'transparent',
+                        color: currentPage === i + 1 ? 'white' : 'var(--foreground)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
                 <button 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
+                  className="btn-primary"
                   style={{
                     padding: '0.5rem',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border)',
                     background: 'transparent',
-                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                    opacity: currentPage === totalPages ? 0.5 : 1
+                    border: '1px solid var(--border)',
+                    color: 'var(--foreground)',
+                    opacity: currentPage === totalPages ? 0.3 : 1,
+                    boxShadow: 'none'
                   }}
                 >
                   <ChevronRight size={20} />
                 </button>
               </div>
-            )}
-          </Card>
-        </>
+            </div>
+          )}
+        </Card>
       )}
 
       <ConfirmModal 
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ isOpen: false, student: null })}
         onConfirm={remove}
-        title="Xác nhận xóa sinh viên"
-        message={`Bạn có chắc chắn muốn xóa sinh viên ${confirmModal.student?.full_name || confirmModal.student?.email}? Hành động này không thể hoàn tác.`}
-        confirmText="Xóa sinh viên"
+        title="Xác nhận xóa tài khoản"
+        message={`Bạn có chắc chắn muốn xóa sinh viên ${confirmModal.student?.full_name || confirmModal.student?.email}? Mọi dữ liệu liên quan đến sinh viên này sẽ bị gỡ bỏ khỏi hệ thống.`}
+        confirmText="Xác nhận xóa"
       />
     </div>
   );
