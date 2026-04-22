@@ -34,23 +34,42 @@ export default function DashboardLayout({ children }) {
     <div className="dashboard-layout">
       <Sidebar role={role} />
       <main className="main-content">
-        <header style={{ 
+        <header className="animate-in" style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
-          marginBottom: '2rem'
+          marginBottom: '3rem',
+          paddingBottom: '1.5rem',
+          borderBottom: '1px solid var(--glass-border)'
         }}>
-          <div className="fade-in">
-            <p style={{ fontSize: '0.875rem', fontWeight: 500 }}>Welcome back,</p>
-            <h2 style={{ margin: 0 }}>{user?.full_name || 'User'}</h2>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></div>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Hệ thống đang trực tuyến</span>
+            </div>
+            <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800 }}>Chào buổi sáng, {user?.full_name?.split(' ').pop() || 'Thành viên'} 👋</h2>
           </div>
-          <div className="glass" style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius)' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary)' }}>
-              {role.toUpperCase()} PORTAL
-            </span>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div className="glass" style={{ padding: '0.625rem 1.25rem', borderRadius: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid var(--glass-border)', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+               <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--primary)' }}></div>
+               <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)', letterSpacing: '0.02em' }}>
+                 CỔNG {role.toUpperCase()}
+               </span>
+            </div>
+            
+            <div style={{ 
+              width: '48px', height: '48px', borderRadius: '1rem', 
+              background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', fontWeight: 800, fontSize: '1.125rem',
+              boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.3)'
+            }}>
+              {(user?.full_name || 'U')[0].toUpperCase()}
+            </div>
           </div>
         </header>
-        <div className="fade-in">
+        <div className="animate-in" style={{ animationDelay: '0.1s' }}>
           {children}
         </div>
       </main>
