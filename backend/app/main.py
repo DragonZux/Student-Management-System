@@ -23,7 +23,12 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # NOTE: Using "*" with allow_credentials=True is invalid for browsers.
+    # In dev we allow localhost ports; adjust via env for production if needed.
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,7 +44,8 @@ async def log_requests(request, call_next):
     start_time = time.time()
     response = await call_next(request)
     duration = time.time() - start_time
-    print(f"DEBUG: {request.method} {request.url.path} - Status: {response.status_code} - Duration: {duration:.4f}s")
+    if settings.DEBUG:
+        print(f"DEBUG: {request.method} {request.url.path} - Status: {response.status_code} - Duration: {duration:.4f}s")
     return response
 
 

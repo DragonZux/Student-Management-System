@@ -5,6 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import check_admin_role, get_current_user, check_teacher_or_admin
+from app.api.notifications import create_notification
 from app.core.audit import log_audit_event
 from app.core.database import get_database
 from app.schemas.academic import ExamCreate, ExamOut, ExamUpdate, ExamGrade
@@ -44,6 +45,28 @@ async def create_exam(payload: ExamCreate, admin: dict = Depends(check_admin_rol
         target_id=exam["_id"],
         metadata={"class_id": payload.class_id},
     )
+
+    # Notify teacher + enrolled students about new exam
+    course = await db.courses.find_one({"_id": target_class.get("course_id")}) if target_class.get("course_id") else None
+    course_label = ""
+    if course:
+        code = course.get("code") or ""
+        t = course.get("title") or ""
+        course_label = f"{code} - {t}".strip(" -")
+    label = course_label or f"Lớp {payload.class_id}"
+    scheduled = exam.get("scheduled_at")
+    scheduled_text = scheduled.strftime("%Y-%m-%d %H:%M") if hasattr(scheduled, "strftime") else str(scheduled)
+    title_text = "Lịch thi mới"
+    message = f"Đã tạo lịch thi mới cho {label}. Thời gian: {scheduled_text}."
+
+    teacher_id = target_class.get("teacher_id")
+    if teacher_id:
+        await create_notification(user_id=teacher_id, title=title_text, message=message)
+
+    enrollments = await db.enrollments.find({"class_id": payload.class_id, "status": {"$in": ["enrolled", "completed"]}}).to_list(5000)
+    student_ids = {e.get("student_id") for e in enrollments if e.get("student_id")}
+    for sid in student_ids:
+        await create_notification(user_id=sid, title=title_text, message=message)
     return exam
 
 
@@ -67,6 +90,30 @@ async def update_exam(exam_id: str, payload: ExamUpdate, admin: dict = Depends(c
         target_id=exam_id,
         metadata={"fields": list(updatable.keys())},
     )
+
+    # Notify teacher + enrolled students about exam update (schedule/room/etc.)
+    target_class = await db.classes.find_one({"_id": updated.get("class_id")}) if updated and updated.get("class_id") else None
+    if target_class:
+        course = await db.courses.find_one({"_id": target_class.get("course_id")}) if target_class.get("course_id") else None
+        course_label = ""
+        if course:
+            code = course.get("code") or ""
+            t = course.get("title") or ""
+            course_label = f"{code} - {t}".strip(" -")
+        label = course_label or f"Lớp {updated.get('class_id')}"
+        scheduled = updated.get("scheduled_at")
+        scheduled_text = scheduled.strftime("%Y-%m-%d %H:%M") if hasattr(scheduled, "strftime") else str(scheduled)
+        title_text = "Cập nhật lịch thi"
+        message = f"Lịch thi của {label} vừa được cập nhật. Thời gian: {scheduled_text}."
+
+        teacher_id = target_class.get("teacher_id")
+        if teacher_id:
+            await create_notification(user_id=teacher_id, title=title_text, message=message)
+
+        enrollments = await db.enrollments.find({"class_id": updated.get("class_id"), "status": {"$in": ["enrolled", "completed"]}}).to_list(5000)
+        student_ids = {e.get("student_id") for e in enrollments if e.get("student_id")}
+        for sid in student_ids:
+            await create_notification(user_id=sid, title=title_text, message=message)
     return updated
 
 
@@ -93,6 +140,21 @@ async def record_exam_grade(exam_id: str, payload: ExamGrade, teacher: dict = De
         target_type="exam",
         target_id=exam_id,
         metadata={"student_id": payload.student_id, "score": payload.score},
+    )
+
+    # Notify the student about their exam score
+    target_class = await db.classes.find_one({"_id": exam.get("class_id")}) if exam.get("class_id") else None
+    course = await db.courses.find_one({"_id": target_class.get("course_id")}) if target_class and target_class.get("course_id") else None
+    course_label = ""
+    if course:
+        code = course.get("code") or ""
+        t = course.get("title") or ""
+        course_label = f"{code} - {t}".strip(" -")
+    label = course_label or f"Lớp {exam.get('class_id')}"
+    await create_notification(
+        user_id=payload.student_id,
+        title="Có điểm thi mới",
+        message=f"Điểm thi của bạn cho {label} đã được cập nhật: {payload.score}.",
     )
     return {"message": "Exam grade recorded"}
 

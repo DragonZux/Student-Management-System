@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from app.api.deps import get_current_user, check_teacher_role
+from app.api.notifications import create_notification
 from app.core.audit import log_audit_event
 from app.core.database import get_database
 from app.schemas.academic import AssignmentCreate, AttendanceCreate, AttendanceOut, AttendanceRecord, ExamGrade
@@ -205,6 +206,26 @@ async def create_assignment(
         target_id=assignment["_id"],
         metadata={"class_id": class_id},
     )
+
+    # Notify enrolled students about the new assignment
+    enrollments = await db.enrollments.find({"class_id": class_id, "status": {"$in": ["enrolled", "completed"]}}).to_list(5000)
+    student_ids = {e.get("student_id") for e in enrollments if e.get("student_id")}
+    course = await db.courses.find_one({"_id": target_class.get("course_id")}) if target_class.get("course_id") else None
+    course_label = ""
+    if course:
+        code = course.get("code") or ""
+        t = course.get("title") or ""
+        course_label = f"{code} - {t}".strip(" -")
+    label = course_label or f"Lớp {class_id}"
+    deadline_text = deadline.strftime("%Y-%m-%d %H:%M")
+    message = f"Có bài tập mới trong {label}. Hạn nộp: {deadline_text}."
+
+    for sid in student_ids:
+        await create_notification(
+            user_id=sid,
+            title=f"Bài tập mới: {title}",
+            message=message,
+        )
     return assignment
 
 # --- Grading ---
@@ -243,6 +264,23 @@ async def grade_student(
         target_id=enrollment_id,
         metadata={"grade": grade},
     )
+
+    # Notify student that final grade has been updated
+    student_id = enrollment.get("student_id")
+    if student_id:
+        cls = await db.classes.find_one({"_id": enrollment.get("class_id")}) if enrollment.get("class_id") else None
+        course = await db.courses.find_one({"_id": cls.get("course_id")}) if cls and cls.get("course_id") else None
+        course_label = ""
+        if course:
+            code = course.get("code") or ""
+            t = course.get("title") or ""
+            course_label = f"{code} - {t}".strip(" -")
+        title_text = "Cập nhật điểm tổng kết"
+        msg = f"Điểm tổng kết của bạn đã được cập nhật"
+        if course_label:
+            msg += f" cho học phần {course_label}"
+        msg += f": {grade}."
+        await create_notification(user_id=student_id, title=title_text, message=msg)
     
     return {"message": "Grade updated successfully"}
 

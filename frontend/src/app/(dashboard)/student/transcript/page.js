@@ -1,10 +1,11 @@
 "use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { Download, FileText, CheckCircle } from 'lucide-react';
+import { Download, CheckCircle, FileText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { useAuth } from '@/components/providers/AuthProvider';
+import styles from './Transcript.module.css';
 
 export default function TranscriptPage() {
   const { user, loading: authLoading } = useAuth();
@@ -65,41 +66,58 @@ export default function TranscriptPage() {
   }, [transcript]);
 
   return (
-    <div>
-      <h1>Bảng điểm học tập</h1>
-      <p style={{ marginBottom: '2rem' }}>Tạo và tải xuống bảng điểm chính thức của bạn.</p>
-      <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{downloadError}</InlineMessage>
+    <div className={`${styles.container} animate-in`}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Bảng điểm học tập</h1>
+        <p className={styles.subtitle}>Tạo và tải xuống bảng điểm chính thức của bạn.</p>
+      </header>
 
-      <div className="grid grid-cols-2">
-        <Card title="Bảng điểm chính thức (PDF)" className="glass">
-          <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginBottom: '1.5rem' }}>
-            Tài liệu này chứa toàn bộ lịch sử học tập, bao gồm các môn học, điểm số và GPA đã tính.
+      {downloadError && (
+        <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>
+          {downloadError}
+        </InlineMessage>
+      )}
+
+      <div className={styles.statsGrid}>
+        <Card 
+          title="Bảng điểm chính thức (PDF)" 
+          className="glass"
+          headerExtra={<FileText size={20} className="text-primary" />}
+        >
+          <p className={styles.infoText}>
+            Tài liệu này chứa toàn bộ lịch sử học tập, bao gồm các môn học, điểm số và GPA đã tính. 
+            Bạn có thể sử dụng bản in này cho các mục đích hành chính chính thức.
           </p>
-          <button className="glass" style={{ 
-            width: '100%', padding: '0.75rem', background: 'var(--primary)', color: 'white', border: 'none', 
-            borderRadius: 'var(--radius)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-          }}
-          onClick={download}
-          disabled={authLoading || loading || downloading || !user?._id}
+          <button 
+            className={styles.downloadButton}
+            onClick={download}
+            disabled={authLoading || loading || downloading || !user?._id}
           >
-            <Download size={18} /> {downloading ? 'Đang tải...' : 'Tải bảng điểm'}
+            {downloading ? (
+              <>Đang xử lý...</>
+            ) : (
+              <>
+                <Download size={20} />
+                Tải xuống bản PDF
+              </>
+            )}
           </button>
         </Card>
 
-        <Card title="Trạng thái" className="glass">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--muted-foreground)' }}>Tổng tín chỉ</span>
-              <span style={{ fontWeight: 600 }}>{loading ? '...' : stats.totalCredits}</span>
+        <Card title="Trạng thái học tập" className="glass">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div className={styles.statRow}>
+              <span className={styles.statLabel}>Tổng tín chỉ tích lũy</span>
+              <span className={styles.statValue}>{loading ? '...' : stats.totalCredits}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--muted-foreground)' }}>GPA hiện tại</span>
-              <span style={{ fontWeight: 600 }}>{loading ? '...' : stats.gpa}</span>
+            <div className={styles.statRow}>
+              <span className={styles.statLabel}>Điểm trung bình (GPA)</span>
+              <span className={styles.statValue}>{loading ? '...' : stats.gpa.toFixed(2)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--muted-foreground)' }}>Trạng thái xác minh</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#166534', fontWeight: 600 }}>
-                <CheckCircle size={14} /> Đã xác minh
+            <div className={styles.statRow}>
+              <span className={styles.statLabel}>Trạng thái xác minh</span>
+              <span className={styles.statusVerified}>
+                <CheckCircle size={16} /> Đã xác minh
               </span>
             </div>
           </div>

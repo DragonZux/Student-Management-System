@@ -1,0 +1,270 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2.5rem;
+}
+
+.headerInfo h1 {
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.headerInfo p {
+  font-size: 1.1rem;
+  color: var(--muted-foreground);
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.exportBtn {
+  padding: 0.75rem 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.exportBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.statCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.statLabel {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.statValue {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.statIcon {
+  padding: 0.75rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tableSection {
+  margin-bottom: 3rem;
+  overflow: hidden;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 1.25rem 2rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  text-align: left;
+  background: rgba(var(--primary-rgb), 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+@keyframes rowAnimate {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.tableRow {
+  animation: rowAnimate 0.4s var(--ease-out-expo) forwards;
+  opacity: 0;
+}
+
+.studentName {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.studentEmail {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+
+.amount {
+  font-weight: 800;
+  font-size: 1.125rem;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(var(--primary-rgb), 0.01);
+}
+
+.pageBtn {
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.pageBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.formsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 2rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formLabel {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+}
+
+.select, .input {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.select:focus, .input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+.policyItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(var(--primary-rgb), 0.02);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+
+.policyItem:hover {
+  background: var(--card);
+  transform: translateX(4px);
+  border-color: var(--primary);
+}
+
+.policyMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.policyTitle {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.policyDetails {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.policyActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.policyEditBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.policyDeleteBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  background: rgba(225, 29, 72, 0.1);
+  color: #e11d48;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+@media (max-width: 640px) {
+  .formsGrid {
+    grid-template-columns: 1fr;
+  }
+}

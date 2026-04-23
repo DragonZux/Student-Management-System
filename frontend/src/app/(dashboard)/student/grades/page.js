@@ -1,8 +1,9 @@
- "use client";
+"use client";
 import Card from '@/components/ui/Card';
-import { Award, BookOpen, TrendingUp } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Award, BookOpen, TrendingUp, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import styles from './Grades.module.css';
 
 export default function StudentGradesPage() {
   const [data, setData] = useState(null);
@@ -44,75 +45,78 @@ export default function StudentGradesPage() {
   };
 
   return (
-    <div>
-      <h1>My Academic Performance</h1>
+    <div className={`${styles.container} animate-in`}>
+      <header style={{ marginBottom: '2.5rem' }}>
+        <h1>Kết quả Học tập</h1>
+        <p style={{ color: 'var(--muted-foreground)', fontSize: '1.1rem' }}>Theo dõi điểm số và tiến độ học tập cá nhân của bạn.</p>
+      </header>
       
-      <div className="grid grid-cols-3" style={{ marginBottom: '2.5rem' }}>
+      <div className={styles.statsGrid}>
         <Card className="glass">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ padding: '0.75rem', background: 'rgba(99, 102, 241, 0.1)', borderRadius: 'var(--radius)' }}>
-              <TrendingUp color="var(--primary)" />
+          <div className={styles.statCard}>
+            <div className={styles.statIcon} style={{ background: 'rgba(99, 102, 241, 0.1)' }}>
+              <TrendingUp color="var(--primary)" size={24} />
             </div>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>Current GPA</p>
-              <h2 style={{ margin: 0 }}>{loading ? '...' : gpa}</h2>
+            <div className={styles.statInfo}>
+              <p>Điểm trung bình (GPA)</p>
+              <h2>{loading ? '...' : gpa.toFixed(2)}</h2>
             </div>
           </div>
         </Card>
         <Card className="glass">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ padding: '0.75rem', background: 'rgba(236, 72, 153, 0.1)', borderRadius: 'var(--radius)' }}>
-              <BookOpen color="var(--secondary)" />
+          <div className={styles.statCard}>
+            <div className={styles.statIcon} style={{ background: 'rgba(168, 85, 247, 0.1)' }}>
+              <BookOpen color="var(--secondary)" size={24} />
             </div>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>Credits Completed</p>
-              <h2 style={{ margin: 0 }}>{loading ? '...' : gradedCredits}</h2>
+            <div className={styles.statInfo}>
+              <p>Tín chỉ tích lũy</p>
+              <h2>{loading ? '...' : gradedCredits}</h2>
             </div>
           </div>
         </Card>
         <Card className="glass">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ padding: '0.75rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: 'var(--radius)' }}>
-              <Award color="var(--accent)" />
+          <div className={styles.statCard}>
+            <div className={styles.statIcon} style={{ background: 'rgba(244, 63, 94, 0.1)' }}>
+              <Award color="var(--accent)" size={24} />
             </div>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>Rank in Class</p>
-              <h2 style={{ margin: 0 }}>—</h2>
+            <div className={styles.statInfo}>
+              <p>Xếp loại học lực</p>
+              <h2>{loading ? '...' : (gpa >= 8 ? 'Giỏi' : gpa >= 6.5 ? 'Khá' : 'Trung bình')}</h2>
             </div>
           </div>
         </Card>
       </div>
 
-      <Card title="Điểm học kỳ hiện tại">
-        {loading ? <div style={{ padding: '1rem' }}>Đang tải...</div> : null}
-        {error ? <div style={{ padding: '1rem', color: '#991b1b' }}>{error}</div> : null}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {records.map((item, index) => (
-            <div key={index} style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '1rem',
-              borderRadius: 'var(--radius)',
-              background: 'var(--muted)',
-              border: '1px solid var(--border)'
-            }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{item.course_code}: {item.course_title}</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>Số tín chỉ: {item.credits}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>
-                  {item.grade == null ? '—' : gradeLetter(item.grade)}
+      <Card title="Chi tiết Điểm Học kỳ">
+        {loading ? (
+          <div className={styles.loading}>Đang tải dữ liệu điểm số...</div>
+        ) : error ? (
+          <div className={styles.error}>{error}</div>
+        ) : records.length === 0 ? (
+          <div className={styles.empty}>
+            <Search size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+            <p>Chưa có dữ liệu điểm số cho học kỳ này.</p>
+          </div>
+        ) : (
+          <div className={styles.gradeList}>
+            {records.map((item, index) => (
+              <div key={index} className={styles.gradeItem}>
+                <div className={styles.courseInfo}>
+                  <div className={styles.courseTitle}>{item.course_code}: {item.course_title}</div>
+                  <div className={styles.courseMeta}>Số tín chỉ: {item.credits} • Giảng viên: {item.teacher_name || 'N/A'}</div>
                 </div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>
-                  {item.grade == null ? '' : `Điểm: ${item.grade}`}
+                <div className={styles.gradeValue}>
+                  <div className={styles.gradeLetter}>
+                    {item.grade == null ? '—' : gradeLetter(item.grade)}
+                  </div>
+                  <div className={styles.gradeNumeric}>
+                    {item.grade == null ? 'Chưa nhập' : `Điểm số: ${item.grade}`}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          {!loading && !error && records.length === 0 ? <div style={{ padding: '1rem' }}>Chưa có điểm nào.</div> : null}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

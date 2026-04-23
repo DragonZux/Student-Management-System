@@ -48,6 +48,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+
+        if user.get("is_active") is False:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.",
+            )
         
         if not verify_password(form_data.password, user["hashed_password"]):
             raise HTTPException(
@@ -56,7 +62,13 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        access_token = create_access_token(subject=user["_id"])
+        # Single-session: generate a new session id (jti) and store it as the only active session.
+        session_id = str(uuid.uuid4())
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"active_jti": session_id, "active_jti_created_at": datetime.utcnow()}},
+        )
+        access_token = create_access_token(subject=user["_id"], jti=session_id)
         await log_audit_event(
             action="auth.login",
             actor_id=user["_id"],
@@ -75,7 +87,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @router.post("/refresh-token")
 async def refresh_token(current_user: dict = Depends(get_current_user)):
-    access_token = create_access_token(subject=current_user["_id"])
+    # Keep the same active session (jti) during refresh
+    session_id = current_user.get("active_jti")
+    access_token = create_access_token(subject=current_user["_id"], jti=session_id)
     await log_audit_event(
         action="auth.refresh_token",
         actor_id=current_user["_id"],

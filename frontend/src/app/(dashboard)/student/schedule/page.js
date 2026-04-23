@@ -1,8 +1,9 @@
- "use client";
+"use client";
 import Card from '@/components/ui/Card';
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin, Download, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
+import styles from './Schedule.module.css';
 
 export default function StudentSchedulePage() {
   const [classes, setClasses] = useState([]);
@@ -30,8 +31,9 @@ export default function StudentSchedulePage() {
   }, []);
 
   const grouped = useMemo(() => {
-    // Expand by day based on class.schedule slots
     const byDay = new Map();
+    const daysOrder = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+    
     for (const c of classes || []) {
       const slots = c.schedule || [];
       for (const s of slots) {
@@ -41,16 +43,19 @@ export default function StudentSchedulePage() {
           classId: c._id,
           course: c.course_code || c.course_title || c.course_id,
           room: c.room,
-          time: `${s.start}-${s.end}`,
+          time: `${s.start} - ${s.end}`,
           type: 'Lớp học',
         });
         byDay.set(day, list);
       }
     }
-    return Array.from(byDay.entries()).map(([day, items]) => ({
-      day,
-      classes: items.sort((a, b) => String(a.time).localeCompare(String(b.time))),
-    }));
+    
+    return daysOrder
+      .filter(day => byDay.has(day))
+      .map(day => ({
+        day,
+        classes: byDay.get(day).sort((a, b) => String(a.time).localeCompare(String(b.time))),
+      }));
   }, [classes]);
 
   const exportSchedule = async () => {
@@ -77,49 +82,66 @@ export default function StudentSchedulePage() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Thời khóa biểu hàng tuần</h1>
+    <div className={`${styles.container} animate-in`}>
+      <header className={styles.header}>
+        <div>
+          <h1>Thời khóa biểu</h1>
+          <p style={{ color: 'var(--muted-foreground)', fontSize: '1.1rem' }}>Lịch học và địa điểm phòng học hàng tuần của bạn.</p>
+        </div>
         <button
-          className="glass"
+          className={styles.exportBtn}
           onClick={exportSchedule}
           disabled={loading || exporting}
-          style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', cursor: loading || exporting ? 'not-allowed' : 'pointer' }}
         >
-          {exporting ? 'Đang xuất...' : 'Xuất PDF'}
+          {exporting ? 'Đang xử lý...' : <><Download size={18} /> Xuất PDF</>}
         </button>
-      </div>
+      </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        {loading ? <Card className="glass">Đang tải...</Card> : null}
-        {error ? <Card className="glass" style={{ color: '#991b1b' }}>{error}</Card> : null}
-        {grouped.map((day) => (
-          <div key={day.day}>
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Calendar size={20} color="var(--primary)" />
-              {day.day}
-            </h3>
-            <div className="grid grid-cols-2">
-              {day.classes.map((cls, idx) => (
-                <Card key={idx} className="glass">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                    <div style={{ fontWeight: 700, fontSize: '1.125rem' }}>{cls.course}</div>
-                    <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: 'var(--muted)', borderRadius: '4px' }}>{cls.type}</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)' }}>
-                      <Clock size={16} /> {cls.time}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)' }}>
-                      <MapPin size={16} /> {cls.room}
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+      <div className={styles.content}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '4rem' }}>
+            <div className="animate-spin" style={{ display: 'inline-block' }}><Clock size={40} color="var(--primary)" /></div>
+            <p style={{ marginTop: '1rem', color: 'var(--muted-foreground)' }}>Đang tải thời khóa biểu...</p>
           </div>
-        ))}
-        {!loading && !error && grouped.length === 0 ? <Card className="glass">Chưa có lớp học nào.</Card> : null}
+        ) : error ? (
+          <Card className="glass" style={{ color: '#e11d48', border: '1px solid rgba(244, 63, 94, 0.2)', background: 'rgba(244, 63, 94, 0.05)', textAlign: 'center', padding: '2rem' }}>
+            {error}
+          </Card>
+        ) : grouped.length === 0 ? (
+          <div className={styles.emptyState}>
+            <Search size={48} style={{ opacity: 0.1 }} />
+            <p>Bạn chưa có lịch học nào trong hệ thống cho học kỳ này.</p>
+          </div>
+        ) : (
+          grouped.map((day, dayIdx) => (
+            <div key={day.day} className={`${styles.daySection} slide-right`} style={{ animationDelay: `${dayIdx * 0.1}s` }}>
+              <h3 className={styles.dayTitle}>
+                <Calendar size={20} className={styles.detailIcon} />
+                {day.day}
+              </h3>
+              <div className={styles.grid}>
+                {day.classes.map((cls, idx) => (
+                  <Card key={idx} className={`${styles.classCard} glass scale-in`} style={{ animationDelay: `${(dayIdx * 0.1) + (idx * 0.05)}s` }}>
+                    <div className={styles.classHeader}>
+                      <div className={styles.courseCode}>{cls.course}</div>
+                      <span className={styles.classType}>{cls.type}</span>
+                    </div>
+                    <div className={styles.classDetails}>
+                      <div className={styles.detailItem}>
+                        <Clock size={18} className={styles.detailIcon} />
+                        <span>{cls.time}</span>
+                      </div>
+                      <div className={styles.detailItem}>
+                        <MapPin size={18} className={styles.detailIcon} />
+                        <span>Phòng: {cls.room}</span>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

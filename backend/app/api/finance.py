@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from app.api.deps import get_current_user, check_admin_role
+from app.api.notifications import create_notification
 from app.core.audit import log_audit_event
 from app.core.database import get_database
 from app.schemas.finance import InvoiceOut, PaymentCreate, PaymentOut, TuitionSummary
@@ -106,6 +107,20 @@ async def update_payment(student_id: str, amount: float):
         target_id=student_id,
         metadata={"amount": amount},
     )
+
+    # Notify student about payment update/adjustment
+    updated_invoice = await db.invoices.find_one({"student_id": student_id})
+    if updated_invoice:
+        paid = float(updated_invoice.get("paid_amount", 0))
+        total = float(updated_invoice.get("total_amount", 0))
+        status_text = updated_invoice.get("status") or ("paid" if paid >= total else "partially_paid" if paid > 0 else "unpaid")
+        if status_text == "paid":
+            msg = f"Học phí của bạn đã được cập nhật và hiện đã thanh toán đủ ({paid}/{total})."
+        elif status_text == "partially_paid":
+            msg = f"Học phí của bạn đã được cập nhật. Đã thanh toán: {paid}/{total}."
+        else:
+            msg = f"Học phí của bạn đã được cập nhật. Số tiền đã ghi nhận: {paid}/{total}."
+        await create_notification(user_id=student_id, title="Cập nhật học phí", message=msg)
          
     return {"message": "Payment recorded successfully"}
 
@@ -158,6 +173,17 @@ async def pay_my_tuition(payload: dict, student: dict = Depends(get_current_user
         target_id=student["_id"],
         metadata={"amount": float(amount)},
     )
+    # Optional: notify the student (useful if they have multiple sessions open)
+    if updated:
+        paid = float(updated.get("paid_amount", 0))
+        total = float(updated.get("total_amount", 0))
+        status_text = updated.get("status") or ("paid" if paid >= total else "partially_paid")
+        title_text = "Thanh toán học phí thành công"
+        if status_text == "paid":
+            msg = f"Bạn đã thanh toán đủ học phí ({paid}/{total})."
+        else:
+            msg = f"Bạn đã thanh toán thành công. Đã thanh toán: {paid}/{total}."
+        await create_notification(user_id=student["_id"], title=title_text, message=msg)
     if updated and "_id" in updated:
         updated["_id"] = str(updated["_id"])
     # Keep a stable response shape for FE/test scripts.

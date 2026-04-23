@@ -1,12 +1,13 @@
 "use client";
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useNotifications } from '@/components/providers/NotificationProvider';
 import { 
   Users, GraduationCap, BookOpen, Calendar, 
   ClipboardList, LogOut, LayoutDashboard,
-  Building2, Wallet, Bell, FileText, UserCircle, MessageSquare, ClipboardCheck
+  Building2, Wallet, Bell, FileText, UserCircle, MessageSquare, ClipboardCheck, Menu, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import styles from './Sidebar.module.css';
 
@@ -50,39 +51,86 @@ export default function Sidebar({ role = 'admin' }) {
   const pathname = usePathname();
   const { logout } = useAuth();
   const items = useMemo(() => navItems[role] || [], [role]);
+  const { unreadCount } = useNotifications();
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
+  useEffect(() => {
+    // restore preference
+    try {
+      const collapsed = localStorage.getItem('sms:sidebar:collapsed');
+      if (collapsed !== null) setIsCollapsed(collapsed === '1');
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('sms:sidebar:collapsed', isCollapsed ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  }, [isCollapsed]);
+
+  const sidebarClassName = useMemo(() => {
+    const base = [styles.sidebar];
+    if (isCollapsed) base.push(styles.collapsed);
+    return base.join(' ');
+  }, [isCollapsed]);
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={sidebarClassName}>
       <div className={styles.logo}>
-        <GraduationCap size={32} color="var(--primary)" />
-        <span className={styles.logoText}>SMS Việt</span>
+        <div className={styles.logoLeft}>
+          <GraduationCap size={32} color="var(--primary)" />
+          <span className={styles.logoText}>SMS Việt</span>
+        </div>
+        <button
+          type="button"
+          className={styles.collapseBtn}
+          title={isCollapsed ? 'Mở sidebar' : 'Thu gọn sidebar'}
+          onClick={() => {
+            setIsCollapsed((v) => !v);
+          }}
+        >
+          {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
       </div>
       
       <nav className={styles.nav}>
-        {items.map((item) => {
+        {items.map((item, index) => {
           const Icon = item.icon;
           const isActive = pathname === item.path;
           return (
-            <Link key={item.path} href={item.path} className={`${styles.navItem} ${isActive ? styles.active : ''}`}>
+            <Link
+              key={item.path}
+              href={item.path}
+              className={`${styles.navItem} ${isActive ? styles.active : ''} slide-right`}
+              style={{ animationDelay: `${index * 0.05}s` }}
+              title={isCollapsed ? item.name : undefined}
+            >
               <Icon size={20} />
-              <span>{item.name}</span>
+              <span className={styles.label}>{item.name}</span>
             </Link>
           );
         })}
       </nav>
 
       <div className={styles.footer}>
-        <Link href="/notifications" className={styles.navItem}>
+        <Link href="/notifications" className={styles.navItem} title={isCollapsed ? 'Thông báo' : undefined}>
           <Bell size={20} />
-          <span>Thông báo</span>
+          <span className={styles.label}>Thông báo</span>
+          {unreadCount > 0 ? (
+            <span className={styles.notifBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+          ) : null}
         </Link>
-        <Link href="/profile" className={styles.navItem}>
+        <Link href="/profile" className={styles.navItem} title={isCollapsed ? 'Hồ sơ' : undefined}>
           <UserCircle size={20} />
-          <span>Hồ sơ</span>
+          <span className={styles.label}>Hồ sơ</span>
         </Link>
         <button onClick={logout} className={styles.logoutBtn}>
           <LogOut size={20} />
-          <span>Đăng xuất</span>
+          <span className={styles.label}>Đăng xuất</span>
         </button>
       </div>
     </aside>

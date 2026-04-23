@@ -1,6 +1,7 @@
  "use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
+import Modal from '@/components/ui/Modal';
 import { Building2, User, Clock, MapPin } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
@@ -162,64 +163,67 @@ export default function ClassesPage() {
         </button>
       </div>
 
-      {showForm ? (
-        <Card className="glass animate-in" title={editing ? 'Điều chỉnh thông tin lớp học' : 'Thiết lập lớp học mới'}>
-          <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Học phần / Môn học</label>
-              <select value={form.course_id} onChange={(e) => setForm((p) => ({ ...p, course_id: e.target.value }))} style={{ width: '100%' }}>
-                <option value="">-- Lựa chọn môn học --</option>
-                {(courses || []).map((c) => (
-                  <option key={c._id} value={c._id}>{c.code} - {c.title}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Giảng viên phụ trách</label>
-              <select value={form.teacher_id} onChange={(e) => setForm((p) => ({ ...p, teacher_id: e.target.value }))} style={{ width: '100%' }}>
-                <option value="">-- Lựa chọn giảng viên --</option>
-                {(teachers || []).map((t) => (
-                  <option key={t._id} value={t._id}>{t.full_name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Học kỳ (Semester)</label>
-              <input value={form.semester} onChange={(e) => setForm((p) => ({ ...p, semester: e.target.value }))} placeholder="Ví dụ: 2026-Spring" style={{ width: '100%' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Phòng học dự kiến</label>
-              <select 
-                value={form.room} 
-                onChange={(e) => {
-                  const rCode = e.target.value;
-                  const rObj = classrooms.find(r => r.code === rCode);
-                  setForm(p => ({ ...p, room: rCode, capacity: rObj ? rObj.capacity : p.capacity }));
-                }} 
-                style={{ width: '100%' }}
-              >
-                <option value="">-- Lựa chọn phòng học --</option>
-                {(classrooms || []).map((rm) => (
-                  <option key={rm._id} value={rm.code}>{rm.code} (Tòa: {rm.building} - Max: {rm.capacity})</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Sức chứa tối đa (Capacity)</label>
-              <input type="number" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} style={{ width: '100%' }} />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Lịch học chi tiết (Ví dụ: Monday 08:00-10:00; Wednesday 13:00-15:00)</label>
-              <input value={form.scheduleText} onChange={(e) => setForm((p) => ({ ...p, scheduleText: e.target.value }))} placeholder="Nhập lịch học theo định dạng 'Thứ Thời Gian'" style={{ width: '100%' }} />
-            </div>
+      <Modal 
+        isOpen={showForm} 
+        onClose={() => setShowForm(false)} 
+        title={editing ? 'Điều chỉnh thông tin lớp học' : 'Thiết lập lớp học mới'}
+        maxWidth="800px"
+      >
+        <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Học phần / Môn học</label>
+            <select value={form.course_id} onChange={(e) => setForm((p) => ({ ...p, course_id: e.target.value }))} style={{ width: '100%' }}>
+              <option value="">-- Lựa chọn môn học --</option>
+              {(courses || []).map((c) => (
+                <option key={c._id} value={c._id}>{c.code} - {c.title}</option>
+              ))}
+            </select>
           </div>
-          <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-            <button onClick={() => setShowForm(false)} className="btn-primary" style={{ background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}>Hủy bỏ</button>
-            <button onClick={submit} className="btn-primary">Lưu cấu hình lớp</button>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Giảng viên phụ trách</label>
+            <select value={form.teacher_id} onChange={(e) => setForm((p) => ({ ...p, teacher_id: e.target.value }))} style={{ width: '100%' }}>
+              <option value="">-- Lựa chọn giảng viên --</option>
+              {(teachers || []).map((t) => (
+                <option key={t._id} value={t._id}>{t.full_name}</option>
+              ))}
+            </select>
           </div>
-        </Card>
-      ) : null}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Học kỳ (Semester)</label>
+            <input value={form.semester} onChange={(e) => setForm((p) => ({ ...p, semester: e.target.value }))} placeholder="Ví dụ: 2026-Spring" style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Phòng học dự kiến</label>
+            <select 
+              value={form.room} 
+              onChange={(e) => {
+                const rCode = e.target.value;
+                const rObj = classrooms.find(r => r.code === rCode);
+                setForm(p => ({ ...p, room: rCode, capacity: rObj ? rObj.capacity : p.capacity }));
+              }} 
+              style={{ width: '100%' }}
+            >
+              <option value="">-- Lựa chọn phòng học --</option>
+              {(classrooms || []).map((rm) => (
+                <option key={rm._id} value={rm.code}>{rm.code} (Tòa: {rm.building} - Max: {rm.capacity})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Sức chứa tối đa (Capacity)</label>
+            <input type="number" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} style={{ width: '100%' }} />
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Lịch học chi tiết (Ví dụ: Monday 08:00-10:00; Wednesday 13:00-15:00)</label>
+            <input value={form.scheduleText} onChange={(e) => setForm((p) => ({ ...p, scheduleText: e.target.value }))} placeholder="Nhập lịch học theo định dạng 'Thứ Thời Gian'" style={{ width: '100%' }} />
+          </div>
+        </div>
+        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+          <button onClick={() => setShowForm(false)} className="btn-primary" style={{ background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}>Hủy bỏ</button>
+          <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận tạo'}</button>
+        </div>
+      </Modal>
 
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem 0', gap: '1rem' }}>
@@ -236,7 +240,7 @@ export default function ClassesPage() {
             return (
               <Card key={cls._id} title={`${crs?.code || 'CRS'}`} className="glass card-hover animate-in" footer={
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', width: '100%' }}>
-                   <button onClick={() => openEdit(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>Cấu hình</button>
+                   <button onClick={() => openEdit(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>Sửa</button>
                    <button onClick={() => remove(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.875rem' }}>Xóa</button>
                 </div>
               }>
