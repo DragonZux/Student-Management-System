@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from typing import List
 from app.api.deps import get_current_user, check_student_role
+from app.api.notifications import create_notification
 from app.core.audit import log_audit_event
 from app.core.database import get_database
 from app.schemas.academic import AttendanceOut, EnrollmentOut, SubmissionCreate
@@ -333,6 +334,35 @@ async def withdraw_course(enrollment_id: str, payload: dict, student: dict = Dep
         target_id=enrollment_id,
         metadata={"class_id": enrollment["class_id"], "reason": reason},
     )
+
+    # Notify admins so they can approve/reject promptly
+    admins = await db.users.find({"role": UserRole.ADMIN}).to_list(1000)
+    cls = await db.classes.find_one({"_id": enrollment.get("class_id")}) if enrollment.get("class_id") else None
+    course = await db.courses.find_one({"_id": cls.get("course_id")}) if cls and cls.get("course_id") else None
+    course_label = ""
+    if course:
+        code = course.get("code") or ""
+        title = course.get("title") or ""
+        course_label = f"{code} - {title}".strip(" -")
+
+    student_name = student.get("full_name") or student.get("email") or "Sinh viên"
+    class_id = enrollment.get("class_id") or ""
+    message = f"{student_name} vừa gửi yêu cầu rút học phần"
+    if course_label:
+        message += f" ({course_label})"
+    if class_id:
+        message += f" - lớp {class_id}"
+    message += "."
+
+    for admin in admins:
+        admin_id = admin.get("_id")
+        if admin_id:
+            await create_notification(
+                user_id=admin_id,
+                title="Yêu cầu rút học phần mới",
+                message=message,
+            )
+
     return {"message": "Withdrawal request submitted for approval"}
 
 @router.post("/feedback")

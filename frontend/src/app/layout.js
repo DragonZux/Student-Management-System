@@ -1,5 +1,5 @@
 import '../styles/globals.css';
-import { Inter } from 'next/font/google';
+import { Be_Vietnam_Pro } from 'next/font/google';
 
 export const metadata = {
   title: 'Hệ thống Quản lý Sinh viên',
@@ -8,19 +8,23 @@ export const metadata = {
 
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import PopupHost from '@/components/providers/PopupHost';
+import { NotificationProvider } from '@/components/providers/NotificationProvider';
 
-const inter = Inter({
-  subsets: ['latin'],
+const beVietnamPro = Be_Vietnam_Pro({
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  subsets: ['vietnamese', 'latin'],
   display: 'swap',
 });
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="vi">
+      <body className={beVietnamPro.className}>
         <AuthProvider>
-          <PopupHost />
-          {children}
+          <NotificationProvider>
+            <PopupHost />
+            {children}
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

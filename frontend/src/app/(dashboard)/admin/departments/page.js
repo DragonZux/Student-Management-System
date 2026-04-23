@@ -1,10 +1,13 @@
- "use client";
+"use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { Building2, Plus } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { Building2, Plus, Loader2, ArrowRight, Info } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { popupValidationError } from '@/lib/validation';
+import styles from './Departments.module.css';
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState([]);
@@ -14,6 +17,7 @@ export default function DepartmentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', faculty: '', description: '' });
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, dept: null });
 
   const load = async () => {
     const res = await api.get('/admin/departments');
@@ -74,11 +78,16 @@ export default function DepartmentsPage() {
     }
   };
 
-  const remove = async (dept) => {
-    if (!confirm(`Xóa bộ môn "${dept.name}"?`)) return;
+  const handleDeleteClick = (dept) => {
+    setConfirmModal({ isOpen: true, dept });
+  };
+
+  const remove = async () => {
+    const dept = confirmModal.dept;
+    if (!dept) return;
     try {
-      setError('');
       await api.delete(`/admin/departments/${dept._id}`);
+      setConfirmModal({ isOpen: false, dept: null });
       await load();
     } catch (e) {
       console.error('Failed to delete department', e);
@@ -87,72 +96,104 @@ export default function DepartmentsPage() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Bộ môn & khoa</h1>
-        <button className="glass" style={{ 
-          padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)', 
-          background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer',
-          fontWeight: 600
-        }}
-        onClick={openCreate}
-        >
-          Thêm bộ môn
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <div>
+          <h1>Cơ cấu Tổ chức</h1>
+          <p>Quản lý hệ thống Khoa, Bộ môn và các đơn vị chuyên môn trong nhà trường.</p>
+        </div>
+        <button className="btn-primary" onClick={openCreate}>
+          <Plus size={18} />
+          Thêm bộ môn mới
         </button>
-      </div>
+      </header>
 
-      {showForm ? (
-        <Card className="glass" title={editing ? 'Sửa bộ môn' : 'Thêm bộ môn'}>
-          <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{formError}</InlineMessage>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Tên</label>
-              <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Khoa</label>
-              <input value={form.faculty} onChange={(e) => setForm((p) => ({ ...p, faculty: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Mô tả</label>
-              <input value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-            </div>
+      <Modal
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title={editing ? 'Cập nhật Bộ môn' : 'Thêm Bộ môn mới'}
+        maxWidth="600px"
+      >
+        <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
+        <div className={styles.formContent}>
+          <div className={styles.formField}>
+            <label>Tên Bộ môn / Khoa</label>
+            <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Ví dụ: Khoa Công nghệ Thông tin" />
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-            <button onClick={() => setShowForm(false)} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', fontWeight: 600 }}>Hủy</button>
-            <button onClick={submit} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>Lưu</button>
+          <div className={styles.formField}>
+            <label>Trực thuộc Khoa (Tùy chọn)</label>
+            <input value={form.faculty} onChange={(e) => setForm((p) => ({ ...p, faculty: e.target.value }))} placeholder="Ví dụ: Công nghệ" />
           </div>
-        </Card>
-      ) : null}
+          <div className={styles.formField}>
+            <label>Mô tả nhiệm vụ / Chuyên môn</label>
+            <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Nhập tóm tắt chức năng và nhiệm vụ..." style={{ minHeight: '120px' }} />
+          </div>
+        </div>
+        <div className={styles.formActions}>
+          <button onClick={() => setShowForm(false)} className="btn-primary" style={{ background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)', boxShadow: 'none' }}>Hủy bỏ</button>
+          <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận thêm'}</button>
+        </div>
+      </Modal>
 
-      {loading ? <div style={{ padding: '1rem' }}>Đang tải...</div> : null}
-      <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{error}</InlineMessage>
+      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>
 
-      <div className="grid grid-cols-3">
-        {departments.map((dept) => (
-          <Card key={dept.name} className="glass">
-            <Building2 size={32} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ margin: '0 0 0.5rem 0' }}>{dept.name}</h3>
-                <p style={{ fontSize: '0.875rem', marginBottom: '1rem' }}>{dept.faculty ? `Khoa ${dept.faculty}` : '—'}</p>
-            
-            <div style={{ padding: '0.75rem', background: 'var(--muted)', borderRadius: 'var(--radius)', fontSize: '0.875rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ color: 'var(--muted-foreground)' }}>Mô tả</span>
-                <span style={{ fontWeight: 600 }}>{dept.description || '—'}</span>
+      {loading ? (
+        <div className={styles.loadingWrapper}>
+          <Loader2 className="animate-spin" size={48} color="var(--primary)" />
+          <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang tải danh sách đơn vị...</p>
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {departments.map((dept, index) => (
+            <Card 
+              key={dept._id} 
+              className={`${styles.deptCard} glass`} 
+              style={{ animationDelay: `${index * 0.05}s` }}
+              footer={
+              <div className={styles.cardFooter}>
+                <button onClick={() => openEdit(dept)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>Sửa</button>
+                <button onClick={() => handleDeleteClick(dept)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.875rem' }}>Xóa</button>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--muted-foreground)' }}>Ngày tạo</span>
-                <span style={{ fontWeight: 600 }}>{dept.created_at ? new Date(dept.created_at).toISOString().slice(0, 10) : '—'}</span>
+            }>
+              <div className={styles.deptHeader}>
+                <div className={styles.iconWrapper}>
+                  <Building2 size={26} />
+                </div>
+                <div>
+                  <h3 className={styles.deptName}>{dept.name}</h3>
+                  <span className="badge badge-primary" style={{ fontSize: '0.7rem', marginTop: '0.25rem' }}>
+                    {dept.faculty ? `KHOA ${dept.faculty.toUpperCase()}` : 'ĐƠN VỊ ĐỘC LẬP'}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button onClick={() => openEdit(dept)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 700 }}>Sửa</button>
-              <button onClick={() => remove(dept)} style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', fontWeight: 800 }}>Xóa</button>
-            </div>
-          </Card>
-        ))}
-        {!loading && !error && departments.length === 0 ? <p>Không có bộ môn nào.</p> : null}
-      </div>
+              
+              <div className={styles.deptMeta}>
+                <div className={styles.description}>
+                  {dept.description || 'Chưa có thông tin mô tả chi tiết cho đơn vị này.'}
+                </div>
+                <div className={styles.dateInfo}>
+                  <span>Thành lập</span>
+                  <span>{dept.created_at ? new Date(dept.created_at).toLocaleDateString('vi-VN') : '—'}</span>
+                </div>
+              </div>
+            </Card>
+          ))}
+          {departments.length === 0 && (
+             <div className={styles.emptyState}>
+               <Building2 size={64} style={{ opacity: 0.1 }} />
+               <p>Hệ thống chưa ghi nhận đơn vị đào tạo nào.</p>
+             </div>
+          )}
+        </div>
+      )}
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, dept: null })}
+        onConfirm={remove}
+        title="Xóa bộ môn / khoa"
+        message={`Bạn có chắc chắn muốn xóa "${confirmModal.dept?.name}"? Các tài khoản trực thuộc đơn vị này sẽ bị ảnh hưởng.`}
+      />
     </div>
   );
 }

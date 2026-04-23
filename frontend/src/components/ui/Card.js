@@ -3,7 +3,7 @@ import styles from './Card.module.css';
 
 export default function Card({ title, children, footer, className, headerExtra }) {
   return (
-    <div className={`${styles.card} ${className}`}>
+    <div className={`${styles.card} ${className} scale-in`}>
       {(title || headerExtra) && (
         <div className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {title && <h3>{title}</h3>}

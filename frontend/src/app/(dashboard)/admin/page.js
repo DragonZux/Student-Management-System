@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { Users, GraduationCap, Building2, TrendingUp, Plus, FileText, Settings, Loader2, Database, ShieldCheck, Activity } from 'lucide-react';
+import { Users, GraduationCap, Building2, TrendingUp, Plus, FileText, Settings, Loader2, Database, ShieldCheck, Activity, ArrowRight, UserPlus, BookPlus } from 'lucide-react';
 import api from '@/lib/api';
 import styles from './Dashboard.module.css';
 
@@ -32,7 +32,6 @@ export default function AdminDashboard() {
     setExporting(true);
     setReportError('');
     try {
-      // Fetching audit logs as a sample report
       const response = await api.get('/admin/audit-logs');
       const data = JSON.stringify(response.data, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
@@ -45,7 +44,7 @@ export default function AdminDashboard() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to generate report:', error);
-      setReportError('Không tạo được báo cáo. Vui lòng kiểm tra backend đang chạy.');
+      setReportError('Không tạo được báo cáo. Vui lòng kiểm tra backend.');
     } finally {
       setExporting(false);
     }
@@ -60,62 +59,62 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="animate-in">
-      <div style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ marginBottom: '0.5rem' }}>Bảng điều khiển quản trị</h1>
-        <p style={{ fontSize: '1.1rem' }}>Chào mừng trở lại. Đây là tình trạng hệ thống hôm nay.</p>
-      </div>
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <h1>Bảng điều khiển Quản trị</h1>
+        <p>Hệ thống đang vận hành ổn định. Dưới đây là tóm tắt tình hình hôm nay.</p>
+      </header>
 
-      <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{reportError}</InlineMessage>
+      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{reportError}</InlineMessage>
       
-      <div className="grid grid-cols-3" style={{ marginBottom: '3rem' }}>
-        <Card className="glass">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-            <div style={{ padding: '1rem', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '1rem' }}>
-              <Users size={36} color="var(--primary)" />
+      <div className={styles.statsGrid}>
+        <Card className="glass slide-right stagger-2">
+          <div className={styles.statCardContent}>
+            <div className={styles.statIconWrapper} style={{ background: 'rgba(99, 102, 241, 0.1)' }}>
+              <Users size={32} color="var(--primary)" />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Sinh viên</p>
-              <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800 }}>{stats?.students || 0}</h2>
+              <p className={styles.statLabel}>Sinh viên</p>
+              <h2 className={styles.statValue}>{stats?.students || 0}</h2>
             </div>
           </div>
         </Card>
-        <Card className="glass">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-            <div style={{ padding: '1rem', background: 'rgba(168, 85, 247, 0.1)', borderRadius: '1rem' }}>
-              <GraduationCap size={36} color="var(--secondary)" />
+        <Card className="glass slide-right stagger-3">
+          <div className={styles.statCardContent}>
+            <div className={styles.statIconWrapper} style={{ background: 'rgba(168, 85, 247, 0.1)' }}>
+              <GraduationCap size={32} color="var(--secondary)" />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Giảng viên</p>
-              <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800 }}>{stats?.teachers || 0}</h2>
+              <p className={styles.statLabel}>Giảng viên</p>
+              <h2 className={styles.statValue}>{stats?.teachers || 0}</h2>
             </div>
           </div>
         </Card>
-        <Card className="glass">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-            <div style={{ padding: '1rem', background: 'rgba(244, 63, 94, 0.1)', borderRadius: '1rem' }}>
-              <Building2 size={36} color="var(--accent)" />
+        <Card className="glass slide-right stagger-4">
+          <div className={styles.statCardContent}>
+            <div className={styles.statIconWrapper} style={{ background: 'rgba(244, 63, 94, 0.1)' }}>
+              <Building2 size={32} color="var(--accent)" />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Môn học</p>
-              <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800 }}>{stats?.courses || 0}</h2>
+              <p className={styles.statLabel}>Môn học</p>
+              <h2 className={styles.statValue}>{stats?.courses || 0}</h2>
             </div>
           </div>
         </Card>
       </div>
 
       <div className="grid grid-cols-2" style={{ gap: '2rem' }}>
-        <Card title="Thao tác quản trị">
-          <div className="grid grid-cols-2" style={{ gap: '1.5rem' }}>
+        <Card title="Phím tắt Thao tác" className="scale-in" style={{ animationDelay: '0.5s' }}>
+          <div className="grid grid-cols-2" style={{ gap: '1.25rem' }}>
             <Link href="/admin/students" style={{ textDecoration: 'none' }}>
               <button className={styles.actionBtn}>
-                <Plus size={24} />
+                <UserPlus size={28} />
                 <span>Ghi danh sinh viên</span>
               </button>
             </Link>
             <Link href="/admin/courses" style={{ textDecoration: 'none' }}>
               <button className={styles.actionBtn}>
-                <Plus size={24} />
+                <BookPlus size={28} />
                 <span>Thêm môn học</span>
               </button>
             </Link>
@@ -124,44 +123,44 @@ export default function AdminDashboard() {
               onClick={handleGenerateReport}
               disabled={exporting}
             >
-              {exporting ? <Loader2 className="animate-spin" size={24} /> : <FileText size={24} />}
-              <span>{exporting ? 'Đang xuất...' : 'Báo cáo hệ thống'}</span>
+              {exporting ? <Loader2 className="animate-spin" size={28} /> : <FileText size={28} />}
+              <span>{exporting ? 'Đang xuất...' : 'Xuất báo cáo'}</span>
             </button>
             <Link href="/admin/teachers" style={{ textDecoration: 'none' }}>
               <button className={styles.actionBtn}>
-                <Users size={24} />
-                <span>Quản lý nhân sự</span>
+                <Users size={28} />
+                <span>Quản lý giảng viên</span>
               </button>
             </Link>
           </div>
         </Card>
         
-        <Card title="Sức khỏe hệ thống">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <Card title="Trạng thái Dịch vụ" className="scale-in" style={{ animationDelay: '0.6s' }}>
+          <div className={styles.statusCard}>
+            <div className={styles.statusItem}>
+              <div className={styles.statusLabel}>
                 <div className={styles.statusIndicator} style={{ background: '#22c55e' }} />
-                <span style={{ fontWeight: 500 }}>Cơ sở dữ liệu (MongoDB)</span>
+                <span style={{ fontWeight: 600 }}>Cơ sở dữ liệu (MongoDB)</span>
               </div>
               <span className="badge badge-success">Ổn định</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className={styles.statusItem}>
+              <div className={styles.statusLabel}>
                 <div className={styles.statusIndicator} style={{ background: '#22c55e' }} />
-                <span style={{ fontWeight: 500 }}>Cổng API (FastAPI)</span>
+                <span style={{ fontWeight: 600 }}>Cổng API (FastAPI)</span>
               </div>
               <span className="badge badge-success">Ổn định</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className={styles.statusItem}>
+              <div className={styles.statusLabel}>
                 <div className={styles.statusIndicator} style={{ background: 'var(--primary)' }} />
-                <span style={{ fontWeight: 500 }}>Mã hóa & Bảo mật</span>
+                <span style={{ fontWeight: 600 }}>Bảo mật & Mã hóa</span>
               </div>
               <span className="badge badge-primary">An toàn</span>
             </div>
             
-            <Link href="/admin/audit" className="btn-primary" style={{ justifyContent: 'center', marginTop: '1rem' }}>
-              Xem nhật ký audit đầy đủ →
+            <Link href="/admin/audit" className="btn-primary" style={{ justifyContent: 'center', padding: '1rem', marginTop: '0.5rem', fontWeight: 700 }}>
+              Xem nhật ký Audit <ArrowRight size={18} style={{ marginLeft: '0.5rem' }} />
             </Link>
           </div>
         </Card>

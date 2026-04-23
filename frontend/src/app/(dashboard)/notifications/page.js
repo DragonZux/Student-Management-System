@@ -1,12 +1,11 @@
 "use client";
 import Card from '@/components/ui/Card';
 import { Bell, Clock, Info, CheckCircle } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import api from '@/lib/api';
+import { useMemo } from 'react';
+import { useNotifications } from '@/components/providers/NotificationProvider';
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { notifications, loading, markRead } = useNotifications();
 
   const formatTimeAgo = (iso) => {
     const ts = iso ? new Date(iso).getTime() : 0;
@@ -21,79 +20,14 @@ export default function NotificationsPage() {
     return `${diffDay}d ago`;
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        setLoading(true);
-        const res = await api.get('/notifications/');
-        if (!cancelled) setNotifications(res.data || []);
-      } catch (e) {
-        console.error('Failed to load notifications', e);
-        if (!cancelled) setNotifications([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (!token) return undefined;
-    const wsBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api')
-      .replace('http://', 'ws://')
-      .replace('https://', 'wss://')
-      .replace(/\/api\/?$/, '');
-    const ws = new WebSocket(`${wsBaseUrl}/api/notifications/ws?token=${encodeURIComponent(token)}`);
-
-    ws.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        if (payload?.type !== 'notification' || !payload.data) return;
-        const incoming = payload.data;
-        setNotifications((prev) => [
-          {
-            _id: incoming.id,
-            title: incoming.title,
-            message: incoming.message,
-            created_at: incoming.created_at,
-            read: false,
-          },
-          ...(prev || []),
-        ]);
-      } catch (err) {
-        console.error('Invalid notification websocket message', err);
-      }
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, []);
-
   const items = useMemo(() => {
     return (notifications || []).map((n) => ({
       ...n,
-      id: n._id || n.id,
+      id: n.id,
       time: formatTimeAgo(n.created_at),
       type: n.read ? 'success' : 'info',
     }));
   }, [notifications]);
-
-  const markRead = async (id) => {
-    try {
-      await api.post(`/notifications/${id}/read`);
-      setNotifications((prev) =>
-        (prev || []).map((n) => ((n._id || n.id) === id ? { ...n, read: true } : n))
-      );
-    } catch (e) {
-      console.error('Failed to mark read', e);
-    }
-  };
 
   return (
     <div>

@@ -1,7 +1,8 @@
  "use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { MapPin, Users, Monitor } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
+import { MapPin, Users, Monitor, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { isInRange, matchesPattern, popupValidationError } from '@/lib/validation';
@@ -102,54 +103,58 @@ export default function ClassroomsPage() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Cơ sở vật chất & phòng học</h1>
-        <button className="glass" style={{ 
-          padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)', 
-          background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer',
-          fontWeight: 600
-        }}
-        onClick={openCreate}
-        >
-          Thêm tài nguyên
+    <div className="animate-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+        <div>
+          <h1 style={{ marginBottom: '0.5rem' }}>Cơ sở vật chất & Phòng học</h1>
+          <p style={{ fontSize: '1.1rem' }}>Quản lý hạ tầng giảng dạy, sức chứa phòng và trang thiết bị học tập.</p>
+        </div>
+        <button className="btn-primary" onClick={openCreate}>
+          <Plus size={18} />
+          Thêm phòng học mới
         </button>
       </div>
 
-      <div className="grid grid-cols-1">
-        <Card>
-          {showForm ? (
-            <div style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-              <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>{editing ? 'Sửa phòng học' : 'Tạo phòng học'}</div>
-              <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{formError}</InlineMessage>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Mã phòng</label>
-                  <input value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Sức chứa</label>
-                  <input type="number" min="0" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Tòa nhà</label>
-                  <input value={form.building} onChange={(e) => setForm((p) => ({ ...p, building: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Trang thiết bị (cách nhau bằng dấu phẩy)</label>
-                  <input value={form.facilities} onChange={(e) => setForm((p) => ({ ...p, facilities: e.target.value }))} style={{ width: '100%', padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border)' }} />
-                </div>
-              </div>
-              <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button onClick={() => setShowForm(false)} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', fontWeight: 600 }}>Hủy</button>
-                <button onClick={submit} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>Lưu</button>
-              </div>
-            </div>
-          ) : null}
+      <Modal
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title={editing ? 'Cập nhật thông tin phòng học' : 'Khai báo phòng học mới'}
+        maxWidth="800px"
+      >
+        <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Mã phòng học</label>
+            <input value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))} placeholder="Ví dụ: A1-202" style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Sức chứa (Capacity)</label>
+            <input type="number" min="0" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Tòa nhà / Khu vực</label>
+            <input value={form.building} onChange={(e) => setForm((p) => ({ ...p, building: e.target.value }))} placeholder="Ví dụ: Tòa nhà A1" style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Trang thiết bị (cách nhau bằng dấu phẩy)</label>
+            <input value={form.facilities} onChange={(e) => setForm((p) => ({ ...p, facilities: e.target.value }))} placeholder="Ví dụ: Máy chiếu, Điều hòa, Bảng điện tử" style={{ width: '100%' }} />
+          </div>
+        </div>
+        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+          <button onClick={() => setShowForm(false)} className="btn-primary" style={{ background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}>Hủy bỏ</button>
+          <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận thêm'}</button>
+        </div>
+      </Modal>
 
-          {loading ? <div style={{ padding: '1rem' }}>Đang tải...</div> : null}
-          <InlineMessage variant="error" style={{ marginBottom: '0.75rem' }}>{error}</InlineMessage>
+      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>
 
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem 0', gap: '1rem' }}>
+          <div className="animate-spin" style={{ width: '40px', height: '40px', border: '4px solid var(--muted)', borderTopColor: 'var(--primary)', borderRadius: '50%' }} />
+          <p style={{ color: 'var(--muted-foreground)', fontWeight: 500 }}>Đang truy xuất dữ liệu phòng học...</p>
+        </div>
+      ) : (
+        <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
             {rooms.map((room) => (
               <div key={room._id || room.code} style={{ 
@@ -177,19 +182,21 @@ export default function ClassroomsPage() {
                 </div>
 
                 <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                  <button onClick={() => openEdit(room)} style={{ padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 700 }}>
+                  <button onClick={() => openEdit(room)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>
                     Sửa
                   </button>
-                  <button onClick={() => remove(room)} style={{ padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid #fee2e2', background: '#fee2e2', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 800, color: '#991b1b' }}>
+                  <button onClick={() => remove(room)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.875rem' }}>
                     Xóa
                   </button>
                 </div>
               </div>
             ))}
           </div>
-          {!loading && !error && rooms.length === 0 ? <div style={{ padding: '1rem' }}>Không có phòng học nào.</div> : null}
-        </Card>
-      </div>
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+            {!loading && !error && rooms.length === 0 ? <p>Không có phòng học nào được ghi nhận.</p> : null}
+          </div>
+        </>
+      )}
     </div>
   );
 }

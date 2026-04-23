@@ -9,6 +9,7 @@ from app.core.audit import log_audit_event
 from app.core.database import get_database
 from app.core.schedule import schedules_conflict
 from app.core.security import get_password_hash
+from app.api.notifications import create_notification
 from app.schemas.academic import ClassCreate, ClassOut, ClassUpdate, CourseCreate, CourseOut, CourseUpdate
 from app.schemas.organization import ClassroomCreate, ClassroomOut, ClassroomUpdate, DepartmentCreate, DepartmentOut, DepartmentUpdate, FeedbackOut, AuditLogOut
 from app.schemas.user import UserCreate, UserOut, UserRole, UserUpdate
@@ -519,15 +520,11 @@ async def approve_withdrawal(enrollment_id: str):
     )
     
     # 3. Notify student (Optional but good)
-    await db.notifications.insert_one({
-        "_id": str(uuid.uuid4()),
-        "user_id": enrollment["student_id"],
-        "title": "Yêu cầu rút học phần đã được phê duyệt",
-        "message": f"Yêu cầu rút học phần của bạn đã được phê duyệt thành công.",
-        "type": "info",
-        "read": False,
-        "created_at": datetime.utcnow()
-    })
+    await create_notification(
+        user_id=enrollment["student_id"],
+        title="Yêu cầu rút học phần đã được phê duyệt",
+        message="Yêu cầu rút học phần của bạn đã được phê duyệt thành công.",
+    )
     
     return {"message": "Withdrawal approved successfully"}
 
@@ -555,14 +552,10 @@ async def reject_withdrawal(enrollment_id: str, payload: dict):
     )
     
     # Notify student
-    await db.notifications.insert_one({
-        "_id": str(uuid.uuid4()),
-        "user_id": enrollment["student_id"],
-        "title": "Yêu cầu rút học phần bị từ chối",
-        "message": f"Yêu cầu rút học phần của bạn bị từ chối. Lý do: {reason}",
-        "type": "warning",
-        "read": False,
-        "created_at": datetime.utcnow()
-    })
+    await create_notification(
+        user_id=enrollment["student_id"],
+        title="Yêu cầu rút học phần bị từ chối",
+        message=f"Yêu cầu rút học phần của bạn bị từ chối. Lý do: {reason}",
+    )
     
     return {"message": "Withdrawal request rejected"}

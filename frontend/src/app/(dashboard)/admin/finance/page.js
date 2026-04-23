@@ -2,11 +2,12 @@
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { Download, TrendingUp, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Download, TrendingUp, Search, ChevronLeft, ChevronRight, DollarSign, PieChart, History, Settings } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isPositiveInteger, popupValidationError } from '@/lib/validation';
 import { exportToCSV } from '@/lib/csv';
+import styles from './Finance.module.css';
 
 export default function AdminFinancePage() {
   const [invoices, setInvoices] = useState([]);
@@ -118,14 +119,8 @@ export default function AdminFinancePage() {
     setActionMessage('');
     setActionError('');
     const amount = Number(paymentForm.amount);
-    if (!paymentForm.student_id) {
-      popupValidationError(setActionError, 'Vui lòng chọn sinh viên.');
-      return;
-    }
-    if (!isPositiveInteger(amount, 1)) {
-      popupValidationError(setActionError, 'Số tiền phải là số dương.');
-      return;
-    }
+    if (!paymentForm.student_id) return popupValidationError(setActionError, 'Vui lòng chọn sinh viên.');
+    if (!isPositiveInteger(amount, 1)) return popupValidationError(setActionError, 'Số tiền phải là số dương.');
     try {
       await api.post(`/finance/update-payment/${paymentForm.student_id}`, null, { params: { amount } });
       setPaymentForm((prev) => ({ ...prev, amount: '' }));
@@ -154,14 +149,8 @@ export default function AdminFinancePage() {
     setActionMessage('');
     setActionError('');
     const cost = Number(policyForm.cost_per_credit);
-    if (!policyForm.semester.trim()) {
-      popupValidationError(setActionError, 'Vui lòng nhập kỳ học.');
-      return;
-    }
-    if (!cost || cost <= 0) {
-      popupValidationError(setActionError, 'Chi phí tín chỉ phải lớn hơn 0.');
-      return;
-    }
+    if (!policyForm.semester.trim()) return popupValidationError(setActionError, 'Vui lòng nhập kỳ học.');
+    if (!cost || cost <= 0) return popupValidationError(setActionError, 'Chi phí tín chỉ phải lớn hơn 0.');
     try {
       if (editingPolicyId) {
         await api.patch(`/finance/policies/${editingPolicyId}`, {
@@ -198,113 +187,114 @@ export default function AdminFinancePage() {
     }
   };
 
+  const exportTransactions = () => {
+    exportToCSV(allTransactions, `transactions-${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
+  const exportPolicies = () => {
+    exportToCSV(policies, `tuition-policies-${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
   return (
-    <div className="animate-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
-        <div>
-          <h1 style={{ marginBottom: '0.5rem' }}>Quản lý Tài chính</h1>
-          <p style={{ fontSize: '1.1rem' }}>Giám sát học phí, ghi nhận thanh toán và thiết lập chính sách.</p>
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <div className={styles.headerInfo}>
+          <h1>Quản lý Tài chính</h1>
+          <p>Giám sát nguồn thu, công nợ và thiết lập chính sách học phí.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button 
-            onClick={exportTransactions}
-            className="input-hover"
-            style={{ padding: '0.75rem 1.25rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.625rem', fontWeight: 700, fontSize: '0.875rem' }}
-          >
-            <Download size={18} /> Xuất Giao dịch
+        <div className={styles.actions}>
+          <button onClick={exportTransactions} className={styles.exportBtn}>
+            <Download size={18} /> Giao dịch
           </button>
-          <button 
-            onClick={exportPolicies}
-            className="input-hover"
-            style={{ padding: '0.75rem 1.25rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.625rem', fontWeight: 700, fontSize: '0.875rem' }}
-          >
-            <Download size={18} /> Xuất Chính sách
+          <button onClick={exportPolicies} className={styles.exportBtn}>
+            <Download size={18} /> Chính sách
           </button>
         </div>
+      </header>
+
+      <div className={`${styles.statsGrid} slide-right stagger-2`}>
+        <Card className="glass">
+          <div className={styles.statCard}>
+            <div>
+              <p className={styles.statLabel}>Tổng doanh thu</p>
+              <h2 className={styles.statValue}>{loading ? '...' : `$${stats.totalRevenue.toLocaleString()}`}</h2>
+            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
+              <TrendingUp color="#059669" size={24} />
+            </div>
+          </div>
+        </Card>
+        <Card className="glass">
+          <div className={styles.statCard}>
+            <div>
+              <p className={styles.statLabel}>Công nợ chưa thu</p>
+              <h2 className={styles.statValue} style={{ color: '#e11d48' }}>{loading ? '...' : `$${stats.outstanding.toLocaleString()}`}</h2>
+            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(244, 63, 94, 0.1)' }}>
+              <DollarSign color="#e11d48" size={24} />
+            </div>
+          </div>
+        </Card>
+        <Card className="glass">
+          <div className={styles.statCard}>
+            <div>
+              <p className={styles.statLabel}>Tỷ lệ thu hồi</p>
+              <h2 className={styles.statValue}>{loading ? '...' : `${stats.collectionRate.toFixed(1)}%`}</h2>
+            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
+              <PieChart color="#2563eb" size={24} />
+            </div>
+          </div>
+        </Card>
       </div>
 
       <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{error || actionError}</InlineMessage>
       <InlineMessage variant="success" style={{ marginBottom: '1rem' }}>{actionMessage}</InlineMessage>
 
-      <div className="grid grid-cols-3" style={{ marginBottom: '3rem' }}>
-        <Card className="glass">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Tổng doanh thu</p>
-              <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800 }}>{loading ? '...' : `$${stats.totalRevenue.toLocaleString()}`}</h2>
-            </div>
-            <div style={{ padding: '0.75rem', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '1rem' }}>
-              <TrendingUp color="#166534" size={24} />
-            </div>
-          </div>
-        </Card>
-        <Card className="glass">
-          <div>
-            <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Công nợ chưa thu</p>
-            <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#e11d48' }}>{loading ? '...' : `$${stats.outstanding.toLocaleString()}`}</h2>
-          </div>
-        </Card>
-        <Card className="glass">
-          <div>
-            <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Tỷ lệ thu hồi</p>
-            <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800 }}>{loading ? '...' : `${stats.collectionRate.toFixed(1)}%`}</h2>
-          </div>
-        </Card>
-      </div>
-
       <Card 
-        title={`Lịch sử Giao dịch`}
-        className="glass"
-        style={{ padding: 0, overflow: 'hidden', marginBottom: '3rem' }}
+        title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={20} /> Lịch sử Giao dịch</div>}
+        className={`${styles.tableSection} glass slide-right stagger-3`}
+        style={{ padding: 0 }}
         headerExtra={
-          <div style={{ position: 'relative', width: '320px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+          <div className={styles.searchWrapper} style={{ width: '320px' }}>
+            <Search size={18} className={styles.searchIcon} />
             <input 
+              className={styles.searchInput}
               type="text" 
               placeholder="Tìm theo tên hoặc email..."
               value={txSearch}
               onChange={(e) => { setTxSearch(e.target.value); setTxPage(1); }}
-              style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.5)', fontSize: '0.9375rem' }} 
-              className="input-hover"
             />
           </div>
         }
       >
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)', background: 'rgba(0,0,0,0.02)' }}>
-                <th style={{ padding: '1.25rem 2rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Sinh viên</th>
-                <th style={{ padding: '1.25rem 2rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Số tiền</th>
-                <th style={{ padding: '1.25rem 2rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Ngày thanh toán</th>
-                <th style={{ padding: '1.25rem 2rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Trạng thái</th>
-                <th style={{ padding: '1.25rem 2rem' }}></th>
+              <tr>
+                <th>Sinh viên</th>
+                <th>Số tiền</th>
+                <th>Ngày thanh toán</th>
+                <th>Trạng thái</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td style={{ padding: '4rem', textAlign: 'center' }} colSpan={5}>Đang tải dữ liệu...</td>
-                </tr>
+                <tr><td colSpan={5} style={{ padding: '4rem', textAlign: 'center' }}>Đang tải dữ liệu...</td></tr>
               ) : paginatedTransactions.length === 0 ? (
-                <tr>
-                  <td style={{ padding: '4rem', textAlign: 'center' }} colSpan={5}>Không có dữ liệu giao dịch.</td>
-                </tr>
-              ) : paginatedTransactions.map((tx) => (
-                <tr key={tx.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '1.25rem 2rem' }}>
-                    <div style={{ fontWeight: 800, fontSize: '1rem' }}>{tx.student}</div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>{tx.email}</div>
+                <tr><td colSpan={5} style={{ padding: '4rem', textAlign: 'center' }}>Không có dữ liệu giao dịch.</td></tr>
+              ) : paginatedTransactions.map((tx, index) => (
+                <tr key={tx.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
+                  <td>
+                    <div className={styles.studentName}>{tx.student}</div>
+                    <div className={styles.studentEmail}>{tx.email}</div>
                   </td>
-                  <td style={{ padding: '1.25rem 2rem', fontWeight: 800, fontSize: '1.125rem' }}>${tx.amount.toLocaleString()}</td>
-                  <td style={{ padding: '1.25rem 2rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>{tx.date}</td>
-                  <td style={{ padding: '1.25rem 2rem' }}>
-                    <span className="badge badge-success">Thành công</span>
-                  </td>
-                  <td style={{ padding: '1.25rem 2rem', textAlign: 'right' }}>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }} className="input-hover">
-                      <Download size={20} />
-                    </button>
+                  <td><span className={styles.amount}>${tx.amount.toLocaleString()}</span></td>
+                  <td>{tx.date}</td>
+                  <td><span className="badge badge-success">Thành công</span></td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button className={styles.pageBtn} title="Tải biên lai"><Download size={18} /></button>
                   </td>
                 </tr>
               ))}
@@ -313,116 +303,88 @@ export default function AdminFinancePage() {
         </div>
 
         {totalTxPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', padding: '1.5rem', background: 'rgba(0,0,0,0.01)' }}>
-            <button onClick={() => setTxPage(p => Math.max(1, p - 1))} disabled={txPage === 1} style={{ padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid var(--border)', background: 'transparent', cursor: txPage === 1 ? 'not-allowed' : 'pointer', opacity: txPage === 1 ? 0.3 : 1 }} className="input-hover">
+          <div className={styles.pagination}>
+            <button className={styles.pageBtn} onClick={() => setTxPage(p => Math.max(1, p - 1))} disabled={txPage === 1}>
               <ChevronLeft size={20} />
             </button>
-            <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Trang {txPage} / {totalTxPages}</span>
-            <button onClick={() => setTxPage(p => Math.min(totalTxPages, p + 1))} disabled={txPage === totalTxPages} style={{ padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid var(--border)', background: 'transparent', cursor: txPage === totalTxPages ? 'not-allowed' : 'pointer', opacity: txPage === totalTxPages ? 0.3 : 1 }} className="input-hover">
+            <span style={{ fontWeight: 700 }}>Trang {txPage} / {totalTxPages}</span>
+            <button className={styles.pageBtn} onClick={() => setTxPage(p => Math.min(totalTxPages, p + 1))} disabled={txPage === totalTxPages}>
               <ChevronRight size={20} />
             </button>
           </div>
         )}
       </Card>
 
-      <div className="grid grid-cols-2" style={{ gap: '2rem' }}>
-        <Card title="Ghi nhận Thanh toán" className="glass" style={{ padding: '2rem' }}>
+      <div className={styles.formsGrid}>
+        <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><DollarSign size={20} /> Ghi nhận Thanh toán</div>} className="glass scale-in" style={{ animationDelay: '0.5s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Chọn Sinh viên</label>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Chọn Sinh viên</label>
               <select 
+                className={styles.select}
                 value={paymentForm.student_id} 
-                onChange={(e) => setPaymentForm((p) => ({ ...p, student_id: e.target.value }))} 
-                style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', fontSize: '1rem' }}
-                className="input-hover"
+                onChange={(e) => setPaymentForm((p) => ({ ...p, student_id: e.target.value }))}
               >
+                <option value="">-- Chọn sinh viên --</option>
                 {students.map((s) => (
                   <option key={s._id} value={s._id}>{s.full_name} ({s.email})</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Số tiền ($)</label>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Số tiền ($)</label>
               <input 
-                type="number" 
-                min="1" 
-                value={paymentForm.amount} 
+                className={styles.input}
+                type="number" min="1" value={paymentForm.amount} 
                 onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))} 
-                style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', fontSize: '1.25rem', fontWeight: 800 }} 
-                className="input-hover"
                 placeholder="0.00"
+                style={{ fontSize: '1.25rem', fontWeight: 800 }}
               />
             </div>
-            <button 
-              onClick={submitPayment} 
-              className="btn-primary"
-              style={{ padding: '1.125rem', borderRadius: '1.125rem', justifyContent: 'center', fontSize: '1.05rem', fontWeight: 800, marginTop: '0.5rem' }}
-            >
+            <button onClick={submitPayment} className="btn-primary" style={{ padding: '1rem', width: '100%', justifyContent: 'center', fontSize: '1.1rem' }}>
               Xác nhận Thanh toán
             </button>
           </div>
         </Card>
 
-        <Card title="Chính sách Học phí" className="glass" style={{ padding: '2rem' }}>
+        <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Settings size={20} /> Chính sách Học phí</div>} className="glass scale-in" style={{ animationDelay: '0.6s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Kỳ học</label>
-                <input 
-                  value={policyForm.semester} 
-                  onChange={(e) => setPolicyForm((p) => ({ ...p, semester: e.target.value }))} 
-                  placeholder="Ví dụ: HK2-2024"
-                  style={{ width: '100%', padding: '0.875rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)' }} 
-                  className="input-hover"
-                />
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Kỳ học</label>
+                <input className={styles.input} value={policyForm.semester} onChange={(e) => setPolicyForm((p) => ({ ...p, semester: e.target.value }))} placeholder="HK2-2024" />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Phí / Tín chỉ ($)</label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  value={policyForm.cost_per_credit} 
-                  onChange={(e) => setPolicyForm((p) => ({ ...p, cost_per_credit: e.target.value }))} 
-                  style={{ width: '100%', padding: '0.875rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)' }} 
-                  className="input-hover"
-                />
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Phí / Tín chỉ ($)</label>
+                <input className={styles.input} type="number" min="1" value={policyForm.cost_per_credit} onChange={(e) => setPolicyForm((p) => ({ ...p, cost_per_credit: e.target.value }))} />
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={policyForm.is_active} 
-                  onChange={(e) => setPolicyForm((p) => ({ ...p, is_active: e.target.checked }))} 
-                  style={{ width: '1.125rem', height: '1.125rem' }}
-                />
-                Kích hoạt chính sách
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                <input type="checkbox" checked={policyForm.is_active} onChange={(e) => setPolicyForm((p) => ({ ...p, is_active: e.target.checked }))} style={{ width: '1.2rem', height: '1.2rem' }} />
+                Kích hoạt
               </label>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                {editingPolicyId && (
-                  <button onClick={startCreatePolicy} className="input-hover" style={{ padding: '0.75rem 1.25rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'transparent', fontWeight: 700 }}>Hủy</button>
-                )}
-                <button onClick={submitPolicy} className="btn-primary" style={{ padding: '0.75rem 1.5rem', borderRadius: '1rem', fontWeight: 800 }}>
-                  {editingPolicyId ? 'Cập nhật' : 'Tạo mới'}
-                </button>
+                {editingPolicyId && <button onClick={startCreatePolicy} className="btn-secondary">Hủy</button>}
+                <button onClick={submitPolicy} className="btn-primary">{editingPolicyId ? 'Cập nhật' : 'Tạo mới'}</button>
               </div>
             </div>
 
-            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               {policies.map((policy) => (
-                <div key={policy._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '1.25rem', padding: '1.25rem', border: '1px solid var(--border)' }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{policy.semester}</div>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
+                <div key={policy._id} className={styles.policyItem}>
+                  <div className={styles.policyMeta}>
+                    <div className={styles.policyTitle}>{policy.semester}</div>
+                    <div className={styles.policyDetails}>
                       ${Number(policy.cost_per_credit).toLocaleString()} / tín chỉ • 
-                      <span style={{ color: policy.is_active ? '#166534' : '#991b1b', marginLeft: '0.5rem' }}>
+                      <span style={{ color: policy.is_active ? '#059669' : '#e11d48', marginLeft: '0.5rem' }}>
                         {policy.is_active ? 'Đang áp dụng' : 'Ngưng'}
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => startEditPolicy(policy)} className="input-hover" style={{ padding: '0.5rem 1rem', borderRadius: '0.75rem', border: 'none', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer' }}>Sửa</button>
-                    <button onClick={() => handleDeletePolicyClick(policy._id)} className="input-hover" style={{ padding: '0.5rem 1rem', borderRadius: '0.75rem', border: 'none', background: 'rgba(225, 29, 72, 0.1)', color: '#e11d48', fontWeight: 700, cursor: 'pointer' }}>Xóa</button>
+                  <div className={styles.policyActions}>
+                    <button onClick={() => startEditPolicy(policy)} className={styles.policyEditBtn}>Sửa</button>
+                    <button onClick={() => setConfirmModal({ isOpen: true, policyId: policy._id })} className={styles.policyDeleteBtn}>Xóa</button>
                   </div>
                 </div>
               ))}
@@ -430,17 +392,6 @@ export default function AdminFinancePage() {
           </div>
         </Card>
       </div>
-
-      <ConfirmModal 
-        isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal({ isOpen: false, policyId: null })}
-        onConfirm={deletePolicy}
-        title="Xác nhận xóa chính sách"
-        message="Bạn có chắc chắn muốn xóa chính sách học phí này? Hành động này có thể ảnh hưởng đến việc tính toán học phí của sinh viên."
-      />
-    </div>
-  );
-}
 
       <ConfirmModal 
         isOpen={confirmModal.isOpen}

@@ -1,10 +1,15 @@
 import bcrypt
 from datetime import datetime, timedelta
-from typing import Any, Union
+from typing import Any, Optional, Union
 from jose import jwt
 from app.core.config import settings
 
-def create_access_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
+def create_access_token(
+    subject: Union[str, Any],
+    expires_delta: timedelta = None,
+    *,
+    jti: Optional[str] = None,
+) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
@@ -12,6 +17,8 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
     to_encode = {"exp": expire, "sub": str(subject)}
+    if jti:
+        to_encode["jti"] = str(jti)
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 

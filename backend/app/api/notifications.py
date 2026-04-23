@@ -110,10 +110,21 @@ async def notifications_ws(websocket: WebSocket):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
+        token_jti = payload.get("jti")
         if not user_id:
             await websocket.close(code=1008)
             return
+        if not token_jti:
+            await websocket.close(code=1008)
+            return
     except JWTError:
+        await websocket.close(code=1008)
+        return
+
+    # Single-session check: only allow the currently active session
+    db = get_database()
+    user = await db.users.find_one({"_id": user_id})
+    if not user or str(user.get("active_jti") or "") != str(token_jti):
         await websocket.close(code=1008)
         return
 
