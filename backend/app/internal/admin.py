@@ -4,12 +4,12 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.api.deps import check_admin_role
+from app.dependencies import check_admin_role
 from app.core.audit import log_audit_event
-from app.core.database import get_database
+from app.db.database import get_database
 from app.core.schedule import schedules_conflict
 from app.core.security import get_password_hash
-from app.api.notifications import create_notification
+from app.routers.notifications import create_notification
 from app.schemas.academic import ClassCreate, ClassOut, ClassUpdate, CourseCreate, CourseOut, CourseUpdate
 from app.schemas.organization import ClassroomCreate, ClassroomOut, ClassroomUpdate, DepartmentCreate, DepartmentOut, DepartmentUpdate, FeedbackOut, AuditLogOut
 from app.schemas.user import UserCreate, UserOut, UserRole, UserUpdate

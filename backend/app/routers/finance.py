@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
-from app.api.deps import get_current_user, check_admin_role
-from app.api.notifications import create_notification
+from app.dependencies import get_current_user, check_admin_role
+from app.routers.notifications import create_notification
 from app.core.audit import log_audit_event
-from app.core.database import get_database
+from app.db.database import get_database
 from app.schemas.finance import InvoiceOut, PaymentCreate, PaymentOut, TuitionSummary
 from app.schemas.user import UserRole
 import uuid

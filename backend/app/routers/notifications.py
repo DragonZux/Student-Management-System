@@ -5,10 +5,10 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
 
-from app.api.deps import check_admin_role, get_current_user
+from app.dependencies import check_admin_role, get_current_user
 from app.core.audit import log_audit_event
 from app.core.config import settings
-from app.core.database import get_database
+from app.db.database import get_database
 from app.schemas.organization import NotificationCreate, NotificationOut
 from datetime import datetime
 

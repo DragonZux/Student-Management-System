@@ -3,9 +3,9 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from app.api.deps import get_current_user, check_admin_role, check_admin_or_self
+from app.dependencies import get_current_user, check_admin_role, check_admin_or_self
 from app.core.audit import log_audit_event
-from app.core.database import get_database
+from app.db.database import get_database
 from app.schemas.user import UserRole
 
 router = APIRouter()
