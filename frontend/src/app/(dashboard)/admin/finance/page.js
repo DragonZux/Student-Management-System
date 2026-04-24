@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isPositiveInteger, popupValidationError } from '@/lib/validation';
 import { exportToCSV } from '@/lib/csv';
-import styles from './Finance.module.css';
+import styles from '@/styles/modules/admin/finance.module.css';
 
 export default function AdminFinancePage() {
   const [invoices, setInvoices] = useState([]);

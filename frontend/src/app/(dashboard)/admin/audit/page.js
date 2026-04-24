@@ -4,7 +4,7 @@ import InlineMessage from '@/components/ui/InlineMessage';
 import { Shield, Clock, User, AlertCircle, Activity, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import styles from './Audit.module.css';
+import styles from '@/styles/modules/admin/audit.module.css';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState([]);

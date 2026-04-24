@@ -7,7 +7,7 @@ import { BookOpen, Plus, Search, Layers, Loader2, BookCheck } from 'lucide-react
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isInRange, matchesPattern, popupValidationError } from '@/lib/validation';
-import styles from './Courses.module.css';
+import styles from '@/styles/modules/admin/courses.module.css';
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState([]);

@@ -5,7 +5,7 @@ import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { Users, GraduationCap, Building2, TrendingUp, Plus, FileText, Settings, Loader2, Database, ShieldCheck, Activity, ArrowRight, UserPlus, BookPlus } from 'lucide-react';
 import api from '@/lib/api';
-import styles from './Dashboard.module.css';
+import styles from '@/styles/modules/admin/dashboard.module.css';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
