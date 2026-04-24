@@ -3,7 +3,7 @@ import Card from '@/components/ui/Card';
 import { Calendar, Clock, MapPin, Download, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
-import styles from './Schedule.module.css';
+import styles from '@/styles/modules/student/schedule.module.css';
 
 export default function StudentSchedulePage() {
   const [classes, setClasses] = useState([]);

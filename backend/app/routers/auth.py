@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core.security import create_access_token, verify_password, get_password_hash
-from app.core.database import get_database
+from app.db.database import get_database
 from app.schemas.user import UserCreate, UserOut
 from app.schemas.common import ProfileUpdate
-from app.api.deps import get_current_user
+from app.dependencies import get_current_user
 from app.core.audit import log_audit_event
 from datetime import datetime
 import uuid

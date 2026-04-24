@@ -5,7 +5,7 @@ import { Download, CheckCircle, FileText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { useAuth } from '@/components/providers/AuthProvider';
-import styles from './Transcript.module.css';
+import styles from '@/styles/modules/student/transcript.module.css';
 
 export default function TranscriptPage() {
   const { user, loading: authLoading } = useAuth();

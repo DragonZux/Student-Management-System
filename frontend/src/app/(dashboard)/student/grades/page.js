@@ -3,7 +3,7 @@ import Card from '@/components/ui/Card';
 import { Award, BookOpen, TrendingUp, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import styles from './Grades.module.css';
+import styles from '@/styles/modules/student/grades.module.css';
 
 export default function StudentGradesPage() {
   const [data, setData] = useState(null);

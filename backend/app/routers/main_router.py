@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api import auth, admin, student, teacher, finance, notifications, reports, exams
+from app.routers import auth, student, teacher, finance, notifications, reports, exams
+from app.internal import admin
 
 api_router = APIRouter()
 

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from app.api.deps import get_current_user, check_teacher_role
-from app.api.notifications import create_notification
+from app.dependencies import get_current_user, check_teacher_role
+from app.routers.notifications import create_notification
 from app.core.audit import log_audit_event
-from app.core.database import get_database
+from app.db.database import get_database
 from app.schemas.academic import AssignmentCreate, AttendanceCreate, AttendanceOut, AttendanceRecord, ExamGrade
 from app.schemas.organization import FeedbackOut
 from app.schemas.user import UserRole

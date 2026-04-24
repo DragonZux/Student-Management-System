@@ -7,7 +7,7 @@ import Modal from '@/components/ui/Modal';
 import { UserPlus, Search, Loader2, Filter, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import api from '@/lib/api';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
-import styles from './Students.module.css';
+import styles from '@/styles/modules/admin/students.module.css';
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);

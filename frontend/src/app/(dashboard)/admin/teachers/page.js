@@ -6,7 +6,7 @@ import { UserPlus, Search, Mail, Phone, BookOpen, Trash2, Edit3, User } from 'lu
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
-import styles from './Teachers.module.css';
+import styles from '@/styles/modules/admin/teachers.module.css';
 
 function getErrorMessage(error, fallback) {
   const detail = error?.response?.data?.detail;

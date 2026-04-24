@@ -4,10 +4,10 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.deps import check_admin_role, get_current_user, check_teacher_or_admin
-from app.api.notifications import create_notification
+from app.dependencies import check_admin_role, get_current_user, check_teacher_or_admin
+from app.routers.notifications import create_notification
 from app.core.audit import log_audit_event
-from app.core.database import get_database
+from app.db.database import get_database
 from app.schemas.academic import ExamCreate, ExamOut, ExamUpdate, ExamGrade
 from app.schemas.user import UserRole
 

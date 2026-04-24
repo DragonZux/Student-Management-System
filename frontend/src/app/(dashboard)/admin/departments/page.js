@@ -7,7 +7,7 @@ import { Building2, Plus, Loader2, ArrowRight, Info } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { popupValidationError } from '@/lib/validation';
-import styles from './Departments.module.css';
+import styles from '@/styles/modules/admin/departments.module.css';
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState([]);

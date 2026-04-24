@@ -9,7 +9,7 @@ import {
   ClipboardList, LogOut, LayoutDashboard,
   Building2, Wallet, Bell, FileText, UserCircle, MessageSquare, ClipboardCheck, Menu, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
-import styles from './Sidebar.module.css';
+import styles from '@/styles/modules/layout/sidebar.module.css';
 
 const navItems = {
   admin: [

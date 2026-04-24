@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 import uuid
 
-from app.core.database import get_database
+from app.db.database import get_database
 
 
 async def log_audit_event(
