@@ -68,16 +68,17 @@ export function NotificationProvider({ children }) {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) return undefined;
 
-    const wsBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api")
-      .replace("http://", "ws://")
-      .replace("https://", "wss://")
-      .replace(/\/api\/?$/, "");
+    const getWsUrl = () => {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const host = window.location.host;
+      return `${protocol}//${host}/api/notifications/ws`;
+    };
 
     const connect = () => {
       const nextToken = localStorage.getItem("token");
       if (!nextToken) return;
 
-      const ws = new WebSocket(`${wsBaseUrl}/api/notifications/ws?token=${encodeURIComponent(nextToken)}`);
+      const ws = new WebSocket(`${getWsUrl()}?token=${encodeURIComponent(nextToken)}`);
       wsRef.current = ws;
 
       ws.onopen = () => {

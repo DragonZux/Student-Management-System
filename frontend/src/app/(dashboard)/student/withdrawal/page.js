@@ -103,13 +103,25 @@ export default function WithdrawalPage() {
                 <select
                   value={selectedEnrollment}
                   onChange={(e) => setSelectedEnrollment(e.target.value)}
-                  style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', fontSize: '1rem' }}
+                  style={{ 
+                    width: '100%', 
+                    padding: '1.125rem', 
+                    borderRadius: '1.25rem', 
+                    border: '1px solid rgba(0,0,0,0.1)', 
+                    background: 'white', 
+                    fontSize: '1rem',
+                    color: '#374151',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                    transition: 'all 0.2s ease',
+                    appearance: 'none',
+                    cursor: 'pointer'
+                  }}
                   className="input-hover"
                 >
                   {withdrawable.length === 0 && <option value="">Không có học phần nào khả dụng để rút</option>}
                   {withdrawable.map((e) => (
                     <option key={e._id} value={e._id}>
-                      {e.course?.code} - {e.course?.title} ({e.class_id})
+                      {e.course?.code} - {e.course?.title} ({e._id})
                     </option>
                   ))}
                 </select>
@@ -157,7 +169,7 @@ export default function WithdrawalPage() {
                   </span>
                 </div>
                 <div>
-                  <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem', fontWeight: 800 }}>{e.course?.code}: {e.course?.title}</h4>
+                  <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem', fontWeight: 800 }}>{e.course?.code} - {e.course?.title} ({e._id})</h4>
                   <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.02)', borderRadius: '0.75rem', fontSize: '0.875rem' }}>
                     <span style={{ fontWeight: 700, color: 'var(--muted-foreground)' }}>Lý do:</span> {e.withdrawal_reason}
                   </div>

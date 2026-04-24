@@ -85,7 +85,7 @@ export default function CoursesPage() {
         ? form.prerequisites.split(',').map((s) => s.trim()).filter(Boolean)
         : [],
     };
-    
+
     if (!payload.code || !payload.title || !payload.credits) {
       popupValidationError(setFormError, 'Vui lòng nhập đầy đủ Mã, Tên và Tín chỉ.');
       return;
@@ -221,10 +221,10 @@ export default function CoursesPage() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={5}>
-                       <div className={styles.emptyState}>
-                          <BookOpen size={48} style={{ opacity: 0.1 }} />
-                          <p>Không tìm thấy học phần nào phù hợp.</p>
-                       </div>
+                      <div className={styles.emptyState}>
+                        <BookOpen size={48} style={{ opacity: 0.1 }} />
+                        <p>Không tìm thấy học phần nào phù hợp.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : filtered.map((course, index) => (
@@ -252,8 +252,8 @@ export default function CoursesPage() {
                     </td>
                     <td>
                       <div className={styles.actions}>
-                         <button onClick={() => openEdit(course)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.8125rem' }}>Sửa</button>
-                         <button onClick={() => handleDeleteClick(course)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.8125rem' }}>Xóa</button>
+                        <button onClick={() => openEdit(course)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.8125rem' }}>Sửa</button>
+                        <button onClick={() => handleDeleteClick(course)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.8125rem' }}>Xóa</button>
                       </div>
                     </td>
                   </tr>
@@ -264,7 +264,7 @@ export default function CoursesPage() {
         </Card>
       )}
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ isOpen: false, course: null })}
         onConfirm={remove}

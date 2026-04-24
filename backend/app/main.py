@@ -20,32 +20,38 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+import time
+from fastapi.middleware.gzip import GZipMiddleware
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    # NOTE: Using "*" with allow_credentials=True is invalid for browsers.
-    # In dev we allow localhost ports; adjust via env for production if needed.
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://smile-carpentry-depose.ngrok-free.dev",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Add GZip compression (Optimizes response size)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 @app.middleware("http")
 async def log_requests(request, call_next):
-    # Skip logging for WebSocket connections to avoid potential protocol upgrade issues
+    # Skip logging for WebSocket connections
     if request.headers.get("upgrade", "").lower() == "websocket":
         return await call_next(request)
         
-    import time
-    start_time = time.time()
+    start_time = time.perf_counter()
     response = await call_next(request)
-    duration = time.time() - start_time
+    
     if settings.DEBUG:
-        print(f"DEBUG: {request.method} {request.url.path} - Status: {response.status_code} - Duration: {duration:.4f}s")
+        process_time = (time.perf_counter() - start_time) * 1000
+        print(f"DEBUG: {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.2f}ms")
+        
     return response
 
 
