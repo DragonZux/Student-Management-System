@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, Info, TriangleAlert } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
 
 export default function InlineMessage({ variant = 'error', children, style }) {
   if (!children) return null;
@@ -26,7 +26,7 @@ export default function InlineMessage({ variant = 'error', children, style }) {
       bg: 'rgba(245, 158, 11, 0.05)',
       fg: '#d97706',
       border: 'rgba(245, 158, 11, 0.2)',
-      icon: <TriangleAlert size={18} />,
+      icon: <AlertTriangle size={18} />,
     },
   };
 

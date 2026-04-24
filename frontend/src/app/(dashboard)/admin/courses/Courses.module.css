@@ -87,8 +87,15 @@
 }
 
 @keyframes rowSlideIn {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .tableRow:last-child {
@@ -179,6 +186,7 @@
     align-items: flex-start;
     gap: 1.5rem;
   }
+
   .formGrid {
     grid-template-columns: 1fr;
   }
