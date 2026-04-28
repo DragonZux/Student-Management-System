@@ -29,6 +29,7 @@ async def create_notification(user_id: str, title: str, message: str) -> dict:
         "created_at": datetime.utcnow()
     })
     await db.notifications.insert_one(notification)
+    print(f"[notifications] inserted notification {notification['_id']} for user {user_id}")
     await _broadcast_to_user(user_id, {
         "type": "notification",
         "data": {
@@ -43,10 +44,14 @@ async def create_notification(user_id: str, title: str, message: str) -> dict:
 
 async def _broadcast_to_user(user_id: str, payload: dict):
     stale = []
-    for ws in active_connections.get(user_id, []):
+    conns = active_connections.get(user_id, [])
+    print(f"[notifications] broadcasting to {user_id}, connections={len(conns)}")
+    for ws in conns:
         try:
             await ws.send_json(payload)
-        except Exception:
+            print(f"[notifications] sent payload to websocket for user {user_id}")
+        except Exception as e:
+            print(f"[notifications] failed sending to websocket for {user_id}: {e}")
             stale.append(ws)
     if stale:
         active_connections[user_id] = [ws for ws in active_connections[user_id] if ws not in stale]

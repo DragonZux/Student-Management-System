@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { showPopup } from '@/lib/popup';
 
+function normalizeBaseUrl(value) {
+  return typeof value === 'string' ? value.trim().replace(/\/$/, '') : '';
+}
+
 function extractErrorMessage(error) {
   const data = error?.response?.data;
   if (!data) return 'Không thể kết nối máy chủ. Vui lòng thử lại.';
@@ -26,8 +30,14 @@ function showErrorPopup(message) {
   showPopup(message, { type: 'error' });
 }
 
-// Force relative path for browser requests to ensure ngrok/https compatibility
-const apiBaseUrl = typeof window !== 'undefined' ? '/api' : (process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000/api');
+// Use an explicit browser-facing base URL so local dev and Docker do not depend on rewrites.
+// The backend container hostname is not resolvable from the browser, so keep a public URL here.
+const configuredBrowserApiBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
+const apiBaseUrl = normalizeBaseUrl(
+  typeof window !== 'undefined'
+    ? (/^https?:\/\//i.test(configuredBrowserApiBase) ? configuredBrowserApiBase : 'http://localhost:8000/api')
+    : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://backend:8000/api')
+);
 
 const api = axios.create({
   baseURL: apiBaseUrl,

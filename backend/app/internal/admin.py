@@ -498,6 +498,7 @@ async def approve_withdrawal(enrollment_id: str):
     enrollment = await db.enrollments.find_one({"_id": enrollment_id, "status": "withdrawal_pending"})
     if not enrollment:
         raise HTTPException(status_code=404, detail="Withdrawal request not found or already processed")
+    cls = await db.classes.find_one({"_id": enrollment["class_id"]})
     
     # 1. Update enrollment status to withdrawn
     await db.enrollments.update_one(
@@ -525,6 +526,14 @@ async def approve_withdrawal(enrollment_id: str):
         title="Yêu cầu rút học phần đã được phê duyệt",
         message="Yêu cầu rút học phần của bạn đã được phê duyệt thành công.",
     )
+
+    teacher_id = cls.get("teacher_id") if cls else None
+    if teacher_id:
+        await create_notification(
+            user_id=teacher_id,
+            title="Yêu cầu rút học phần đã được phê duyệt",
+            message=f"Một yêu cầu rút học phần của sinh viên đã được phê duyệt cho lớp {enrollment['class_id']}.",
+        )
     
     return {"message": "Withdrawal approved successfully"}
 
@@ -534,6 +543,7 @@ async def reject_withdrawal(enrollment_id: str, payload: dict):
     enrollment = await db.enrollments.find_one({"_id": enrollment_id, "status": "withdrawal_pending"})
     if not enrollment:
         raise HTTPException(status_code=404, detail="Withdrawal request not found or already processed")
+    cls = await db.classes.find_one({"_id": enrollment["class_id"]})
     
     reason = payload.get("reason", "Yêu cầu không được chấp nhận bởi quản trị viên.")
     
@@ -557,5 +567,13 @@ async def reject_withdrawal(enrollment_id: str, payload: dict):
         title="Yêu cầu rút học phần bị từ chối",
         message=f"Yêu cầu rút học phần của bạn bị từ chối. Lý do: {reason}",
     )
+
+    teacher_id = cls.get("teacher_id") if cls else None
+    if teacher_id:
+        await create_notification(
+            user_id=teacher_id,
+            title="Yêu cầu rút học phần bị từ chối",
+            message=f"Một yêu cầu rút học phần của sinh viên đã bị từ chối cho lớp {enrollment['class_id']}. Lý do: {reason}",
+        )
     
     return {"message": "Withdrawal request rejected"}
