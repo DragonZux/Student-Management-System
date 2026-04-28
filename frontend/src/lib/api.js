@@ -101,10 +101,44 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Add a response interceptor to handle token expiration
+// Global GET Request Caching (5 mins)
+const CACHE_TTL = 5 * 60 * 1000;
+
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response) => {
+    // Cache GET requests
+    if (response.config.method === 'get' && typeof window !== 'undefined') {
+      // Avoid caching some endpoints if needed (like auth check)
+      if (!response.config.url.includes('/auth/me')) {
+        const cacheKey = `api_cache_${response.config.url}_${JSON.stringify(response.config.params || {})}`;
+        const cacheData = {
+          data: response.data,
+          timestamp: Date.now(),
+        };
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        } catch (e) {
+          console.warn('LocalStorage cache full, clearing old entries');
+          Object.keys(localStorage).filter(k => k.startsWith('api_cache_')).forEach(k => localStorage.removeItem(k));
+        }
+      }
+    }
+    return response;
+  },
+  async (error) => {
+    // Fallback: use cached data if request fails (and it's a GET)
+    if (error.config?.method === 'get' && typeof window !== 'undefined') {
+      const cacheKey = `api_cache_${error.config.url}_${JSON.stringify(error.config.params || {})}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_TTL) {
+          console.info('Serving from stale cache due to network error:', error.config.url);
+          return Promise.resolve({ data, config: error.config, __fromCache: true });
+        }
+      }
+    }
+
     const status = error.response?.status;
     const message = extractErrorMessage(error);
 

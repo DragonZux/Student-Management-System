@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
 from app.dependencies import get_current_user, check_admin_role
 from app.routers.notifications import create_notification
@@ -66,12 +66,24 @@ async def get_my_tuition(student: dict = Depends(get_current_user)):
     return invoice_payload
 
 
-@router.get("/my-payments", response_model=List[PaymentOut])
-async def get_my_payments(student: dict = Depends(get_current_user)):
+@router.get("/my-payments")
+async def get_my_payments(
+    student: dict = Depends(get_current_user),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     if student["role"] != UserRole.STUDENT:
         raise HTTPException(status_code=403, detail="Only students can view payments")
     db = get_database()
-    return await db.payments.find({"student_id": student["_id"]}).sort("paid_at", -1).to_list(1000)
+    query = {"student_id": student["_id"]}
+    total = await db.payments.count_documents(query)
+    payments = await db.payments.find(query).sort("paid_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": payments,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.post("/update-payment/{student_id}", dependencies=[Depends(check_admin_role)])
 async def update_payment(student_id: str, amount: float):
@@ -125,16 +137,36 @@ async def update_payment(student_id: str, amount: float):
     return {"message": "Payment recorded successfully"}
 
 
-@router.get("/invoices", dependencies=[Depends(check_admin_role)], response_model=List[InvoiceOut])
-async def list_invoices():
+@router.get("/invoices", dependencies=[Depends(check_admin_role)])
+async def list_invoices(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     db = get_database()
-    return await db.invoices.find().sort("updated_at", -1).to_list(1000)
+    total = await db.invoices.count_documents({})
+    invoices = await db.invoices.find().sort("updated_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": invoices,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 
-@router.get("/payments", dependencies=[Depends(check_admin_role)], response_model=List[PaymentOut])
-async def list_payments():
+@router.get("/payments", dependencies=[Depends(check_admin_role)])
+async def list_payments(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     db = get_database()
-    return await db.payments.find().sort("paid_at", -1).to_list(1000)
+    total = await db.payments.count_documents({})
+    payments = await db.payments.find().sort("paid_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": payments,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.post("/pay-my-tuition")
 async def pay_my_tuition(payload: dict, student: dict = Depends(get_current_user)):

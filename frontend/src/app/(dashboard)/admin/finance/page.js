@@ -9,54 +9,57 @@ import { isPositiveInteger, popupValidationError } from '@/lib/validation';
 import { exportToCSV } from '@/lib/csv';
 import styles from '@/styles/modules/admin/finance.module.css';
 
+import usePaginatedData from '@/hooks/usePaginatedData';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+
 export default function AdminFinancePage() {
+  const {
+    data: payments,
+    loading: paymentsLoading,
+    error: paymentsError,
+    total,
+    currentPage: txPage,
+    setCurrentPage: setTxPage,
+    totalPages: totalTxPages,
+    refresh: refreshPayments
+  } = usePaginatedData('/finance/payments', 'payments', 10);
+
   const [invoices, setInvoices] = useState([]);
-  const [payments, setPayments] = useState([]);
   const [students, setStudents] = useState([]);
   const [policies, setPolicies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [depsLoading, setDepsLoading] = useState(true);
   const [error, setError] = useState('');
+  
   const [actionMessage, setActionMessage] = useState('');
   const [actionError, setActionError] = useState('');
   const [paymentForm, setPaymentForm] = useState({ student_id: '', amount: '' });
   const [policyForm, setPolicyForm] = useState({ semester: '', cost_per_credit: '', is_active: true });
   const [editingPolicyId, setEditingPolicyId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, policyId: null });
 
   const [txSearch, setTxSearch] = useState('');
-  const [txPage, setTxPage] = useState(1);
-  const txPerPage = 10;
-
-  const [confirmModal, setConfirmModal] = useState({ isOpen: false, policyId: null });
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+    async function loadDeps() {
       try {
-        setLoading(true);
-        const [invRes, payRes, studentRes, policyRes] = await Promise.all([
-          api.get('/finance/invoices'),
-          api.get('/finance/payments'),
-          api.get('/admin/users', { params: { role: 'student' } }),
+        setDepsLoading(true);
+        const [invRes, studentRes, policyRes] = await Promise.all([
+          api.get('/finance/invoices?limit=1000'),
+          api.get('/admin/users?role=student&limit=1000'),
           api.get('/finance/policies'),
         ]);
         if (cancelled) return;
-        setInvoices(invRes.data || []);
-        setPayments(payRes.data || []);
-        // Handle paginated response for students
-        const studentData = studentRes.data?.data || studentRes.data || [];
-        setStudents(studentData);
-        setPolicies(policyRes.data || []);
-        setError('');
+        setInvoices(invRes.data?.data || invRes.data || []);
+        setStudents(studentRes.data?.data || studentRes.data || []);
+        setPolicies(policyRes.data?.data || policyRes.data || []);
       } catch (e) {
-        console.error('Failed to load admin finance data', e);
-        if (!cancelled) {
-          setError(e.response?.data?.detail || 'Không tải được dữ liệu tài chính.');
-        }
+        if (!cancelled) setError('Không tải được dữ liệu hệ thống.');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setDepsLoading(false);
       }
     }
-    load();
+    loadDeps();
     return () => { cancelled = true; };
   }, []);
 
@@ -67,54 +70,40 @@ export default function AdminFinancePage() {
   }, [students]);
 
   const stats = useMemo(() => {
-    const totalRevenue = (payments || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    // We use all invoices for stats calculation
     const totalBilled = (invoices || []).reduce((sum, i) => sum + Number(i.total_amount || 0), 0);
     const totalPaid = (invoices || []).reduce((sum, i) => sum + Number(i.paid_amount || 0), 0);
     const outstanding = Math.max(0, totalBilled - totalPaid);
     const collectionRate = totalBilled > 0 ? (totalPaid / totalBilled) * 100 : 0;
-    return { totalRevenue, outstanding, collectionRate };
-  }, [invoices, payments]);
+    return { totalRevenue: totalPaid, outstanding, collectionRate };
+  }, [invoices]);
 
-  const allTransactions = useMemo(() => {
-    return (payments || [])
-      .map((p) => {
-        const student = studentById.get(p.student_id);
-        return {
-          id: p._id || p.id,
-          student: student?.full_name || p.student_id,
-          email: student?.email || '',
-          amount: Number(p.amount || 0),
-          date: p.paid_at ? new Date(p.paid_at).toISOString().slice(0, 10) : '',
-          status: 'Paid',
-        };
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const paginatedTransactions = useMemo(() => {
+    return (payments || []).map((p) => {
+      const student = studentById.get(p.student_id);
+      return {
+        id: p._id || p.id,
+        student: student?.full_name || p.student_id,
+        email: student?.email || '',
+        amount: Number(p.amount || 0),
+        date: p.paid_at ? new Date(p.paid_at).toISOString().slice(0, 10) : '',
+        status: 'Paid',
+      };
+    });
   }, [payments, studentById]);
 
-  const filteredTransactions = useMemo(() => {
-    const q = txSearch.toLowerCase().trim();
-    if (!q) return allTransactions;
-    return allTransactions.filter(tx => 
-      tx.student.toLowerCase().includes(q) || 
-      tx.email.toLowerCase().includes(q)
-    );
-  }, [allTransactions, txSearch]);
-
-  const totalTxPages = Math.ceil(filteredTransactions.length / txPerPage);
-  const paginatedTransactions = useMemo(() => {
-    const start = (txPage - 1) * txPerPage;
-    return filteredTransactions.slice(start, start + txPerPage);
-  }, [filteredTransactions, txPage]);
-
-  const refresh = async () => {
-    const [invRes, payRes, policyRes] = await Promise.all([
-      api.get('/finance/invoices'),
-      api.get('/finance/payments'),
-      api.get('/finance/policies'),
-    ]);
-    setInvoices(invRes.data || []);
-    setPayments(payRes.data || []);
-    setPolicies(policyRes.data || []);
+  const refreshAll = async () => {
+    try {
+      const [invRes, policyRes] = await Promise.all([
+        api.get('/finance/invoices?limit=1000'),
+        api.get('/finance/policies'),
+      ]);
+      setInvoices(invRes.data?.data || invRes.data || []);
+      setPolicies(policyRes.data?.data || policyRes.data || []);
+      refreshPayments();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const submitPayment = async () => {
@@ -127,7 +116,7 @@ export default function AdminFinancePage() {
       await api.post(`/finance/update-payment/${paymentForm.student_id}`, null, { params: { amount } });
       setPaymentForm((prev) => ({ ...prev, amount: '' }));
       setActionMessage('Đã ghi nhận thanh toán thành công.');
-      await refresh();
+      await refreshAll();
     } catch (e) {
       setActionError(e.response?.data?.detail || 'Ghi nhận thanh toán thất bại.');
     }
@@ -170,7 +159,7 @@ export default function AdminFinancePage() {
         setActionMessage('Đã tạo chính sách học phí mới.');
       }
       startCreatePolicy();
-      await refresh();
+      await refreshAll();
     } catch (e) {
       setActionError(e.response?.data?.detail || 'Lưu chính sách học phí thất bại.');
     }
@@ -181,7 +170,7 @@ export default function AdminFinancePage() {
     try {
       await api.delete(`/finance/policies/${confirmModal.policyId}`);
       setActionMessage('Đã xóa chính sách học phí.');
-      await refresh();
+      await refreshAll();
     } catch (e) {
       setActionError(e.response?.data?.detail || 'Xóa chính sách học phí thất bại.');
     } finally {
@@ -190,11 +179,7 @@ export default function AdminFinancePage() {
   };
 
   const exportTransactions = () => {
-    exportToCSV(allTransactions, `transactions-${new Date().toISOString().slice(0, 10)}.csv`);
-  };
-
-  const exportPolicies = () => {
-    exportToCSV(policies, `tuition-policies-${new Date().toISOString().slice(0, 10)}.csv`);
+    exportToCSV(paginatedTransactions, `transactions-${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   return (
@@ -208,9 +193,6 @@ export default function AdminFinancePage() {
           <button onClick={exportTransactions} className={styles.exportBtn}>
             <Download size={18} /> Giao dịch
           </button>
-          <button onClick={exportPolicies} className={styles.exportBtn}>
-            <Download size={18} /> Chính sách
-          </button>
         </div>
       </header>
 
@@ -219,7 +201,7 @@ export default function AdminFinancePage() {
           <div className={styles.statCard}>
             <div>
               <p className={styles.statLabel}>Tổng doanh thu</p>
-              <h2 className={styles.statValue}>{loading ? '...' : `$${stats.totalRevenue.toLocaleString()}`}</h2>
+              <h2 className={styles.statValue}>{(depsLoading || paymentsLoading) ? '...' : `$${stats.totalRevenue.toLocaleString()}`}</h2>
             </div>
             <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
               <TrendingUp color="#059669" size={24} />
@@ -230,7 +212,7 @@ export default function AdminFinancePage() {
           <div className={styles.statCard}>
             <div>
               <p className={styles.statLabel}>Công nợ chưa thu</p>
-              <h2 className={styles.statValue} style={{ color: '#e11d48' }}>{loading ? '...' : `$${stats.outstanding.toLocaleString()}`}</h2>
+              <h2 className={styles.statValue} style={{ color: '#e11d48' }}>{(depsLoading || paymentsLoading) ? '...' : `$${stats.outstanding.toLocaleString()}`}</h2>
             </div>
             <div className={styles.statIcon} style={{ background: 'rgba(244, 63, 94, 0.1)' }}>
               <DollarSign color="#e11d48" size={24} />
@@ -241,7 +223,7 @@ export default function AdminFinancePage() {
           <div className={styles.statCard}>
             <div>
               <p className={styles.statLabel}>Tỷ lệ thu hồi</p>
-              <h2 className={styles.statValue}>{loading ? '...' : `${stats.collectionRate.toFixed(1)}%`}</h2>
+              <h2 className={styles.statValue}>{(depsLoading || paymentsLoading) ? '...' : `${stats.collectionRate.toFixed(1)}%`}</h2>
             </div>
             <div className={styles.statIcon} style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
               <PieChart color="#2563eb" size={24} />
@@ -250,58 +232,48 @@ export default function AdminFinancePage() {
         </Card>
       </div>
 
-      <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{error || actionError}</InlineMessage>
+      <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{error || actionError || paymentsError}</InlineMessage>
       <InlineMessage variant="success" style={{ marginBottom: '1rem' }}>{actionMessage}</InlineMessage>
 
       <Card 
         title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={20} /> Lịch sử Giao dịch</div>}
         className={`${styles.tableSection} glass slide-right stagger-3`}
         style={{ padding: 0 }}
-        headerExtra={
-          <div className={styles.searchWrapper} style={{ width: '320px' }}>
-            <Search size={18} className={styles.searchIcon} />
-            <input 
-              className={styles.searchInput}
-              type="text" 
-              placeholder="Tìm theo tên hoặc email..."
-              value={txSearch}
-              onChange={(e) => { setTxSearch(e.target.value); setTxPage(1); }}
-            />
-          </div>
-        }
       >
         <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Sinh viên</th>
-                <th>Số tiền</th>
-                <th>Ngày thanh toán</th>
-                <th>Trạng thái</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={5} style={{ padding: '4rem', textAlign: 'center' }}>Đang tải dữ liệu...</td></tr>
-              ) : paginatedTransactions.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: '4rem', textAlign: 'center' }}>Không có dữ liệu giao dịch.</td></tr>
-              ) : paginatedTransactions.map((tx, index) => (
-                <tr key={tx.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
-                  <td>
-                    <div className={styles.studentName}>{tx.student}</div>
-                    <div className={styles.studentEmail}>{tx.email}</div>
-                  </td>
-                  <td><span className={styles.amount}>${tx.amount.toLocaleString()}</span></td>
-                  <td>{tx.date}</td>
-                  <td><span className="badge badge-success">Thành công</span></td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button className={styles.pageBtn} title="Tải biên lai"><Download size={18} /></button>
-                  </td>
+          {paymentsLoading ? (
+            <div style={{ padding: '1.5rem' }}><TableSkeleton rows={8} columns={4} /></div>
+          ) : (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Sinh viên</th>
+                  <th>Số tiền</th>
+                  <th>Ngày thanh toán</th>
+                  <th>Trạng thái</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {paginatedTransactions.length === 0 ? (
+                  <tr><td colSpan={5} style={{ padding: '4rem', textAlign: 'center' }}>Không có dữ liệu giao dịch.</td></tr>
+                ) : paginatedTransactions.map((tx, index) => (
+                  <tr key={tx.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
+                    <td>
+                      <div className={styles.studentName}>{tx.student}</div>
+                      <div className={styles.studentEmail}>{tx.email}</div>
+                    </td>
+                    <td><span className={styles.amount}>${tx.amount.toLocaleString()}</span></td>
+                    <td>{tx.date}</td>
+                    <td><span className="badge badge-success">Thành công</span></td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button className={styles.pageBtn} title="Tải biên lai"><Download size={18} /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {totalTxPages > 1 && (
@@ -326,6 +298,7 @@ export default function AdminFinancePage() {
                 className={styles.select}
                 value={paymentForm.student_id} 
                 onChange={(e) => setPaymentForm((p) => ({ ...p, student_id: e.target.value }))}
+                disabled={depsLoading}
               >
                 <option value="">-- Chọn sinh viên --</option>
                 {students.map((s) => (
@@ -343,7 +316,7 @@ export default function AdminFinancePage() {
                 style={{ fontSize: '1.25rem', fontWeight: 800 }}
               />
             </div>
-            <button onClick={submitPayment} className="btn-primary" style={{ padding: '1rem', width: '100%', justifyContent: 'center', fontSize: '1.1rem' }}>
+            <button onClick={submitPayment} className="btn-primary" style={{ padding: '1rem', width: '100%', justifyContent: 'center', fontSize: '1.1rem' }} disabled={depsLoading}>
               Xác nhận Thanh toán
             </button>
           </div>

@@ -9,6 +9,7 @@ import api from '@/lib/api';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
 import styles from '@/styles/modules/admin/students.module.css';
 import usePaginatedData from '@/hooks/usePaginatedData';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 
 export default function StudentsPage() {
   const {
@@ -273,10 +274,9 @@ export default function StudentsPage() {
       </div>
 
       {studentsLoading ? (
-        <div className={styles.loadingWrapper}>
-          <Loader2 className="animate-spin" size={48} color="var(--primary)" />
-          <p className={styles.loadingText}>Đang truy xuất dữ liệu sinh viên...</p>
-        </div>
+        <Card title="Đang tải danh sách sinh viên...">
+          <TableSkeleton rows={10} columns={5} />
+        </Card>
       ) : studentsError ? (
         <Card className="glass" style={{ border: '1px solid #fecaca', background: 'rgba(244, 63, 94, 0.02)' }}>
           <div style={{ textAlign: 'center', padding: '2rem' }}>

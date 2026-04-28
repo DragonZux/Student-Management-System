@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
 import styles from '@/styles/modules/admin/teachers.module.css';
 import usePaginatedData from '@/hooks/usePaginatedData';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 
 function getErrorMessage(error, fallback) {
   const detail = error?.response?.data?.detail;
@@ -224,10 +225,9 @@ export default function TeachersPage() {
       <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{teachersError}</InlineMessage>
       
       {teachersLoading ? (
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
-          <p>Đang truy xuất danh sách giảng viên...</p>
-        </div>
+        <Card title="Đang tải danh sách giảng viên...">
+          <TableSkeleton rows={6} columns={4} />
+        </Card>
       ) : (
         <>
           <div className={styles.teacherGrid}>

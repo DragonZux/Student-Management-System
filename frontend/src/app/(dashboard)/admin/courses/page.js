@@ -9,52 +9,29 @@ import api from '@/lib/api';
 import { isInRange, matchesPattern, popupValidationError } from '@/lib/validation';
 import styles from '@/styles/modules/admin/courses.module.css';
 
+import usePaginatedData from '@/hooks/usePaginatedData';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 export default function CoursesPage() {
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [query, setQuery] = useState('');
+  const {
+    data: courses,
+    loading,
+    error,
+    total,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    query,
+    setQuery,
+    refresh
+  } = usePaginatedData('/admin/courses', 'courses');
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ code: '', title: '', credits: 3, description: '', prerequisites: '' });
   const [formError, setFormError] = useState('');
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, course: null });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/admin/courses');
-        if (!cancelled) {
-          setCourses(res.data || []);
-        }
-      } catch (e) {
-        console.error('Failed to load courses', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách môn học');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return courses;
-    return (courses || []).filter((c) => {
-      return (
-        String(c.code || '').toLowerCase().includes(q) ||
-        String(c.title || '').toLowerCase().includes(q)
-      );
-    });
-  }, [courses, query]);
 
   const openCreate = () => {
     setEditing(null);
@@ -92,19 +69,7 @@ export default function CoursesPage() {
       popupValidationError(setFormError, 'Vui lòng nhập đầy đủ Mã, Tên và Tín chỉ.');
       return;
     }
-    if (!matchesPattern(payload.code, /^[A-Za-z0-9_-]{2,20}$/)) {
-      popupValidationError(setFormError, 'Mã môn chỉ gồm chữ, số, dấu gạch (2-20 ký tự).');
-      return;
-    }
-    if (payload.title.length < 3) {
-      popupValidationError(setFormError, 'Tên môn phải có ít nhất 3 ký tự.');
-      return;
-    }
-    if (!isInRange(payload.credits, 1, 10)) {
-      popupValidationError(setFormError, 'Số tín chỉ từ 1 đến 10.');
-      return;
-    }
-
+    
     try {
       if (editing?._id) {
         await api.patch(`/admin/courses/${editing._id}`, payload);
@@ -112,9 +77,8 @@ export default function CoursesPage() {
         await api.post('/admin/courses', payload);
       }
       setShowForm(false);
-      await load();
+      refresh();
     } catch (e) {
-      console.error('Failed to save course', e);
       setFormError(e.response?.data?.detail || 'Lưu môn học thất bại');
     }
   };
@@ -129,10 +93,9 @@ export default function CoursesPage() {
     try {
       await api.delete(`/admin/courses/${course._id}`);
       setConfirmModal({ isOpen: false, course: null });
-      await load();
+      refresh();
     } catch (e) {
-      console.error('Failed to delete course', e);
-      setError(e.response?.data?.detail || 'Xóa môn học thất bại');
+      alert(e.response?.data?.detail || 'Xóa môn học thất bại');
     }
   };
 
@@ -197,17 +160,16 @@ export default function CoursesPage() {
       </div>
 
       {loading ? (
-        <div className={styles.loadingWrapper}>
-          <Loader2 className="animate-spin" size={48} color="var(--primary)" />
-          <p style={{ color: 'var(--muted-foreground)', fontWeight: 600 }}>Đang truy xuất dữ liệu đào tạo...</p>
-        </div>
+        <Card title="Đang tải danh mục học phần...">
+          <TableSkeleton rows={10} columns={5} />
+        </Card>
       ) : error ? (
         <div style={{ textAlign: 'center', padding: '2rem' }}>
           <InlineMessage variant="error">{error}</InlineMessage>
-          <button onClick={load} className="btn-primary" style={{ marginTop: '1.5rem', margin: '1.5rem auto 0' }}>Tải lại dữ liệu</button>
+          <button onClick={refresh} className="btn-primary" style={{ marginTop: '1.5rem', margin: '1.5rem auto 0' }}>Tải lại dữ liệu</button>
         </div>
       ) : (
-        <Card title={`Danh sách Học phần (${filtered.length})`} className="slide-right stagger-3">
+        <Card title={`Danh sách Học phần (${total})`} className="slide-right stagger-3">
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
@@ -220,7 +182,7 @@ export default function CoursesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {courses.length === 0 ? (
                   <tr>
                     <td colSpan={5}>
                       <div className={styles.emptyState}>
@@ -229,7 +191,7 @@ export default function CoursesPage() {
                       </div>
                     </td>
                   </tr>
-                ) : filtered.map((course, index) => (
+                ) : courses.map((course, index) => (
                   <tr key={course._id || course.code} className={`${styles.tableRow} table-row-hover`} style={{ animationDelay: `${index * 0.04}s` }}>
                     <td>
                       <code className={styles.courseCode}>{course.code}</code>
@@ -263,6 +225,48 @@ export default function CoursesPage() {
               </tbody>
             </table>
           </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', padding: '1rem', borderTop: '1px solid var(--border)' }}>
+              <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+                Trang {currentPage} / {totalPages} • Tổng cộng {total} học phần
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  className="btn-primary" 
+                  style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i + 1}
+                    className="btn-primary"
+                    style={{ 
+                      padding: '0.5rem 1rem', 
+                      background: currentPage === i + 1 ? 'var(--primary)' : 'transparent',
+                      color: currentPage === i + 1 ? 'white' : 'var(--foreground)',
+                      border: '1px solid var(--border)',
+                      minWidth: '40px'
+                    }}
+                    onClick={() => setCurrentPage(i + 1)}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button 
+                  className="btn-primary" 
+                  style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

@@ -96,6 +96,24 @@ async def get_dashboard_stats(response: Response):
     response.headers["Cache-Control"] = "no-cache, must-revalidate"
     return stats
 
+@router.get("/quick-data")
+async def get_admin_quick_data(role: Optional[UserRole] = Query(None)):
+    """Lightweight endpoint for fast dashboard summaries"""
+    db = get_database()
+    query = {"role": role} if role else {}
+    
+    # Get total count
+    total = await db.users.count_documents(query)
+    
+    # Get a tiny preview (limit 5)
+    projection = {"hashed_password": 0}
+    users = await db.users.find(query, projection).limit(5).to_list(5)
+    
+    return {
+        "total": total,
+        "preview": users
+    }
+
 @router.patch("/users/{user_id}", response_model=UserOut)
 async def update_user(user_id: str, user_in: UserUpdate):
     db = get_database()
@@ -164,11 +182,20 @@ async def create_course(course: CourseCreate):
     )
     return course_dict
 
-@router.get("/courses", response_model=List[dict])
-async def list_courses():
+@router.get("/courses")
+async def list_courses(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     db = get_database()
-    courses = await db.courses.find().to_list(1000)
-    return courses
+    total = await db.courses.count_documents({})
+    courses = await db.courses.find().skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": courses,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.patch("/courses/{course_id}", response_model=CourseOut)
 async def update_course(course_id: str, payload: CourseUpdate):
@@ -282,11 +309,20 @@ async def create_class(class_data: ClassCreate):
     )
     return class_dict
 
-@router.get("/classes", response_model=List[dict])
-async def list_classes():
+@router.get("/classes")
+async def list_classes(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     db = get_database()
-    classes = await db.classes.find().to_list(1000)
-    return classes
+    total = await db.classes.count_documents({})
+    classes = await db.classes.find().skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": classes,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.patch("/classes/{class_id}", response_model=ClassOut)
 async def update_class(class_id: str, payload: ClassUpdate):
@@ -448,10 +484,20 @@ async def create_classroom(payload: ClassroomCreate):
     )
     return classroom
 
-@router.get("/classrooms", response_model=List[dict])
-async def list_classrooms():
+@router.get("/classrooms")
+async def list_classrooms(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     db = get_database()
-    return await db.classrooms.find().to_list(1000)
+    total = await db.classrooms.count_documents({})
+    rooms = await db.classrooms.find().skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": rooms,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.patch("/classrooms/{classroom_id}", response_model=ClassroomOut)
 async def update_classroom(classroom_id: str, payload: ClassroomUpdate):
@@ -497,25 +543,43 @@ async def delete_classroom(classroom_id: str):
 
 # --- Audit Logs ---
 
-@router.get("/audit-logs", response_model=List[AuditLogOut])
-async def list_audit_logs(action: Optional[str] = None, actor_id: Optional[str] = None):
+@router.get("/audit-logs")
+async def list_audit_logs(
+    action: Optional[str] = None, 
+    actor_id: Optional[str] = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200)
+):
     db = get_database()
     query = {}
     if action:
         query["action"] = action
     if actor_id:
         query["actor_id"] = actor_id
-    return await db.audit_logs.find(query).sort("created_at", -1).to_list(1000)
+    
+    total = await db.audit_logs.count_documents(query)
+    logs = await db.audit_logs.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "data": logs,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 # --- Feedback/Survey (admin visibility) ---
 
 # --- Withdrawal Requests Management ---
 
-@router.get("/withdrawal-requests", response_model=List[dict])
-async def list_withdrawal_requests():
+@router.get("/withdrawal-requests")
+async def list_withdrawal_requests(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     db = get_database()
-    # Find all enrollments with pending withdrawal
-    requests = await db.enrollments.find({"status": "withdrawal_pending"}).to_list(1000)
+    query = {"status": "withdrawal_pending"}
+    total = await db.enrollments.count_documents(query)
+    requests = await db.enrollments.find(query).skip(skip).limit(limit).to_list(limit)
     
     # Enrich with student and class/course info
     enriched = []
@@ -534,7 +598,12 @@ async def list_withdrawal_requests():
             "requested_at": req.get("withdrawal_requested_at"),
             "class_id": req["class_id"]
         })
-    return enriched
+    return {
+        "data": enriched,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.post("/withdrawal-requests/{enrollment_id}/approve")
 async def approve_withdrawal(enrollment_id: str):

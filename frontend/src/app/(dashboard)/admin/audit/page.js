@@ -6,29 +6,21 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import styles from '@/styles/modules/admin/audit.module.css';
 
-export default function AuditLogsPage() {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+import usePaginatedData from '@/hooks/usePaginatedData';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/admin/audit-logs');
-        if (!cancelled) setLogs(res.data || []);
-      } catch (e) {
-        console.error('Failed to load audit logs', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được nhật ký hệ thống');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, []);
+export default function AuditLogsPage() {
+  const {
+    data: logs,
+    loading,
+    error,
+    total,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    refresh
+  } = usePaginatedData('/admin/audit-logs', 'audit-logs', 50);
 
   const getSeverityInfo = (action = '') => {
     const a = String(action).toLowerCase();
@@ -48,7 +40,7 @@ export default function AuditLogsPage() {
         <p>Giám sát toàn bộ hoạt động quản trị và sự kiện bảo mật thời gian thực.</p>
       </header>
 
-      <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>
+      {error && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>}
 
       <Card className={`${styles.logsCard} glass slide-right stagger-2`} style={{ padding: 0 }}>
         <div className={styles.tableHeader}>
@@ -59,9 +51,8 @@ export default function AuditLogsPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {loading ? (
-            <div className={styles.loading}>
-              <Loader2 className={styles.spinner} size={40} />
-              <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang truy xuất nhật ký...</p>
+            <div style={{ padding: '1.5rem' }}>
+              <TableSkeleton rows={10} columns={3} />
             </div>
           ) : logs.length === 0 ? (
             <div className={styles.empty}>
@@ -69,47 +60,75 @@ export default function AuditLogsPage() {
               <p>Chưa có nhật ký hoạt động nào được ghi lại.</p>
             </div>
           ) : (
-            logs.map((log, index) => {
-              const severity = getSeverityInfo(log.action);
-              return (
-                <div 
-                  key={`${log.id}-${index}`} 
-                  className={styles.logRow}
-                  style={{ animationDelay: `${index * 0.04}s` }}
-                >
-                  <div className={styles.eventInfo}>
-                    <div className={styles.iconWrapper} style={{ background: severity.bgColor }}>
-                      <Shield size={20} color={severity.iconColor} />
-                    </div>
-                    <div>
-                      <div className={styles.actionTitle}>{log.action}</div>
-                      <div className={styles.actorMeta}>
-                        <User size={14} />
-                        <span>{log.actor_id || 'System'}</span>
-                        <span style={{ opacity: 0.3 }}>|</span>
-                        <span className={styles.actorRole}>{log.actor_role || 'Auto'}</span>
+            <>
+              {logs.map((log, index) => {
+                const severity = getSeverityInfo(log.action);
+                return (
+                  <div 
+                    key={`${log._id || index}`} 
+                    className={styles.logRow}
+                    style={{ animationDelay: `${index * 0.02}s` }}
+                  >
+                    <div className={styles.eventInfo}>
+                      <div className={styles.iconWrapper} style={{ background: severity.bgColor }}>
+                        <Shield size={20} color={severity.iconColor} />
+                      </div>
+                      <div>
+                        <div className={styles.actionTitle}>{log.action}</div>
+                        <div className={styles.actorMeta}>
+                          <User size={14} />
+                          <span>{log.actor_id || 'System'}</span>
+                          <span style={{ opacity: 0.3 }}>|</span>
+                          <span className={styles.actorRole}>{log.actor_role || 'Auto'}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className={styles.timeInfo}>
-                    <div className={styles.dateRow}>
-                      <Clock size={14} />
-                      {log.created_at ? new Date(log.created_at).toLocaleDateString('vi-VN') : '--/--/----'}
+                    
+                    <div className={styles.timeInfo}>
+                      <div className={styles.dateRow}>
+                        <Clock size={14} />
+                        {log.created_at ? new Date(log.created_at).toLocaleDateString('vi-VN') : '--/--/----'}
+                      </div>
+                      <div className={styles.timeRow}>
+                        {log.created_at ? new Date(log.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                      </div>
                     </div>
-                    <div className={styles.timeRow}>
-                      {log.created_at ? new Date(log.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
-                    </div>
-                  </div>
 
-                  <div className={styles.severityCol}>
-                    <span className={`badge ${severity.class}`} style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}>
-                      {severity.label}
-                    </span>
+                    <div className={styles.severityCol}>
+                      <span className={`badge ${severity.class}`} style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}>
+                        {severity.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+                    Trang {currentPage} / {totalPages} • Tổng cộng {total} nhật ký
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      className="btn-primary" 
+                      style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button 
+                      className="btn-primary" 
+                      style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight size={20} />
+                    </button>
                   </div>
                 </div>
-              );
-            })
+              )}
+            </>
           )}
         </div>
       </Card>
