@@ -41,6 +41,7 @@ const apiBaseUrl = normalizeBaseUrl(
 
 const api = axios.create({
   baseURL: apiBaseUrl,
+  timeout: 30000,
   headers: {
     'ngrok-skip-browser-warning': 'true'
   }

@@ -19,27 +19,29 @@ export default function DepartmentsPage() {
   const [form, setForm] = useState({ name: '', faculty: '', description: '' });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, dept: null });
 
-  const load = async () => {
-    const res = await api.get('/admin/departments');
-    setDepartments(res.data || []);
-  };
-
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const load = async () => {
       try {
         setLoading(true);
         setError('');
-        await load();
+        const res = await api.get('/admin/departments');
+        if (!cancelled) {
+          setDepartments(res.data || []);
+        }
       } catch (e) {
         console.error('Failed to load departments', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách bộ môn');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    init();
-    return () => { cancelled = true; };
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const openCreate = () => {

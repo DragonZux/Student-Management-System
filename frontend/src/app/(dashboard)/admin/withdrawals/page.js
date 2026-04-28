@@ -11,20 +11,29 @@ export default function AdminWithdrawalsPage() {
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
 
-  const loadRequests = async () => {
-    try {
-      const res = await api.get('/admin/withdrawal-requests');
-      setRequests(res.data || []);
-    } catch (e) {
-      console.error('Failed to load withdrawal requests', e);
-      setError(e.response?.data?.detail || 'Không tải được danh sách yêu cầu rút học phần');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let cancelled = false;
+
+    const loadRequests = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await api.get('/admin/withdrawal-requests');
+        if (!cancelled) {
+          setRequests(res.data || []);
+        }
+      } catch (e) {
+        console.error('Failed to load withdrawal requests', e);
+        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách yêu cầu rút học phần');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     loadRequests();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleAction = async (id, action) => {

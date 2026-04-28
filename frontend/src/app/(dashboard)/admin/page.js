@@ -14,19 +14,30 @@ export default function AdminDashboard() {
   const [reportError, setReportError] = useState('');
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    let cancelled = false;
 
-  const fetchStats = async () => {
-    try {
-      const response = await api.get('/reports/admin-stats');
-      setStats(response.data);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/reports/admin-stats');
+        if (!cancelled) {
+          setStats(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleGenerateReport = async () => {
     setExporting(true);

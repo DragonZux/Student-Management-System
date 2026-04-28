@@ -15,31 +15,33 @@ export default function StudentAssignmentsPage() {
   const [submittingFor, setSubmittingFor] = useState(null);
   const [content, setContent] = useState('');
 
-  const load = async () => {
-    const [aRes, sRes] = await Promise.all([
-      api.get('/student/my-assignments'),
-      api.get('/student/my-submissions'),
-    ]);
-    setAssignments(aRes.data || []);
-    setSubmissions(sRes.data || []);
-  };
-
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const load = async () => {
       try {
         setLoading(true);
         setError('');
-        await load();
+        const [aRes, sRes] = await Promise.all([
+          api.get('/student/my-assignments'),
+          api.get('/student/my-submissions'),
+        ]);
+        if (!cancelled) {
+          setAssignments(aRes.data || []);
+          setSubmissions(sRes.data || []);
+        }
       } catch (e) {
         console.error('Failed to load assignments', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được bài tập');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    init();
-    return () => { cancelled = true; };
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const submissionByAssignment = useMemo(() => {

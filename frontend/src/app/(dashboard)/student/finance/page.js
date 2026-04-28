@@ -23,10 +23,18 @@ export default function StudentFinancePage() {
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+
+    const load = async () => {
       try {
         setLoading(true);
-        await refresh();
+        const [invRes, payRes] = await Promise.all([
+          api.get('/finance/my-tuition'),
+          api.get('/finance/my-payments'),
+        ]);
+        if (!cancelled) {
+          setInvoice(invRes.data);
+          setPayments(payRes.data || []);
+        }
       } catch (e) {
         console.error('Failed to load finance data', e);
         if (!cancelled) {
@@ -36,9 +44,12 @@ export default function StudentFinancePage() {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    };
+
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const balance = useMemo(() => {

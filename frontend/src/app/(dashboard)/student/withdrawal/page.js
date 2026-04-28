@@ -23,20 +23,27 @@ export default function WithdrawalPage() {
 
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const init = async () => {
       try {
         setLoading(true);
         setError('');
-        await load();
+        const res = await api.get('/student/my-enrollments');
+        if (!cancelled) {
+          setEnrollments(res.data || []);
+        }
       } catch (e) {
         console.error('Failed to load enrollments', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách đăng ký');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    };
+
     init();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const withdrawable = useMemo(() => {

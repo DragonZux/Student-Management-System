@@ -17,37 +17,29 @@ export default function TeacherAttendancePage() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
   const [submitting, setSubmitting] = useState(false);
 
-  const loadClasses = async () => {
-    const res = await api.get('/teacher/my-classes');
-    setClasses(res.data || []);
-  };
-
-  const loadStudents = async (classId) => {
-    const res = await api.get(`/teacher/classes/${classId}/students`);
-    const items = (res.data || []).map((x) => ({
-      enrollment: x.enrollment,
-      student: x.student,
-      status: 'present',
-    }));
-    setStudents(items);
-  };
-
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const init = async () => {
       try {
         setLoading(true);
         setError('');
-        await loadClasses();
+        const res = await api.get('/teacher/my-classes');
+        if (!cancelled) {
+          setClasses(res.data || []);
+        }
       } catch (e) {
         console.error('Failed to load teacher classes', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách lớp');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    };
+
     init();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -56,21 +48,33 @@ export default function TeacherAttendancePage() {
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+
+    const load = async () => {
       if (!selectedClass) return;
       try {
         setLoading(true);
         setError('');
-        await loadStudents(selectedClass);
+        const res = await api.get(`/teacher/classes/${selectedClass}/students`);
+        if (!cancelled) {
+          const items = (res.data || []).map((x) => ({
+            enrollment: x.enrollment,
+            student: x.student,
+            status: 'present',
+          }));
+          setStudents(items);
+        }
       } catch (e) {
         console.error('Failed to load students', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách sinh viên');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    };
+
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [selectedClass]);
 
   const stats = useMemo(() => {
