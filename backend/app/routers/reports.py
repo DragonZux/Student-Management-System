@@ -52,17 +52,23 @@ async def generate_transcript(user_id: str, current_user: dict = Depends(check_a
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
-    enrollments = await db.enrollments.find({"student_id": user_id, "status": "completed"}).to_list(100)
+    enrollments = await db.enrollments.find({"student_id": user_id, "status": "completed"}).to_list(1000)
+    class_ids = [item["class_id"] for item in enrollments if item.get("class_id")]
+    classes = await db.classes.find({"_id": {"$in": list(set(class_ids))}}).to_list(len(set(class_ids))) if class_ids else []
+    class_by_id = {item["_id"]: item for item in classes}
+    course_ids = [item.get("course_id") for item in classes if item.get("course_id")]
+    courses = await db.courses.find({"_id": {"$in": list(set(course_ids))}}).to_list(len(set(course_ids))) if course_ids else []
+    course_by_id = {item["_id"]: item for item in courses}
     
     transcript_data = []
     total_points = 0
     total_credits = 0
     
     for e in enrollments:
-        cls = await db.classes.find_one({"_id": e["class_id"]})
+        cls = class_by_id.get(e["class_id"])
         if not cls:
             continue
-        course = await db.courses.find_one({"_id": cls["course_id"]})
+        course = course_by_id.get(cls.get("course_id"))
         if not course:
             continue
         

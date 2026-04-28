@@ -23,9 +23,9 @@ export default function FeedbackPage() {
       try {
         setLoading(true);
         setError('');
-        const res = await api.get('/student/my-enrollments');
+        const res = await api.get('/student/my-enrollments', { params: { skip: 0, limit: 1000 } });
         if (!cancelled) {
-          setEnrollments(res.data || []);
+          setEnrollments(res.data?.data || res.data || []);
         }
       } catch (e) {
         console.error('Failed to load enrollments', e);

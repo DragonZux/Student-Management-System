@@ -5,12 +5,11 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import api from "@/lib/api";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isInRange, popupValidationError, toNumber } from "@/lib/validation";
+import usePaginatedData from "@/hooks/usePaginatedData";
+import PaginationControls from "@/components/ui/PaginationControls";
 
 export default function ExamsPage() {
   const { user } = useAuth();
-  const [exams, setExams] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [createError, setCreateError] = useState("");
   const [gradeError, setGradeError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -32,12 +31,20 @@ export default function ExamsPage() {
   const [takeForm, setTakeForm] = useState({ content: "" });
   const [takeError, setTakeError] = useState("");
 
-  const canManage = user?.role === "teacher" || user?.role === "admin";
+  const {
+    data: exams,
+    loading,
+    error,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+    refresh,
+  } = usePaginatedData("/exams/", { cacheKey: "exams", initialLimit: 6 });
 
-  const load = useCallback(async () => {
-    const res = await api.get("/exams/");
-    setExams(res.data || []);
-  }, []);
+  const canManage = user?.role === "teacher" || user?.role === "admin";
 
   const loadClasses = useCallback(async () => {
     try {
@@ -45,8 +52,8 @@ export default function ExamsPage() {
         const res = await api.get("/teacher/my-classes");
         setMyClasses(res.data || []);
       } else if (user?.role === "admin") {
-        const res = await api.get("/admin/classes");
-        setMyClasses(res.data || []);
+        const res = await api.get("/admin/classes", { params: { skip: 0, limit: 1000 } });
+        setMyClasses(res.data?.data || res.data || []);
       } else {
         setMyClasses([]);
       }
@@ -56,24 +63,15 @@ export default function ExamsPage() {
   }, [user?.role]);
 
   useEffect(() => {
-    let cancelled = false;
     async function init() {
       try {
-        setLoading(true);
-        setError("");
-        await Promise.all([load(), loadClasses()]);
+        await loadClasses();
       } catch (e) {
         console.error("Failed to load exams", e);
-        if (!cancelled) setError(e.response?.data?.detail || "Failed to load exams");
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     }
     init();
-    return () => {
-      cancelled = true;
-    };
-  }, [load, loadClasses]);
+  }, [loadClasses]);
 
   useEffect(() => {
     if (!createForm.class_id && myClasses.length > 0) {
@@ -128,7 +126,7 @@ export default function ExamsPage() {
         duration_minutes: 90,
         max_score: 100,
       });
-      await load();
+      refresh();
     } catch (e) {
       console.error("Create exam failed", e);
       setCreateError(e.response?.data?.detail || "Tạo kỳ thi thất bại");
@@ -140,7 +138,7 @@ export default function ExamsPage() {
     setActionError("");
     try {
       await api.delete(`/exams/${exam._id}`);
-      await load();
+      refresh();
     } catch (e) {
       console.error("Delete exam failed", e);
       setActionError(e.response?.data?.detail || "Xóa kỳ thi thất bại");
@@ -178,7 +176,7 @@ export default function ExamsPage() {
       });
       setGradeExam(null);
       setGradeError("");
-      await load();
+      refresh();
     } catch (e) {
       console.error("Record grade failed", e);
       setGradeError(e.response?.data?.detail || "Ghi điểm thất bại");
@@ -199,7 +197,7 @@ export default function ExamsPage() {
       setTakeExam(null);
       setTakeForm({ content: "" });
       setTakeError("");
-      await load();
+      refresh();
       alert("Nộp bài thi thành công!");
     } catch (e) {
       console.error("Submit exam failed", e);
@@ -443,6 +441,16 @@ export default function ExamsPage() {
           );
         })}
         {!loading && sorted.length === 0 ? <Card className="glass" style={{ textAlign: "center", padding: "3rem" }}>Chưa có kỳ thi nào được lên lịch.</Card> : null}
+        <PaginationControls
+          page={currentPage}
+          totalPages={totalPages}
+          total={total}
+          currentCount={sorted.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          showPageSize
+        />
       </div>
     </div>
   );

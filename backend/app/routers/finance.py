@@ -27,18 +27,20 @@ async def get_my_tuition(student: dict = Depends(get_current_user)):
     
     db = get_database()
     # Find all enrollments
-    enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(100)
+    enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(1000)
     
     # Calculate tuition based on credits and active policy
     total_credits = 0
-    
-    for e in enrollments:
-        # Need to find class and then course to get credits
-        cls = await db.classes.find_one({"_id": e["class_id"]})
-        if cls:
-            course = await db.courses.find_one({"_id": cls["course_id"]})
-            if course:
-                total_credits += course["credits"]
+    class_ids = [item["class_id"] for item in enrollments if item.get("class_id")]
+    classes = await db.classes.find({"_id": {"$in": class_ids}}).to_list(len(set(class_ids))) if class_ids else []
+    course_ids = [item.get("course_id") for item in classes if item.get("course_id")]
+    courses = await db.courses.find({"_id": {"$in": list(set(course_ids))}}).to_list(len(set(course_ids))) if course_ids else []
+    course_by_id = {item["_id"]: item for item in courses}
+
+    for cls in classes:
+        course = course_by_id.get(cls.get("course_id"))
+        if course:
+            total_credits += course.get("credits", 0)
     
     cost_per_credit = await _get_active_cost_per_credit(db)
     total_amount = total_credits * cost_per_credit
@@ -114,7 +116,7 @@ async def update_payment(student_id: str, amount: float):
 
     await log_audit_event(
         action="admin.update_payment",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="finance",
         target_id=student_id,
         metadata={"amount": amount},
@@ -244,7 +246,7 @@ async def create_fee_policy(payload: dict):
     await db.fee_policies.insert_one(policy)
     await log_audit_event(
         action="admin.create_fee_policy",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="fee_policy",
         target_id=policy["_id"],
         metadata={"semester": semester},
@@ -283,7 +285,7 @@ async def update_fee_policy(policy_id: str, payload: dict):
     updated = await db.fee_policies.find_one({"_id": policy_id})
     await log_audit_event(
         action="admin.update_fee_policy",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="fee_policy",
         target_id=policy_id,
         metadata={"fields": list(updatable.keys())},
@@ -298,7 +300,7 @@ async def delete_fee_policy(policy_id: str):
         raise HTTPException(status_code=404, detail="Policy not found")
     await log_audit_event(
         action="admin.delete_fee_policy",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="fee_policy",
         target_id=policy_id,
     )

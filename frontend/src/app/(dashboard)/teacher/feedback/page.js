@@ -4,6 +4,7 @@ import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { MessageSquare, Star } from 'lucide-react';
 import api from '@/lib/api';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function TeacherFeedbackPage() {
   const [classes, setClasses] = useState([]);
@@ -11,6 +12,9 @@ export default function TeacherFeedbackPage() {
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalFeedback, setTotalFeedback] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,14 +42,23 @@ export default function TeacherFeedbackPage() {
   }, [classes, selectedClass]);
 
   useEffect(() => {
+    setPage(1);
+  }, [selectedClass]);
+
+  useEffect(() => {
     let cancelled = false;
     async function loadFeedback() {
       if (!selectedClass) return;
       try {
         setLoading(true);
         setError('');
-        const res = await api.get(`/teacher/feedback/${selectedClass}`);
-        if (!cancelled) setFeedback(res.data || []);
+        const res = await api.get(`/teacher/feedback/${selectedClass}`, {
+          params: { skip: (page - 1) * pageSize, limit: pageSize },
+        });
+        if (!cancelled) {
+          setFeedback(res.data?.data || res.data || []);
+          setTotalFeedback(res.data?.total || 0);
+        }
       } catch (e) {
         console.error('Failed to load class feedback', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được phản hồi của lớp');
@@ -57,7 +70,7 @@ export default function TeacherFeedbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedClass]);
+  }, [selectedClass, page, pageSize]);
 
   const classLabel = useMemo(() => {
     const cls = classes.find((item) => item._id === selectedClass);
@@ -125,6 +138,16 @@ export default function TeacherFeedbackPage() {
             </div>
           ))}
         </div>
+        <PaginationControls
+          page={page}
+          totalPages={Math.max(1, Math.ceil(totalFeedback / pageSize))}
+          total={totalFeedback}
+          currentCount={feedback.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          showPageSize
+        />
       </Card>
     </div>
   );

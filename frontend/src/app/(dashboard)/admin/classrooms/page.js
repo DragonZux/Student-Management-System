@@ -9,7 +9,7 @@ import { isInRange, matchesPattern, popupValidationError } from '@/lib/validatio
 
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { TableSkeleton } from '@/components/ui/Skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function ClassroomsPage() {
   const {
@@ -20,8 +20,10 @@ export default function ClassroomsPage() {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     refresh
-  } = usePaginatedData('/admin/classrooms', 'classrooms');
+  } = usePaginatedData('/admin/classrooms', { cacheKey: 'classrooms' });
 
   const [formError, setFormError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -164,47 +166,16 @@ export default function ClassroomsPage() {
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3rem', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
-              <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem', fontWeight: 600 }}>
-                Trang {currentPage} / {totalPages} • {total} phòng học
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  className="btn-primary" 
-                  style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                {[...Array(totalPages)].map((_, i) => (
-                  <button
-                    key={i + 1}
-                    className="btn-primary"
-                    style={{ 
-                      padding: '0.5rem 1rem', 
-                      background: currentPage === i + 1 ? 'var(--primary)' : 'transparent',
-                      color: currentPage === i + 1 ? 'white' : 'var(--foreground)',
-                      border: '1px solid var(--border)',
-                      minWidth: '40px'
-                    }}
-                    onClick={() => setCurrentPage(i + 1)}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                <button 
-                  className="btn-primary" 
-                  style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            </div>
-          )}
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={rooms.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+          />
 
           {!loading && rooms.length === 0 && (
             <div style={{ padding: '4rem', textAlign: 'center' }}>

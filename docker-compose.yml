@@ -3,10 +3,9 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
     environment:
       - MONGO_URI=mongodb://mongodb:27017/sms_db
+      - DEBUG=false
     depends_on:
       - mongodb
 
@@ -14,13 +13,11 @@ services:
     build: ./frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
     environment:
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
       - NEXT_PUBLIC_WS_BASE_URL=ws://localhost:8000/api
+      - INTERNAL_API_BASE_URL=http://backend:8000/api
+      - NODE_ENV=production
 
   mongodb:
     image: mongo:latest

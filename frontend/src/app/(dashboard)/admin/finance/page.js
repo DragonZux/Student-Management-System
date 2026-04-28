@@ -2,7 +2,7 @@
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { Download, TrendingUp, Search, ChevronLeft, ChevronRight, DollarSign, PieChart, History, Settings } from 'lucide-react';
+import { Download, TrendingUp, Search, DollarSign, PieChart, History, Settings } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isPositiveInteger, popupValidationError } from '@/lib/validation';
@@ -11,6 +11,7 @@ import styles from '@/styles/modules/admin/finance.module.css';
 
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function AdminFinancePage() {
   const {
@@ -21,8 +22,10 @@ export default function AdminFinancePage() {
     currentPage: txPage,
     setCurrentPage: setTxPage,
     totalPages: totalTxPages,
+    pageSize: txPageSize,
+    setPageSize: setTxPageSize,
     refresh: refreshPayments
-  } = usePaginatedData('/finance/payments', 'payments', 10);
+  } = usePaginatedData('/finance/payments', { cacheKey: 'payments', initialLimit: 10 });
 
   const [invoices, setInvoices] = useState([]);
   const [students, setStudents] = useState([]);
@@ -276,17 +279,18 @@ export default function AdminFinancePage() {
           )}
         </div>
 
-        {totalTxPages > 1 && (
-          <div className={styles.pagination}>
-            <button className={styles.pageBtn} onClick={() => setTxPage(p => Math.max(1, p - 1))} disabled={txPage === 1}>
-              <ChevronLeft size={20} />
-            </button>
-            <span style={{ fontWeight: 700 }}>Trang {txPage} / {totalTxPages}</span>
-            <button className={styles.pageBtn} onClick={() => setTxPage(p => Math.min(totalTxPages, p + 1))} disabled={txPage === totalTxPages}>
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        )}
+        <div className={styles.pagination}>
+          <PaginationControls
+            page={txPage}
+            totalPages={totalTxPages}
+            total={total}
+            currentCount={payments.length}
+            pageSize={txPageSize}
+            onPageChange={setTxPage}
+            onPageSizeChange={setTxPageSize}
+            showPageSize
+          />
+        </div>
       </Card>
 
       <div className={styles.formsGrid}>

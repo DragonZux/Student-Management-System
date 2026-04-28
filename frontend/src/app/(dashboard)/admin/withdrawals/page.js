@@ -7,7 +7,7 @@ import api from '@/lib/api';
 
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { TableSkeleton } from '@/components/ui/Skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function AdminWithdrawalsPage() {
   const {
@@ -18,8 +18,10 @@ export default function AdminWithdrawalsPage() {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     refresh
-  } = usePaginatedData('/admin/withdrawal-requests', 'withdrawals');
+  } = usePaginatedData('/admin/withdrawal-requests', { cacheKey: 'withdrawals' });
 
   const [actionLoading, setActionLoading] = useState(null);
 
@@ -127,31 +129,16 @@ export default function AdminWithdrawalsPage() {
             </Card>
           ))}
           
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', padding: '1rem', borderTop: '1px solid var(--border)' }}>
-              <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-                Trang {currentPage} / {totalPages} • Tổng cộng {total} yêu cầu
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  className="btn-primary" 
-                  style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button 
-                  className="btn-primary" 
-                  style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            </div>
-          )}
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={requests.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+          />
 
           {requests.length === 0 && !loading && (
             <div style={{ padding: '5rem 2rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '2rem', border: '2px dashed var(--border)' }}>

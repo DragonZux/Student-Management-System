@@ -1,10 +1,8 @@
-"use client";
-import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { Book, Calendar, Award, Wallet } from 'lucide-react';
-import api from '@/lib/api';
+import { serverApiFetch } from '@/lib/serverApi';
 
 function formatDeadline(value) {
   if (!value) return 'Chưa có dữ liệu';
@@ -13,33 +11,24 @@ function formatDeadline(value) {
   return date.toLocaleString();
 }
 
-export default function StudentDashboard() {
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadSummary() {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/student/dashboard-summary');
-        if (!cancelled) setSummary(res.data || null);
-      } catch (e) {
-        console.error('Failed to load student dashboard summary', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được dữ liệu dashboard');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    loadSummary();
-    return () => {
-      cancelled = true;
+async function loadStudentSummary() {
+  try {
+    return {
+      summary: await serverApiFetch('/student/dashboard-summary', { next: { revalidate: 30 } }),
+      error: '',
     };
-  }, []);
+  } catch (error) {
+    return {
+      summary: null,
+      error: error.message || 'Không tải được dữ liệu dashboard',
+    };
+  }
+}
 
-  const stats = useMemo(() => ([
+export default async function StudentDashboard() {
+  const { summary, error } = await loadStudentSummary();
+  const loading = !summary;
+  const stats = [
     {
       label: 'Lớp học tiếp theo',
       value: summary?.next_class ? `${summary.next_class.course_code || summary.next_class.course_title} @ ${summary.next_class.start || '--:--'}` : 'Chưa có lịch học',
@@ -64,7 +53,7 @@ export default function StudentDashboard() {
       icon: Wallet,
       color: '#0f766e',
     },
-  ]), [loading, summary]);
+  ];
 
   return (
     <div className="animate-in">

@@ -7,7 +7,7 @@ import api from '@/lib/api';
 
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { CardSkeleton } from '@/components/ui/Skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function StudentFinancePage() {
   const [invoice, setInvoice] = useState(null);
@@ -20,8 +20,10 @@ export default function StudentFinancePage() {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     refresh: refreshPayments
-  } = usePaginatedData('/finance/my-payments', 'my-payments', 5);
+  } = usePaginatedData('/finance/my-payments', { cacheKey: 'my-payments', initialLimit: 5 });
 
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState('');
@@ -183,27 +185,16 @@ export default function StudentFinancePage() {
                   </Card>
                 ))}
 
-                {totalPages > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem' }}>
-                    <button 
-                      className="btn-primary" 
-                      style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>{currentPage} / {totalPages}</span>
-                    <button 
-                      className="btn-primary" 
-                      style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                )}
+                <PaginationControls
+                  page={currentPage}
+                  totalPages={totalPages}
+                  total={total}
+                  currentCount={payments.length}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  showPageSize
+                />
               </>
             )}
           </div>

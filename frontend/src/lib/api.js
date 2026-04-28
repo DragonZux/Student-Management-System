@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { showPopup } from '@/lib/popup';
+import { clearAuthCookies, getAuthTokenFromBrowser } from '@/lib/authCookies';
 
 function normalizeBaseUrl(value) {
   return typeof value === 'string' ? value.trim().replace(/\/$/, '') : '';
@@ -88,57 +89,18 @@ api.defaults.retryDelay = 1000;
 // Add a request interceptor to add the auth token
 api.interceptors.request.use(
   (config) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = typeof window !== 'undefined' ? getAuthTokenFromBrowser() : null;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    }
-    // Debug log to see the actual URL being called in the browser
-    if (typeof window !== 'undefined') {
-      console.log(`API Call: ${config.method.toUpperCase()} ${config.baseURL}${config.url}`);
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Global GET Request Caching (5 mins)
-const CACHE_TTL = 5 * 60 * 1000;
-
 api.interceptors.response.use(
-  (response) => {
-    // Cache GET requests
-    if (response.config.method === 'get' && typeof window !== 'undefined') {
-      // Avoid caching some endpoints if needed (like auth check)
-      if (!response.config.url.includes('/auth/me')) {
-        const cacheKey = `api_cache_${response.config.url}_${JSON.stringify(response.config.params || {})}`;
-        const cacheData = {
-          data: response.data,
-          timestamp: Date.now(),
-        };
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-        } catch (e) {
-          console.warn('LocalStorage cache full, clearing old entries');
-          Object.keys(localStorage).filter(k => k.startsWith('api_cache_')).forEach(k => localStorage.removeItem(k));
-        }
-      }
-    }
-    return response;
-  },
+  (response) => response,
   async (error) => {
-    // Fallback: use cached data if request fails (and it's a GET)
-    if (error.config?.method === 'get' && typeof window !== 'undefined') {
-      const cacheKey = `api_cache_${error.config.url}_${JSON.stringify(error.config.params || {})}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_TTL) {
-          console.info('Serving from stale cache due to network error:', error.config.url);
-          return Promise.resolve({ data, config: error.config, __fromCache: true });
-        }
-      }
-    }
-
     const status = error.response?.status;
     const message = extractErrorMessage(error);
 
@@ -158,6 +120,7 @@ api.interceptors.response.use(
           showErrorPopup('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          clearAuthCookies();
           if (!isOnLoginPage) {
             window.location.href = '/login';
           }

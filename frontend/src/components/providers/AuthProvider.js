@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { clearAuthCookies, getAuthTokenFromBrowser, getUserFromBrowserStorage, syncAuthCookies } from '@/lib/authCookies';
 
 const AuthContext = createContext();
 
@@ -17,13 +18,14 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth/refresh-token');
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
+      syncAuthCookies(access_token, user?.role);
       return true;
     } catch (error) {
       console.error('Failed to refresh token:', error);
       // If refresh fails, the interceptor will handle the 401 and redirect to login
       return false;
     }
-  }, []);
+  }, [user?.role]);
 
   // Setup auto-refresh interval
   const setupRefreshInterval = useCallback(() => {
@@ -38,24 +40,33 @@ export const AuthProvider = ({ children }) => {
   }, [refreshToken]);
 
   useEffect(() => {
-    // Check if user is logged in on mount
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
+    const storedUser = getUserFromBrowserStorage();
+    const token = getAuthTokenFromBrowser();
 
     if (storedUser && token) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setupRefreshInterval();
-        
-        // Also verify the token is still valid by calling /me
-        api.get('/auth/me').catch(() => {
-           // If /me fails, it means token is already expired
-           // The interceptor in api.js will handle redirect
+      setUser(storedUser);
+      syncAuthCookies(token, storedUser?.role);
+      setupRefreshInterval();
+    } else if (token) {
+      api.get('/auth/me')
+        .then((response) => {
+          const nextUser = response.data;
+          localStorage.setItem('user', JSON.stringify(nextUser));
+          setUser(nextUser);
+          syncAuthCookies(token, nextUser?.role);
+          setupRefreshInterval();
+        })
+        .catch(() => {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          clearAuthCookies();
+        })
+        .finally(() => {
+          setLoading(false);
         });
-      } catch {
-        localStorage.removeItem('user');
-      }
+      return () => {
+        if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+      };
     }
     setLoading(false);
 
@@ -85,6 +96,7 @@ export const AuthProvider = ({ children }) => {
 
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
+      syncAuthCookies(access_token, userData.role);
       
       setupRefreshInterval();
 
@@ -104,6 +116,7 @@ export const AuthProvider = ({ children }) => {
     if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    clearAuthCookies();
     setUser(null);
     router.push('/login');
   }, [router]);

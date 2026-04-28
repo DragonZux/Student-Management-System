@@ -2,47 +2,37 @@
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { Book } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import api from '@/lib/api';
+import usePaginatedData from '@/hooks/usePaginatedData';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function StudentEnrollmentPage() {
-  const [availableClasses, setAvailableClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetchClasses = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const response = await api.get('/student/available-classes');
-        if (!cancelled) setAvailableClasses(response.data || []);
-      } catch (err) {
-        if (!cancelled) {
-          setAvailableClasses([]);
-          setError(err.response?.data?.detail || 'Không tải được danh sách lớp khả dụng.');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchClasses();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const {
+    data: availableClasses,
+    loading,
+    error,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+    refresh,
+  } = usePaginatedData('/student/available-classes', { cacheKey: 'student_available_classes', initialLimit: 6 });
 
   const handleEnroll = async (classId) => {
-    setError('');
+    setActionError('');
     setSuccess('');
     try {
       await api.post(`/student/enroll/${classId}`);
       setSuccess('Đăng ký lớp thành công!');
-      setAvailableClasses((prev) => prev.filter((c) => c._id !== classId));
+      refresh();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Đăng ký thất bại.');
+      setActionError(err.response?.data?.detail || 'Đăng ký thất bại.');
     }
   };
 
@@ -54,6 +44,7 @@ export default function StudentEnrollmentPage() {
       <p style={{ marginBottom: '2.5rem' }}>Chọn lớp học cho học kỳ hiện tại.</p>
       
       <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{error}</InlineMessage>
+      <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{actionError}</InlineMessage>
       <InlineMessage variant="success" style={{ marginBottom: '1rem' }}>{success}</InlineMessage>
 
       <div className="grid grid-cols-1" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -94,6 +85,17 @@ export default function StudentEnrollmentPage() {
         ))}
         {availableClasses.length === 0 && <p>Không có lớp học nào khả dụng.</p>}
       </div>
+
+      <PaginationControls
+        page={currentPage}
+        totalPages={totalPages}
+        total={total}
+        currentCount={availableClasses.length}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+        showPageSize
+      />
     </div>
   );
 }

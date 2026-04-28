@@ -8,7 +8,7 @@ import styles from '@/styles/modules/admin/audit.module.css';
 
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { TableSkeleton } from '@/components/ui/Skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function AuditLogsPage() {
   const {
@@ -19,8 +19,10 @@ export default function AuditLogsPage() {
     currentPage,
     setCurrentPage,
     totalPages,
+    pageSize,
+    setPageSize,
     refresh
-  } = usePaginatedData('/admin/audit-logs', 'audit-logs', 50);
+  } = usePaginatedData('/admin/audit-logs', { cacheKey: 'audit-logs', initialLimit: 50 });
 
   const getSeverityInfo = (action = '') => {
     const a = String(action).toLowerCase();
@@ -103,31 +105,18 @@ export default function AuditLogsPage() {
                 );
               })}
 
-              {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-                    Trang {currentPage} / {totalPages} • Tổng cộng {total} nhật ký
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button 
-                      className="btn-primary" 
-                      style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <button 
-                      className="btn-primary" 
-                      style={{ padding: '0.5rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  </div>
-                </div>
-              )}
+              <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                <PaginationControls
+                  page={currentPage}
+                  totalPages={totalPages}
+                  total={total}
+                  currentCount={logs.length}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  showPageSize
+                />
+              </div>
             </>
           )}
         </div>

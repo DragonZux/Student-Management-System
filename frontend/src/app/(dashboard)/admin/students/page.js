@@ -4,12 +4,13 @@ import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import Modal from '@/components/ui/Modal';
-import { UserPlus, Search, Loader2, Filter, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { UserPlus, Search, Loader2, Filter, User } from 'lucide-react';
 import api from '@/lib/api';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
 import styles from '@/styles/modules/admin/students.module.css';
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function StudentsPage() {
   const {
@@ -17,13 +18,13 @@ export default function StudentsPage() {
     total,
     loading: studentsLoading,
     error: studentsError,
-    skip,
-    limit,
-    search,
-    handleSearch,
-    nextPage,
-    prevPage,
-    setPage,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+    query,
+    setQuery,
     refresh
   } = usePaginatedData('/admin/users?role=student', { cacheKey: 'admin_students' });
 
@@ -158,7 +159,7 @@ export default function StudentsPage() {
   const onSearchChange = (e) => {
     const val = e.target.value;
     setKeyword(val);
-    handleSearch(val);
+    setQuery(val);
   };
 
   // Local filtering for department (since API only filters by role/search)
@@ -169,8 +170,9 @@ export default function StudentsPage() {
     return students.filter(s => s.department === departmentFilter);
   }, [students, departmentFilter]);
 
-  const currentPage = Math.floor(skip / limit) + 1;
-  const totalPages = Math.ceil(total / limit);
+  useEffect(() => {
+    setKeyword(query || '');
+  }, [query]);
 
   return (
     <div className={`${styles.container} animate-in`}>
@@ -352,50 +354,17 @@ export default function StudentsPage() {
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <div className={styles.pagination}>
-              <div className={styles.paginationInfo}>
-                Hiển thị <b>{displayStudents.length}</b> / <b>{total}</b> sinh viên
-              </div>
-              <div className={styles.paginationControls}>
-                <button 
-                  onClick={prevPage}
-                  disabled={currentPage === 1}
-                  className={styles.pageBtn}
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {[...Array(totalPages)].map((_, i) => {
-                    const p = i + 1;
-                    // Only show a limited number of page buttons
-                    if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
-                      return (
-                        <button
-                          key={p}
-                          onClick={() => setPage(i)}
-                          className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
-                        >
-                          {p}
-                        </button>
-                      );
-                    }
-                    if (p === currentPage - 3 || p === currentPage + 3) {
-                      return <span key={p}>...</span>;
-                    }
-                    return null;
-                  })}
-                </div>
-                <button 
-                  onClick={nextPage}
-                  disabled={currentPage === totalPages}
-                  className={styles.pageBtn}
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            </div>
-          )}
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={students.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+            className={styles.pagination}
+          />
         </Card>
       )}
 

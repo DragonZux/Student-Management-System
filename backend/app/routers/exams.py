@@ -2,7 +2,7 @@ from datetime import datetime
 import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import check_admin_role, get_current_user, check_teacher_or_admin
 from app.routers.notifications import create_notification
@@ -14,8 +14,12 @@ from app.schemas.user import UserRole
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ExamOut])
-async def list_exams(current_user: dict = Depends(get_current_user)):
+@router.get("/")
+async def list_exams(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    current_user: dict = Depends(get_current_user),
+):
     db = get_database()
     query = {}
     if current_user["role"] == UserRole.TEACHER:
@@ -24,7 +28,14 @@ async def list_exams(current_user: dict = Depends(get_current_user)):
     elif current_user["role"] == UserRole.STUDENT:
         enrolled_classes = await db.enrollments.find({"student_id": current_user["_id"], "status": {"$in": ["enrolled", "completed"]}}).to_list(1000)
         query["class_id"] = {"$in": [enrollment["class_id"] for enrollment in enrolled_classes]}
-    return await db.exams.find(query).sort("scheduled_at", -1).to_list(1000)
+    total = await db.exams.count_documents(query)
+    exams = await db.exams.find(query).sort("scheduled_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": exams,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @router.post("/", response_model=ExamOut)

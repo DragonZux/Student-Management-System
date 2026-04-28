@@ -5,6 +5,8 @@ import { LogOut, AlertCircle, FileText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { hasMinLength, popupValidationError } from '@/lib/validation';
+import useClientPagination from '@/hooks/useClientPagination';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function WithdrawalPage() {
   const [enrollments, setEnrollments] = useState([]);
@@ -16,9 +18,23 @@ export default function WithdrawalPage() {
   const [submitMessage, setSubmitMessage] = useState('');
   const [submitError, setSubmitError] = useState('');
 
+  const historyItems = useMemo(
+    () => enrollments.filter((e) => e.status === 'withdrawal_pending' || e.status === 'withdrawn'),
+    [enrollments],
+  );
+  const {
+    data: pagedHistory,
+    total: historyTotal,
+    currentPage: historyPage,
+    totalPages: historyTotalPages,
+    pageSize: historyPageSize,
+    setCurrentPage: setHistoryPage,
+    setPageSize: setHistoryPageSize,
+  } = useClientPagination(historyItems, { initialPageSize: 4 });
+
   const load = async () => {
-    const res = await api.get('/student/my-enrollments');
-    setEnrollments(res.data || []);
+    const res = await api.get('/student/my-enrollments', { params: { skip: 0, limit: 1000 } });
+    setEnrollments(res.data?.data || res.data || []);
   };
 
   useEffect(() => {
@@ -28,9 +44,9 @@ export default function WithdrawalPage() {
       try {
         setLoading(true);
         setError('');
-        const res = await api.get('/student/my-enrollments');
+        const res = await api.get('/student/my-enrollments', { params: { skip: 0, limit: 1000 } });
         if (!cancelled) {
-          setEnrollments(res.data || []);
+          setEnrollments(res.data?.data || res.data || []);
         }
       } catch (e) {
         console.error('Failed to load enrollments', e);
@@ -165,7 +181,7 @@ export default function WithdrawalPage() {
           <h2 style={{ fontSize: '1.375rem', fontWeight: 800, margin: '0 0 0.5rem' }}>Lịch sử yêu cầu</h2>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {enrollments.filter(e => e.status === 'withdrawal_pending' || e.status === 'withdrawn').map(e => (
+            {pagedHistory.map(e => (
               <Card key={e._id} className="glass" style={{ padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                   <div style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.03)', borderRadius: '0.75rem' }}>
@@ -184,11 +200,21 @@ export default function WithdrawalPage() {
               </Card>
             ))}
             
-            {enrollments.filter(e => e.status === 'withdrawal_pending' || e.status === 'withdrawn').length === 0 && (
+            {historyItems.length === 0 && (
               <div style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '1.5rem', border: '2px dashed var(--border)' }}>
                 <p style={{ color: 'var(--muted-foreground)', fontWeight: 600, margin: 0 }}>Bạn chưa có yêu cầu nào.</p>
               </div>
             )}
+            <PaginationControls
+              page={historyPage}
+              totalPages={historyTotalPages}
+              total={historyTotal}
+              currentCount={pagedHistory.length}
+              pageSize={historyPageSize}
+              onPageChange={setHistoryPage}
+              onPageSizeChange={setHistoryPageSize}
+              showPageSize
+            />
           </div>
         </div>
       </div>

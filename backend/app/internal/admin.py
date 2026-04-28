@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 import uuid
-
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.dependencies import check_admin_role
 from app.core.audit import log_audit_event
@@ -13,8 +12,6 @@ from app.routers.notifications import create_notification
 from app.schemas.academic import ClassCreate, ClassOut, ClassUpdate, CourseCreate, CourseOut, CourseUpdate
 from app.schemas.organization import ClassroomCreate, ClassroomOut, ClassroomUpdate, DepartmentCreate, DepartmentOut, DepartmentUpdate, FeedbackOut, AuditLogOut
 from app.schemas.user import UserCreate, UserOut, UserRole, UserUpdate
-
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 router = APIRouter(dependencies=[Depends(check_admin_role)])
 
@@ -35,7 +32,7 @@ async def create_user(user_in: UserCreate):
     await db.users.insert_one(user_dict)
     await log_audit_event(
         action="admin.create_user",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="user",
         target_id=user_dict["_id"],
         metadata={"email": user_dict["email"], "role": user_dict["role"]},
@@ -45,11 +42,18 @@ async def create_user(user_in: UserCreate):
 @router.get("/users")
 async def get_users(
     role: Optional[UserRole] = Query(default=None),
+    search: Optional[str] = Query(default=None),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     query = {"role": role} if role else {}
+    if search:
+        query["$or"] = [
+            {"full_name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"department": {"$regex": search, "$options": "i"}},
+        ]
     projection = {"hashed_password": 0}
     
     total = await db.users.count_documents(query)
@@ -65,11 +69,18 @@ async def get_users(
 @router.get("/users/{role}")
 async def get_users_by_role(
     role: UserRole,
+    search: Optional[str] = Query(default=None),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     query = {"role": role}
+    if search:
+        query["$or"] = [
+            {"full_name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"department": {"$regex": search, "$options": "i"}},
+        ]
     projection = {"hashed_password": 0}
     
     total = await db.users.count_documents(query)
@@ -135,7 +146,7 @@ async def update_user(user_id: str, user_in: UserUpdate):
     updated = await db.users.find_one({"_id": user_id})
     await log_audit_event(
         action="admin.update_user",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="user",
         target_id=user_id,
         metadata={"fields": list(update_data.keys())},
@@ -150,7 +161,7 @@ async def delete_user(user_id: str):
         raise HTTPException(status_code=404, detail="User not found")
     await log_audit_event(
         action="admin.delete_user",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="user",
         target_id=user_id,
     )
@@ -175,7 +186,7 @@ async def create_course(course: CourseCreate):
     await db.courses.insert_one(course_dict)
     await log_audit_event(
         action="admin.create_course",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="course",
         target_id=course_dict["_id"],
         metadata={"code": course_dict["code"]},
@@ -184,12 +195,20 @@ async def create_course(course: CourseCreate):
 
 @router.get("/courses")
 async def list_courses(
+    search: Optional[str] = Query(default=None),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
-    total = await db.courses.count_documents({})
-    courses = await db.courses.find().skip(skip).limit(limit).to_list(limit)
+    query = {}
+    if search:
+        query["$or"] = [
+            {"code": {"$regex": search, "$options": "i"}},
+            {"title": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}},
+        ]
+    total = await db.courses.count_documents(query)
+    courses = await db.courses.find(query).skip(skip).limit(limit).to_list(limit)
     return {
         "data": courses,
         "total": total,
@@ -226,7 +245,7 @@ async def update_course(course_id: str, payload: CourseUpdate):
     updated = await db.courses.find_one({"_id": course_id})
     await log_audit_event(
         action="admin.update_course",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="course",
         target_id=course_id,
         metadata={"fields": list(updatable.keys())},
@@ -244,7 +263,7 @@ async def delete_course(course_id: str):
         raise HTTPException(status_code=404, detail="Course not found")
     await log_audit_event(
         action="admin.delete_course",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="course",
         target_id=course_id,
     )
@@ -302,7 +321,7 @@ async def create_class(class_data: ClassCreate):
     await db.classes.insert_one(class_dict)
     await log_audit_event(
         action="admin.create_class",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="class",
         target_id=class_dict["_id"],
         metadata={"course_id": class_dict["course_id"], "teacher_id": class_dict["teacher_id"], "room": class_dict["room"]},
@@ -311,12 +330,21 @@ async def create_class(class_data: ClassCreate):
 
 @router.get("/classes")
 async def list_classes(
+    search: Optional[str] = Query(default=None),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
-    total = await db.classes.count_documents({})
-    classes = await db.classes.find().skip(skip).limit(limit).to_list(limit)
+    query = {}
+    if search:
+        query["$or"] = [
+            {"semester": {"$regex": search, "$options": "i"}},
+            {"room": {"$regex": search, "$options": "i"}},
+            {"teacher_id": {"$regex": search, "$options": "i"}},
+            {"course_id": {"$regex": search, "$options": "i"}},
+        ]
+    total = await db.classes.count_documents(query)
+    classes = await db.classes.find(query).skip(skip).limit(limit).to_list(limit)
     return {
         "data": classes,
         "total": total,
@@ -360,7 +388,7 @@ async def update_class(class_id: str, payload: ClassUpdate):
     updated = await db.classes.find_one({"_id": class_id})
     await log_audit_event(
         action="admin.update_class",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="class",
         target_id=class_id,
         metadata={"fields": list(updatable.keys())},
@@ -379,7 +407,7 @@ async def delete_class(class_id: str):
         raise HTTPException(status_code=404, detail="Class not found")
     await log_audit_event(
         action="admin.delete_class",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="class",
         target_id=class_id,
     )
@@ -404,7 +432,7 @@ async def create_department(payload: DepartmentCreate):
     await db.departments.insert_one(department)
     await log_audit_event(
         action="admin.create_department",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="department",
         target_id=department["_id"],
     )
@@ -437,7 +465,7 @@ async def update_department(department_id: str, payload: DepartmentUpdate):
     updated = await db.departments.find_one({"_id": department_id})
     await log_audit_event(
         action="admin.update_department",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="department",
         target_id=department_id,
         metadata={"fields": list(updatable.keys())},
@@ -452,7 +480,7 @@ async def delete_department(department_id: str):
         raise HTTPException(status_code=404, detail="Department not found")
     await log_audit_event(
         action="admin.delete_department",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="department",
         target_id=department_id,
     )
@@ -478,7 +506,7 @@ async def create_classroom(payload: ClassroomCreate):
     await db.classrooms.insert_one(classroom)
     await log_audit_event(
         action="admin.create_classroom",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="classroom",
         target_id=classroom["_id"],
     )
@@ -520,7 +548,7 @@ async def update_classroom(classroom_id: str, payload: ClassroomUpdate):
     updated = await db.classrooms.find_one({"_id": classroom_id})
     await log_audit_event(
         action="admin.update_classroom",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="classroom",
         target_id=classroom_id,
         metadata={"fields": list(updatable.keys())},
@@ -535,7 +563,7 @@ async def delete_classroom(classroom_id: str):
         raise HTTPException(status_code=404, detail="Classroom not found")
     await log_audit_event(
         action="admin.delete_classroom",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="classroom",
         target_id=classroom_id,
     )
@@ -582,11 +610,22 @@ async def list_withdrawal_requests(
     requests = await db.enrollments.find(query).skip(skip).limit(limit).to_list(limit)
     
     # Enrich with student and class/course info
+    student_ids = [req["student_id"] for req in requests if req.get("student_id")]
+    class_ids = [req["class_id"] for req in requests if req.get("class_id")]
+    students = await db.users.find({"_id": {"$in": list(set(student_ids))}}, {"hashed_password": 0}).to_list(len(set(student_ids))) if student_ids else []
+    classes = await db.classes.find({"_id": {"$in": list(set(class_ids))}}).to_list(len(set(class_ids))) if class_ids else []
+    course_ids = [cls.get("course_id") for cls in classes if cls.get("course_id")]
+    courses = await db.courses.find({"_id": {"$in": list(set(course_ids))}}).to_list(len(set(course_ids))) if course_ids else []
+
+    student_by_id = {item["_id"]: item for item in students}
+    class_by_id = {item["_id"]: item for item in classes}
+    course_by_id = {item["_id"]: item for item in courses}
+
     enriched = []
     for req in requests:
-        student = await db.users.find_one({"_id": req["student_id"]})
-        cls = await db.classes.find_one({"_id": req["class_id"]})
-        course = await db.courses.find_one({"_id": cls["course_id"]}) if cls else None
+        student = student_by_id.get(req["student_id"])
+        cls = class_by_id.get(req["class_id"])
+        course = course_by_id.get(cls.get("course_id")) if cls else None
         
         enriched.append({
             "enrollment_id": req["_id"],
@@ -627,7 +666,7 @@ async def approve_withdrawal(enrollment_id: str):
     
     await log_audit_event(
         action="admin.approve_withdrawal",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="enrollment",
         target_id=enrollment_id,
         metadata={"student_id": enrollment["student_id"], "class_id": enrollment["class_id"]},
@@ -668,7 +707,7 @@ async def reject_withdrawal(enrollment_id: str, payload: dict):
     
     await log_audit_event(
         action="admin.reject_withdrawal",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="enrollment",
         target_id=enrollment_id,
         metadata={"student_id": enrollment["student_id"], "reason": reason},

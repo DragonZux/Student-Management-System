@@ -1,34 +1,25 @@
 "use client";
 import Card from '@/components/ui/Card';
 import { Calendar, Clock, MapPin, Download, Search } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import api from '@/lib/api';
 import styles from '@/styles/modules/student/schedule.module.css';
+import usePaginatedData from '@/hooks/usePaginatedData';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function StudentSchedulePage() {
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/student/my-schedule');
-        if (!cancelled) setClasses(res.data || []);
-      } catch (e) {
-        console.error('Failed to load schedule', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được thời khóa biểu');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, []);
+  const {
+    data: classes,
+    loading,
+    error,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+  } = usePaginatedData('/student/my-schedule', { cacheKey: 'student_schedule', initialLimit: 6 });
 
   const grouped = useMemo(() => {
     const byDay = new Map();
@@ -142,6 +133,18 @@ export default function StudentSchedulePage() {
             </div>
           ))
         )}
+        {!loading && !error ? (
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={classes.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+          />
+        ) : null}
       </div>
     </div>
   );

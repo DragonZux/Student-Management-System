@@ -9,6 +9,7 @@ import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validati
 import styles from '@/styles/modules/admin/teachers.module.css';
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 function getErrorMessage(error, fallback) {
   const detail = error?.response?.data?.detail;
@@ -35,19 +36,19 @@ export default function TeachersPage() {
     total,
     loading: teachersLoading,
     error: teachersError,
-    skip,
-    limit,
-    search,
-    handleSearch,
-    nextPage,
-    prevPage,
-    setPage,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+    query: searchQuery,
+    setQuery: setSearchQuery,
     refresh
   } = usePaginatedData('/admin/users?role=teacher', { cacheKey: 'admin_teachers' });
 
   const [departments, setDepartments] = useState([]);
   const [deptsLoading, setDeptsLoading] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setLocalQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ full_name: '', email: '', password: 'teacher123', department: '' });
@@ -88,6 +89,10 @@ export default function TeachersPage() {
     fetchDepts();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    setLocalQuery(searchQuery || '');
+  }, [searchQuery]);
 
   const openCreate = () => {
     setEditing(null);
@@ -154,12 +159,9 @@ export default function TeachersPage() {
 
   const onSearchChange = (e) => {
     const val = e.target.value;
-    setQuery(val);
-    handleSearch(val);
+    setLocalQuery(val);
+    setSearchQuery(val);
   };
-
-  const currentPage = Math.floor(skip / limit) + 1;
-  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className={`${styles.container} animate-in`}>
@@ -272,13 +274,16 @@ export default function TeachersPage() {
             ) : null}
           </div>
 
-          {totalPages > 1 && (
-            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-              <button onClick={prevPage} disabled={currentPage === 1} className="btn-secondary">Trước</button>
-              <span style={{ alignSelf: 'center' }}>Trang {currentPage} / {totalPages}</span>
-              <button onClick={nextPage} disabled={currentPage === totalPages} className="btn-secondary">Sau</button>
-            </div>
-          )}
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={teachers.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+          />
         </>
       )}
     </div>
