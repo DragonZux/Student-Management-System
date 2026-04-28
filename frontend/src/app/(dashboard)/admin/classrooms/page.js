@@ -16,27 +16,29 @@ export default function ClassroomsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ code: '', building: '', capacity: 0, facilities: '' });
 
-  const load = async () => {
-    const res = await api.get('/admin/classrooms');
-    setRooms(res.data || []);
-  };
-
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const load = async () => {
       try {
         setLoading(true);
         setError('');
-        await load();
+        const res = await api.get('/admin/classrooms');
+        if (!cancelled) {
+          setRooms(res.data || []);
+        }
       } catch (e) {
         console.error('Failed to load classrooms', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách phòng học');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    init();
-    return () => { cancelled = true; };
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const openCreate = () => {

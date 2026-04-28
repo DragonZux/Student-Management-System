@@ -42,31 +42,33 @@ export default function TeachersPage() {
     popupValidationError(setFormError, message);
   };
 
-  const load = async () => {
-    const [userRes, deptRes] = await Promise.all([
-      api.get('/admin/users?role=teacher'),
-      api.get('/admin/departments')
-    ]);
-    setTeachers(userRes.data || []);
-    setDepartments(deptRes.data || []);
-  };
-
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const load = async () => {
       try {
         setLoading(true);
         setError('');
-        await load();
+        const [userRes, deptRes] = await Promise.all([
+          api.get('/admin/users?role=teacher'),
+          api.get('/admin/departments')
+        ]);
+        if (!cancelled) {
+          setTeachers(userRes.data || []);
+          setDepartments(deptRes.data || []);
+        }
       } catch (e) {
         console.error('Failed to load teachers', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách giảng viên');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    init();
-    return () => { cancelled = true; };
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = useMemo(() => {

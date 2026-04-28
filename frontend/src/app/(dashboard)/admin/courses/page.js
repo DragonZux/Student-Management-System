@@ -20,27 +20,29 @@ export default function CoursesPage() {
   const [formError, setFormError] = useState('');
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, course: null });
 
-  const load = async () => {
-    const res = await api.get('/admin/courses');
-    setCourses(res.data || []);
-  };
-
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const load = async () => {
       try {
         setLoading(true);
         setError('');
-        await load();
+        const res = await api.get('/admin/courses');
+        if (!cancelled) {
+          setCourses(res.data || []);
+        }
       } catch (e) {
         console.error('Failed to load courses', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách môn học');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    init();
-    return () => { cancelled = true; };
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = useMemo(() => {

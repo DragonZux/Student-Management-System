@@ -17,11 +17,6 @@ export default function TeacherGradingPage() {
   const [comments, setComments] = useState('');
   const [formError, setFormError] = useState('');
 
-  const loadClasses = async () => {
-    const res = await api.get('/teacher/my-classes');
-    setClasses(res.data || []);
-  };
-
   const loadStudents = async (classId) => {
     const res = await api.get(`/teacher/classes/${classId}/students`);
     setItems(res.data || []);
@@ -29,20 +24,27 @@ export default function TeacherGradingPage() {
 
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const init = async () => {
       try {
         setLoading(true);
         setError('');
-        await loadClasses();
+        const res = await api.get('/teacher/my-classes');
+        if (!cancelled) {
+          setClasses(res.data || []);
+        }
       } catch (e) {
         console.error('Failed to load classes', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách lớp');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    };
+
     init();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -51,21 +53,28 @@ export default function TeacherGradingPage() {
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+
+    const load = async () => {
       if (!selectedClass) return;
       try {
         setLoading(true);
         setError('');
-        await loadStudents(selectedClass);
+        const res = await api.get(`/teacher/classes/${selectedClass}/students`);
+        if (!cancelled) {
+          setItems(res.data || []);
+        }
       } catch (e) {
         console.error('Failed to load students', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách sinh viên');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    };
+
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [selectedClass]);
 
   const openGrade = (it) => {

@@ -26,39 +26,37 @@ export default function ClassesPage() {
     scheduleText: 'Monday 08:00-10:00',
   });
 
-  const load = async () => {
-    try {
-      const [clsRes, courseRes, teacherRes, roomRes] = await Promise.all([
-        api.get('/admin/classes'),
-        api.get('/admin/courses'),
-        api.get('/admin/users?role=teacher'),
-        api.get('/admin/classrooms'),
-      ]);
-      setClasses(clsRes.data || []);
-      setCourses(courseRes.data || []);
-      setTeachers(teacherRes.data || []);
-      setClassrooms(roomRes.data || []);
-    } catch (e) {
-      console.error('Failed to load data', e);
-      throw e;
-    }
-  };
-
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const load = async () => {
       try {
         setLoading(true);
         setError('');
-        await load();
+        const [clsRes, courseRes, teacherRes, roomRes] = await Promise.all([
+          api.get('/admin/classes'),
+          api.get('/admin/courses'),
+          api.get('/admin/users?role=teacher'),
+          api.get('/admin/classrooms'),
+        ]);
+        if (!cancelled) {
+          setClasses(clsRes.data || []);
+          setCourses(courseRes.data || []);
+          setTeachers(teacherRes.data || []);
+          setClassrooms(roomRes.data || []);
+        }
       } catch (e) {
+        console.error('Failed to load data', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được dữ liệu hệ thống');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    init();
-    return () => { cancelled = true; };
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const courseById = useMemo(() => {

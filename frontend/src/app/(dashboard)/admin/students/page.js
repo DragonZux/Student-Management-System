@@ -29,26 +29,38 @@ export default function StudentsPage() {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, student: null });
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    let cancelled = false;
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const [studentRes, deptRes] = await Promise.all([
-        api.get('/admin/users?role=student'),
-        api.get('/admin/departments')
-      ]);
-      setStudents(studentRes.data || []);
-      setRealDepartments(deptRes.data || []);
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-      setError('Không tải được danh sách dữ liệu. Vui lòng kiểm tra backend.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const [studentRes, deptRes] = await Promise.all([
+          api.get('/admin/users?role=student'),
+          api.get('/admin/departments')
+        ]);
+        if (!cancelled) {
+          setStudents(studentRes.data || []);
+          setRealDepartments(deptRes.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+        if (!cancelled) {
+          setError('Không tải được danh sách dữ liệu. Vui lòng kiểm tra backend.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const openCreate = () => {
     setEditing(null);

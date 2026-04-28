@@ -18,31 +18,33 @@ export default function TeacherAssignmentsPage() {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
 
-  const load = async () => {
-    const [clsRes, asmRes] = await Promise.all([
-      api.get('/teacher/my-classes'),
-      api.get('/teacher/assignments'),
-    ]);
-    setClasses(clsRes.data || []);
-    setAssignments(asmRes.data || []);
-  };
-
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+
+    const init = async () => {
       try {
         setLoading(true);
         setError('');
-        await load();
+        const [clsRes, asmRes] = await Promise.all([
+          api.get('/teacher/my-classes'),
+          api.get('/teacher/assignments'),
+        ]);
+        if (!cancelled) {
+          setClasses(clsRes.data || []);
+          setAssignments(asmRes.data || []);
+        }
       } catch (e) {
         console.error('Failed to load teacher assignments', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách bài tập');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    };
+
     init();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
