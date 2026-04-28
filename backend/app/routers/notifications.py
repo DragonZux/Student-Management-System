@@ -91,6 +91,22 @@ async def mark_as_read(notification_id: str, user: dict = Depends(get_current_us
         target_id=notification_id,
     )
     return {"status": "success"}
+    
+@router.post("/mark-all-read")
+async def mark_all_as_read(user: dict = Depends(get_current_user)):
+    db = get_database()
+    await db.notifications.update_many(
+        {"user_id": user["_id"], "read": False},
+        {"$set": {"read": True}}
+    )
+    await log_audit_event(
+        action="notification.mark_all_read",
+        actor_id=user["_id"],
+        actor_role=user.get("role"),
+        target_type="notification",
+        target_id="all",
+    )
+    return {"status": "success"}
 
 
 @router.post("/send", dependencies=[Depends(check_admin_role)])

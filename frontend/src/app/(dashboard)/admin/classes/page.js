@@ -42,7 +42,9 @@ export default function ClassesPage() {
         if (!cancelled) {
           setClasses(clsRes.data || []);
           setCourses(courseRes.data || []);
-          setTeachers(teacherRes.data || []);
+          // Handle paginated response for teachers
+          const teacherData = teacherRes.data?.data || teacherRes.data || [];
+          setTeachers(teacherData);
           setClassrooms(roomRes.data || []);
         }
       } catch (e) {

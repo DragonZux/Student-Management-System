@@ -14,6 +14,8 @@ from app.schemas.academic import ClassCreate, ClassOut, ClassUpdate, CourseCreat
 from app.schemas.organization import ClassroomCreate, ClassroomOut, ClassroomUpdate, DepartmentCreate, DepartmentOut, DepartmentUpdate, FeedbackOut, AuditLogOut
 from app.schemas.user import UserCreate, UserOut, UserRole, UserUpdate
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+
 router = APIRouter(dependencies=[Depends(check_admin_role)])
 
 # --- Student & Teacher Management ---
@@ -40,18 +42,59 @@ async def create_user(user_in: UserCreate):
     )
     return user_dict
 
-@router.get("/users", response_model=List[UserOut])
-async def get_users(role: Optional[UserRole] = Query(default=None)):
+@router.get("/users")
+async def get_users(
+    role: Optional[UserRole] = Query(default=None),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     db = get_database()
     query = {"role": role} if role else {}
-    users = await db.users.find(query).to_list(1000)
-    return users
+    projection = {"hashed_password": 0}
+    
+    total = await db.users.count_documents(query)
+    users = await db.users.find(query, projection).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "data": users,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
-@router.get("/users/{role}", response_model=List[UserOut])
-async def get_users_by_role(role: UserRole):
+@router.get("/users/{role}")
+async def get_users_by_role(
+    role: UserRole,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100)
+):
     db = get_database()
-    users = await db.users.find({"role": role}).to_list(1000)
-    return users
+    query = {"role": role}
+    projection = {"hashed_password": 0}
+    
+    total = await db.users.count_documents(query)
+    users = await db.users.find(query, projection).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "data": users,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+@router.get("/dashboard-stats")
+async def get_dashboard_stats(response: Response):
+    db = get_database()
+    counts = await db.users.aggregate([
+        {"$group": {"_id": "$role", "count": {"$sum": 1}}}
+    ]).to_list(None)
+    
+    stats = {item["_id"]: item["count"] for item in counts}
+    stats["courses"] = await db.courses.count_documents({})
+    stats["departments"] = await db.departments.count_documents({})
+    
+    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return stats
 
 @router.patch("/users/{user_id}", response_model=UserOut)
 async def update_user(user_id: str, user_in: UserUpdate):
@@ -332,8 +375,9 @@ async def create_department(payload: DepartmentCreate):
     return department
 
 @router.get("/departments", response_model=List[dict])
-async def list_departments():
+async def list_departments(response: Response):
     db = get_database()
+    response.headers["Cache-Control"] = "public, max-age=300"
     return await db.departments.find().to_list(1000)
 
 @router.patch("/departments/{department_id}", response_model=DepartmentOut)

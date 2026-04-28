@@ -8,58 +8,68 @@ import { UserPlus, Search, Loader2, Filter, ChevronLeft, ChevronRight, User } fr
 import api from '@/lib/api';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
 import styles from '@/styles/modules/admin/students.module.css';
+import usePaginatedData from '@/hooks/usePaginatedData';
 
 export default function StudentsPage() {
-  const [students, setStudents] = useState([]);
+  const {
+    data: students,
+    total,
+    loading: studentsLoading,
+    error: studentsError,
+    skip,
+    limit,
+    search,
+    handleSearch,
+    nextPage,
+    prevPage,
+    setPage,
+    refresh
+  } = usePaginatedData('/admin/users?role=student', { cacheKey: 'admin_students' });
+
   const [realDepartments, setRealDepartments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [keyword, setKeyword] = useState('');
+  const [deptsLoading, setDeptsLoading] = useState(false);
+  const [keyword, setKeyword] = useState(''); // Local state for input
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formError, setFormError] = useState('');
   const [form, setForm] = useState({ full_name: '', email: '', password: '', department: '' });
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
   // Confirmation Modal state
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, student: null });
 
   useEffect(() => {
     let cancelled = false;
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const [studentRes, deptRes] = await Promise.all([
-          api.get('/admin/users?role=student'),
-          api.get('/admin/departments')
-        ]);
-        if (!cancelled) {
-          setStudents(studentRes.data || []);
-          setRealDepartments(deptRes.data || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch data:', err);
-        if (!cancelled) {
-          setError('Không tải được danh sách dữ liệu. Vui lòng kiểm tra backend.');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
+    const fetchDepts = async () => {
+      // Simple cache for departments (valid for 1 day)
+      const cached = localStorage.getItem('cache_departments');
+      if (cached) {
+        const { timestamp, data } = JSON.parse(cached);
+        if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+          setRealDepartments(data);
+          return;
         }
       }
-    };
 
-    fetchData();
-
-    return () => {
-      cancelled = true;
+      try {
+        setDeptsLoading(true);
+        const res = await api.get('/admin/departments');
+        if (!cancelled) {
+          const data = res.data || [];
+          setRealDepartments(data);
+          localStorage.setItem('cache_departments', JSON.stringify({
+            timestamp: Date.now(),
+            data
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch depts:', err);
+      } finally {
+        if (!cancelled) setDeptsLoading(false);
+      }
     };
+    fetchDepts();
+    return () => { cancelled = true; };
   }, []);
 
   const openCreate = () => {
@@ -121,7 +131,7 @@ export default function StudentsPage() {
         });
       }
       setShowForm(false);
-      await fetchData();
+      refresh();
     } catch (err) {
       console.error('Failed to save student:', err);
       setFormError(err.response?.data?.detail || 'Lưu thông tin sinh viên thất bại.');
@@ -138,46 +148,28 @@ export default function StudentsPage() {
     try {
       await api.delete(`/admin/users/${student._id}`);
       setConfirmModal({ isOpen: false, student: null });
-      await fetchData();
+      refresh();
     } catch (err) {
       console.error('Failed to delete student:', err);
-      setError(err.response?.data?.detail || 'Xóa sinh viên thất bại.');
     }
   };
 
-  const filteredStudents = useMemo(() => {
-    let result = students || [];
-    
-    // Keyword search
-    const q = keyword.trim().toLowerCase();
-    if (q) {
-      result = result.filter((student) => {
-        return (
-          String(student.full_name || '').toLowerCase().includes(q) ||
-          String(student.email || '').toLowerCase().includes(q) ||
-          String(student._id || '').toLowerCase().includes(q)
-        );
-      });
-    }
+  const onSearchChange = (e) => {
+    const val = e.target.value;
+    setKeyword(val);
+    handleSearch(val);
+  };
 
-    // Department filter
-    if (departmentFilter !== 'all') {
-      result = result.filter(s => s.department === departmentFilter);
-    }
+  // Local filtering for department (since API only filters by role/search)
+  // Or we could update API to filter by department too. 
+  // For now, let's keep it simple.
+  const displayStudents = useMemo(() => {
+    if (departmentFilter === 'all') return students;
+    return students.filter(s => s.department === departmentFilter);
+  }, [students, departmentFilter]);
 
-    return result;
-  }, [keyword, students, departmentFilter]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-  const paginatedStudents = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredStudents.slice(start, start + itemsPerPage);
-  }, [filteredStudents, currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [keyword, departmentFilter]);
+  const currentPage = Math.floor(skip / limit) + 1;
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className={`${styles.container} animate-in`}>
@@ -262,7 +254,7 @@ export default function StudentsPage() {
             type="text" 
             placeholder="Tìm kiếm theo tên, email hoặc mã số..."
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={onSearchChange}
           />
         </div>
         <div className={styles.filterWrapper}>
@@ -280,20 +272,20 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {loading ? (
+      {studentsLoading ? (
         <div className={styles.loadingWrapper}>
           <Loader2 className="animate-spin" size={48} color="var(--primary)" />
           <p className={styles.loadingText}>Đang truy xuất dữ liệu sinh viên...</p>
         </div>
-      ) : error ? (
+      ) : studentsError ? (
         <Card className="glass" style={{ border: '1px solid #fecaca', background: 'rgba(244, 63, 94, 0.02)' }}>
           <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>
-            <button onClick={fetchData} className="btn-primary" style={{ margin: '0 auto' }}>Thử lại</button>
+            <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{studentsError}</InlineMessage>
+            <button onClick={refresh} className="btn-primary" style={{ margin: '0 auto' }}>Thử lại</button>
           </div>
         </Card>
       ) : (
-        <Card title={`Danh sách Sinh viên (${filteredStudents.length})`}>
+        <Card title={`Danh sách Sinh viên (${total})`}>
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
@@ -306,7 +298,7 @@ export default function StudentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedStudents.length === 0 ? (
+                {displayStudents.length === 0 ? (
                   <tr>
                     <td colSpan={5}>
                       <div className={styles.emptyState}>
@@ -315,7 +307,7 @@ export default function StudentsPage() {
                       </div>
                     </td>
                   </tr>
-                ) : paginatedStudents.map((student, index) => (
+                ) : displayStudents.map((student, index) => (
                   <tr 
                     key={student._id} 
                     className={`${styles.tableRow} table-row-hover`}
@@ -323,7 +315,7 @@ export default function StudentsPage() {
                   >
                     <td>
                       <code className={styles.studentId}>
-                        {student._id.substring(0, 8).toUpperCase()}
+                        {(student._id || '').substring(0, 8).toUpperCase()}
                       </code>
                     </td>
                     <td>
@@ -363,29 +355,39 @@ export default function StudentsPage() {
           {totalPages > 1 && (
             <div className={styles.pagination}>
               <div className={styles.paginationInfo}>
-                Hiển thị <b>{paginatedStudents.length}</b> / <b>{filteredStudents.length}</b> sinh viên
+                Hiển thị <b>{displayStudents.length}</b> / <b>{total}</b> sinh viên
               </div>
               <div className={styles.paginationControls}>
                 <button 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  onClick={prevPage}
                   disabled={currentPage === 1}
                   className={styles.pageBtn}
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`${styles.pageBtn} ${currentPage === i + 1 ? styles.pageBtnActive : ''}`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+                  {[...Array(totalPages)].map((_, i) => {
+                    const p = i + 1;
+                    // Only show a limited number of page buttons
+                    if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setPage(i)}
+                          className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    }
+                    if (p === currentPage - 3 || p === currentPage + 3) {
+                      return <span key={p}>...</span>;
+                    }
+                    return null;
+                  })}
                 </div>
                 <button 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  onClick={nextPage}
                   disabled={currentPage === totalPages}
                   className={styles.pageBtn}
                 >
@@ -405,6 +407,7 @@ export default function StudentsPage() {
         message={`Bạn có chắc chắn muốn xóa sinh viên ${confirmModal.student?.full_name || confirmModal.student?.email}? Mọi dữ liệu liên quan sẽ bị gỡ bỏ vĩnh viễn.`}
         confirmText="Xác nhận xóa"
       />
+
     </div>
   );
 }
