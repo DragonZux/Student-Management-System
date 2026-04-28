@@ -19,7 +19,7 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/reports/admin-stats');
+        const response = await api.get('/admin/dashboard-stats');
         if (!cancelled) {
           setStats(response.data);
         }
@@ -61,14 +61,6 @@ export default function AdminDashboard() {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <Loader2 className="animate-spin" size={48} color="var(--primary)" />
-      </div>
-    );
-  }
-
   return (
     <div className={`${styles.container} animate-in`}>
       <header className={`${styles.header} slide-right stagger-1`}>
@@ -86,7 +78,11 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className={styles.statLabel}>Sinh viên</p>
-              <h2 className={styles.statValue}>{stats?.students || 0}</h2>
+              {loading ? (
+                <Loader2 className="animate-spin" size={24} color="var(--primary)" />
+              ) : (
+                <h2 className={styles.statValue}>{stats?.student || 0}</h2>
+              )}
             </div>
           </div>
         </Card>
@@ -97,7 +93,11 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className={styles.statLabel}>Giảng viên</p>
-              <h2 className={styles.statValue}>{stats?.teachers || 0}</h2>
+              {loading ? (
+                <Loader2 className="animate-spin" size={24} color="var(--secondary)" />
+              ) : (
+                <h2 className={styles.statValue}>{stats?.teacher || 0}</h2>
+              )}
             </div>
           </div>
         </Card>
@@ -108,7 +108,11 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className={styles.statLabel}>Môn học</p>
-              <h2 className={styles.statValue}>{stats?.courses || 0}</h2>
+              {loading ? (
+                <Loader2 className="animate-spin" size={24} color="var(--accent)" />
+              ) : (
+                <h2 className={styles.statValue}>{stats?.courses || 0}</h2>
+              )}
             </div>
           </div>
         </Card>

@@ -76,6 +76,18 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
+  const markAllRead = useCallback(async () => {
+    // optimistic
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await api.post("/notifications/mark-all-read");
+    } catch (e) {
+      console.error("Failed to mark all as read", e);
+      // Optional: reload if failed to ensure sync
+      reload();
+    }
+  }, [reload]);
+
   useEffect(() => {
     reload();
   }, [reload]);
@@ -86,6 +98,16 @@ export function NotificationProvider({ children }) {
 
     const getWsUrl = () => {
       return `${getWebSocketBaseUrl()}/notifications/ws`;
+    };
+
+    const playNotifySound = () => {
+      try {
+        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3");
+        audio.volume = 0.5;
+        audio.play();
+      } catch (e) {
+        // ignore audio errors
+      }
     };
 
     const connect = () => {
@@ -155,6 +177,9 @@ export function NotificationProvider({ children }) {
             return [incoming, ...prev];
           });
 
+          // Play sound
+          playNotifySound();
+
           // Alert/popup ngay khi có thông báo mới
           const popupText = incoming.message ? `${incoming.title}: ${incoming.message}` : incoming.title;
           showPopup(popupText, { type: "success", durationMs: 4500 });
@@ -191,8 +216,9 @@ export function NotificationProvider({ children }) {
       loading,
       reload,
       markRead,
+      markAllRead,
     }),
-    [notifications, unreadCount, loading, reload, markRead]
+    [notifications, unreadCount, loading, reload, markRead, markAllRead]
   );
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
 import styles from '@/styles/modules/admin/teachers.module.css';
+import usePaginatedData from '@/hooks/usePaginatedData';
 
 function getErrorMessage(error, fallback) {
   const detail = error?.response?.data?.detail;
@@ -28,10 +29,23 @@ function getErrorMessage(error, fallback) {
 }
 
 export default function TeachersPage() {
-  const [teachers, setTeachers] = useState([]);
+  const {
+    data: teachers,
+    total,
+    loading: teachersLoading,
+    error: teachersError,
+    skip,
+    limit,
+    search,
+    handleSearch,
+    nextPage,
+    prevPage,
+    setPage,
+    refresh
+  } = usePaginatedData('/admin/users?role=teacher', { cacheKey: 'admin_teachers' });
+
   const [departments, setDepartments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [deptsLoading, setDeptsLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -44,44 +58,35 @@ export default function TeachersPage() {
 
   useEffect(() => {
     let cancelled = false;
-
-    const load = async () => {
+    const fetchDepts = async () => {
+      const cached = localStorage.getItem('cache_departments');
+      if (cached) {
+        const { timestamp, data } = JSON.parse(cached);
+        if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+          setDepartments(data);
+          return;
+        }
+      }
       try {
-        setLoading(true);
-        setError('');
-        const [userRes, deptRes] = await Promise.all([
-          api.get('/admin/users?role=teacher'),
-          api.get('/admin/departments')
-        ]);
+        setDeptsLoading(true);
+        const res = await api.get('/admin/departments');
         if (!cancelled) {
-          setTeachers(userRes.data || []);
-          setDepartments(deptRes.data || []);
+          const data = res.data || [];
+          setDepartments(data);
+          localStorage.setItem('cache_departments', JSON.stringify({
+            timestamp: Date.now(),
+            data
+          }));
         }
       } catch (e) {
-        console.error('Failed to load teachers', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách giảng viên');
+        console.error('Failed to load depts', e);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setDeptsLoading(false);
       }
     };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
+    fetchDepts();
+    return () => { cancelled = true; };
   }, []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return teachers;
-    return (teachers || []).filter((t) => {
-      return (
-        String(t.full_name || '').toLowerCase().includes(q) ||
-        String(t.email || '').toLowerCase().includes(q) ||
-        String(t.department || '').toLowerCase().includes(q)
-      );
-    });
-  }, [teachers, query]);
 
   const openCreate = () => {
     setEditing(null);
@@ -129,7 +134,7 @@ export default function TeachersPage() {
         await api.post('/admin/users', payload);
       }
       setShowForm(false);
-      await load();
+      refresh();
     } catch (e) {
       console.error('Failed to save teacher', e);
       notifyFormError(getErrorMessage(e, 'Lưu giảng viên thất bại'));
@@ -139,14 +144,21 @@ export default function TeachersPage() {
   const remove = async (t) => {
     if (!confirm(`Xóa giảng viên ${t.full_name || t.email}?`)) return;
     try {
-      setError('');
       await api.delete(`/admin/users/${t._id}`);
-      await load();
+      refresh();
     } catch (e) {
       console.error('Failed to delete teacher', e);
-      setError(e.response?.data?.detail || 'Xóa giảng viên thất bại');
     }
   };
+
+  const onSearchChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    handleSearch(val);
+  };
+
+  const currentPage = Math.floor(skip / limit) + 1;
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className={`${styles.container} animate-in`}>
@@ -203,61 +215,71 @@ export default function TeachersPage() {
           <input
             className={styles.searchInput}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={onSearchChange}
             placeholder="Tìm kiếm theo tên, email hoặc khoa chuyên môn..."
           />
         </div>
       </div>
 
-      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>
+      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{teachersError}</InlineMessage>
       
-      {loading ? (
+      {teachersLoading ? (
         <div className={styles.loading}>
           <div className={styles.spinner} />
           <p>Đang truy xuất danh sách giảng viên...</p>
         </div>
       ) : (
-        <div className={styles.teacherGrid}>
-          {filtered.map((teacher, index) => (
-            <Card key={teacher._id} className={`${styles.teacherCard} glass card-hover scale-in`} style={{ animationDelay: `${(index * 0.05) + 0.3}s` }}>
-              <div className={styles.cardHeader}>
-                <div className={styles.avatar}>
-                  {(teacher.full_name || teacher.email || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+        <>
+          <div className={styles.teacherGrid}>
+            {teachers.map((teacher, index) => (
+              <Card key={teacher._id} className={`${styles.teacherCard} glass card-hover scale-in`} style={{ animationDelay: `${(index * 0.05) + 0.3}s` }}>
+                <div className={styles.cardHeader}>
+                  <div className={styles.avatar}>
+                    {(teacher.full_name || teacher.email || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className={styles.teacherInfo}>
+                    <h3 title={teacher.full_name}>{teacher.full_name || 'Giảng viên'}</h3>
+                    <div className={styles.department}>{teacher.department || 'Chưa phân khoa'}</div>
+                  </div>
                 </div>
-                <div className={styles.teacherInfo}>
-                  <h3 title={teacher.full_name}>{teacher.full_name || 'Giảng viên'}</h3>
-                  <div className={styles.department}>{teacher.department || 'Chưa phân khoa'}</div>
+                
+                <div className={styles.detailsList}>
+                  <div className={styles.detailItem}>
+                    <Mail size={16} className={styles.detailIcon} />
+                    <span title={teacher.email}>{teacher.email}</span>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <BookOpen size={16} className={styles.detailIcon} />
+                    <span className="badge badge-primary">ID: {teacher._id.substring(0, 8).toUpperCase()}</span>
+                  </div>
                 </div>
-              </div>
-              
-              <div className={styles.detailsList}>
-                <div className={styles.detailItem}>
-                  <Mail size={16} className={styles.detailIcon} />
-                  <span title={teacher.email}>{teacher.email}</span>
-                </div>
-                <div className={styles.detailItem}>
-                  <BookOpen size={16} className={styles.detailIcon} />
-                  <span className="badge badge-primary">ID: {teacher._id.substring(0, 8).toUpperCase()}</span>
-                </div>
-              </div>
 
-              <div className={styles.actions}>
-                <button onClick={() => openEdit(teacher)} className={styles.editBtn}>
-                  <Edit3 size={16} style={{ marginRight: '0.5rem' }} /> Sửa
-                </button>
-                <button onClick={() => remove(teacher)} className={styles.deleteBtn}>
-                  <Trash2 size={16} style={{ marginRight: '0.5rem' }} /> Xóa
-                </button>
+                <div className={styles.actions}>
+                  <button onClick={() => openEdit(teacher)} className={styles.editBtn}>
+                    <Edit3 size={16} style={{ marginRight: '0.5rem' }} /> Sửa
+                  </button>
+                  <button onClick={() => remove(teacher)} className={styles.deleteBtn}>
+                    <Trash2 size={16} style={{ marginRight: '0.5rem' }} /> Xóa
+                  </button>
+                </div>
+              </Card>
+            ))}
+            {teachers.length === 0 ? (
+              <div className={styles.emptyState}>
+                <Search size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                <p>Không tìm thấy giảng viên nào phù hợp với yêu cầu tìm kiếm.</p>
               </div>
-            </Card>
-          ))}
-          {!loading && filtered.length === 0 ? (
-            <div className={styles.emptyState}>
-              <Search size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
-              <p>Không tìm thấy giảng viên nào phù hợp với yêu cầu tìm kiếm.</p>
+            ) : null}
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+              <button onClick={prevPage} disabled={currentPage === 1} className="btn-secondary">Trước</button>
+              <span style={{ alignSelf: 'center' }}>Trang {currentPage} / {totalPages}</span>
+              <button onClick={nextPage} disabled={currentPage === totalPages} className="btn-secondary">Sau</button>
             </div>
-          ) : null}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

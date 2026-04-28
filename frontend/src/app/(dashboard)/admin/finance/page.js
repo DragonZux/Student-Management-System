@@ -42,7 +42,9 @@ export default function AdminFinancePage() {
         if (cancelled) return;
         setInvoices(invRes.data || []);
         setPayments(payRes.data || []);
-        setStudents(studentRes.data || []);
+        // Handle paginated response for students
+        const studentData = studentRes.data?.data || studentRes.data || [];
+        setStudents(studentData);
         setPolicies(policyRes.data || []);
         setError('');
       } catch (e) {
