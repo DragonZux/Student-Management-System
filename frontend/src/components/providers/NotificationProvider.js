@@ -41,6 +41,7 @@ export function NotificationProvider({ children }) {
   const reconnectTimerRef = useRef(null);
   const pingTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
+  const idleReloadRef = useRef(null);
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
@@ -54,7 +55,7 @@ export function NotificationProvider({ children }) {
     try {
       setLoading(true);
       const res = await api.get("/notifications/");
-      const list = Array.isArray(res.data) ? res.data : [];
+      const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       const normalized = list.map(normalizeNotification).filter(Boolean);
       setNotifications(normalized);
     } catch {
@@ -89,7 +90,30 @@ export function NotificationProvider({ children }) {
   }, [reload]);
 
   useEffect(() => {
-    reload();
+    if (typeof window === 'undefined') return undefined;
+
+    const scheduleReload = () => {
+      if ('requestIdleCallback' in window) {
+        idleReloadRef.current = window.requestIdleCallback(() => {
+          reload();
+        }, { timeout: 1500 });
+        return;
+      }
+
+      idleReloadRef.current = window.setTimeout(() => {
+        reload();
+      }, 300);
+    };
+
+    scheduleReload();
+
+    return () => {
+      if (idleReloadRef.current && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleReloadRef.current);
+      } else if (idleReloadRef.current) {
+        window.clearTimeout(idleReloadRef.current);
+      }
+    };
   }, [reload]);
 
   useEffect(() => {
@@ -189,9 +213,32 @@ export function NotificationProvider({ children }) {
       };
     };
 
-    connect();
+    let bootTimer = null;
+    let removeVisibilityListener = null;
+
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') {
+          document.removeEventListener('visibilitychange', onVisible);
+          removeVisibilityListener = null;
+          connect();
+        }
+      };
+      document.addEventListener('visibilitychange', onVisible);
+      removeVisibilityListener = () => document.removeEventListener('visibilitychange', onVisible);
+    } else {
+      bootTimer = window.setTimeout(() => {
+        connect();
+      }, 800);
+    }
 
     return () => {
+      if (removeVisibilityListener) {
+        removeVisibilityListener();
+      }
+      if (bootTimer) {
+        window.clearTimeout(bootTimer);
+      }
       if (reconnectTimerRef.current) {
         window.clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;

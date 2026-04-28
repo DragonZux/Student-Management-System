@@ -33,19 +33,12 @@ async def get_current_user(token: str = Depends(reusable_oauth2)):
         )
     
     db = get_database()
-    user = await db.users.find_one({"_id": user_id})
+    user = await db.users.find_one({
+        "_id": user_id,
+        "active_jti": str(token_jti),
+        "is_active": {"$ne": False},
+    })
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if user.get("is_active") is False:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.",
-        )
-
-    active_jti = user.get("active_jti")
-    if not active_jti or str(active_jti) != str(token_jti):
-        # Someone else logged in and replaced the active session id
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Tài khoản đã được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.",

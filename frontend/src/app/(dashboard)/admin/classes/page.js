@@ -7,13 +7,30 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isInRange, popupValidationError } from '@/lib/validation';
 
+import usePaginatedData from '@/hooks/usePaginatedData';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import PaginationControls from '@/components/ui/PaginationControls';
+
 export default function ClassesPage() {
-  const [classes, setClasses] = useState([]);
+  const {
+    data: classes,
+    loading: classesLoading,
+    error: classesError,
+    total,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    pageSize,
+    setPageSize,
+    refresh
+  } = usePaginatedData('/admin/classes', { cacheKey: 'classes' });
+
   const [courses, setCourses] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classrooms, setClassrooms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [depsLoading, setDepsLoading] = useState(true);
+  const [depsError, setDepsError] = useState('');
+
   const [formError, setFormError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -28,37 +45,28 @@ export default function ClassesPage() {
 
   useEffect(() => {
     let cancelled = false;
-
-    const load = async () => {
+    const loadDeps = async () => {
       try {
-        setLoading(true);
-        setError('');
-        const [clsRes, courseRes, teacherRes, roomRes] = await Promise.all([
-          api.get('/admin/classes'),
-          api.get('/admin/courses'),
-          api.get('/admin/users?role=teacher'),
-          api.get('/admin/classrooms'),
+        setDepsLoading(true);
+        const [courseRes, teacherRes, roomRes] = await Promise.all([
+          api.get('/admin/courses', { params: { skip: 0, limit: 1000 } }),
+          api.get('/admin/users?role=teacher', { params: { skip: 0, limit: 1000 } }),
+          api.get('/admin/classrooms', { params: { skip: 0, limit: 1000 } }),
         ]);
         if (!cancelled) {
-          setClasses(clsRes.data || []);
-          setCourses(courseRes.data || []);
-          // Handle paginated response for teachers
+          setCourses(courseRes.data?.data || courseRes.data || []);
           const teacherData = teacherRes.data?.data || teacherRes.data || [];
           setTeachers(teacherData);
-          setClassrooms(roomRes.data || []);
+          setClassrooms(roomRes.data?.data || roomRes.data || []);
         }
       } catch (e) {
-        console.error('Failed to load data', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được dữ liệu hệ thống');
+        if (!cancelled) setDepsError('Không tải được dữ liệu hệ thống');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setDepsLoading(false);
       }
     };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
+    loadDeps();
+    return () => { cancelled = true; };
   }, []);
 
   const courseById = useMemo(() => {
@@ -135,7 +143,7 @@ export default function ClassesPage() {
       if (editing?._id) await api.patch(`/admin/classes/${editing._id}`, payload);
       else await api.post('/admin/classes', payload);
       setShowForm(false);
-      await load();
+      refresh();
     } catch (e) {
       setFormError(e.response?.data?.detail || 'Lưu lớp thất bại');
     }
@@ -145,9 +153,9 @@ export default function ClassesPage() {
     if (!confirm(`Xóa lớp này?`)) return;
     try {
       await api.delete(`/admin/classes/${cls._id}`);
-      await load();
+      refresh();
     } catch (e) {
-      setError(e.response?.data?.detail || 'Xóa lớp thất bại');
+      alert(e.response?.data?.detail || 'Xóa lớp thất bại');
     }
   };
 
@@ -158,7 +166,7 @@ export default function ClassesPage() {
           <h1 style={{ marginBottom: '0.5rem' }}>Lớp học & Phân công Giảng dạy</h1>
           <p style={{ fontSize: '1.1rem' }}>Quản lý kế hoạch giảng dạy, sắp xếp phòng học và điều phối giảng viên.</p>
         </div>
-        <button className="btn-primary" onClick={openCreate}>
+        <button className="btn-primary" onClick={openCreate} disabled={depsLoading}>
           + Thiết lập lớp mới
         </button>
       </div>
@@ -225,70 +233,84 @@ export default function ClassesPage() {
         </div>
       </Modal>
 
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem 0', gap: '1rem' }}>
-          <div className="animate-spin" style={{ width: '40px', height: '40px', border: '4px solid var(--muted)', borderTopColor: 'var(--primary)', borderRadius: '50%' }} />
-          <p style={{ color: 'var(--muted-foreground)', fontWeight: 500 }}>Đang đồng bộ dữ liệu lớp học...</p>
-        </div>
+      {(classesLoading || depsLoading) ? (
+        <Card title="Đang đồng bộ dữ liệu lớp học...">
+          <TableSkeleton rows={6} columns={4} />
+        </Card>
+      ) : (classesError || depsError) ? (
+        <InlineMessage variant="error">{classesError || depsError}</InlineMessage>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
-          {(classes || []).map((cls) => {
-            const crs = courseById.get(cls.course_id);
-            const tch = teacherById.get(cls.teacher_id);
-            const enrollmentPercentage = Math.min(100, Math.round((cls.current_enrollment / cls.capacity) * 100)) || 0;
-            
-            return (
-              <Card key={cls._id} title={`${crs?.code || 'CRS'}`} className="glass card-hover animate-in" footer={
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', width: '100%' }}>
-                   <button onClick={() => openEdit(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>Sửa</button>
-                   <button onClick={() => remove(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.875rem' }}>Xóa</button>
-                </div>
-              }>
-                <div style={{ marginBottom: '1.25rem' }}>
-                   <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 800, lineHeight: '1.2' }}>{crs?.title || 'Môn học mới'}</h3>
-                   <span className="badge badge-primary">{cls.semester}</span>
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9375rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                      <User size={16} />
-                    </div>
-                    <span style={{ fontWeight: 600 }}>{tch?.full_name || 'Chưa chỉ định giảng viên'}</span>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
+            {classes.map((cls) => {
+              const crs = courseById.get(cls.course_id);
+              const tch = teacherById.get(cls.teacher_id);
+              const enrollmentPercentage = Math.min(100, Math.round((cls.current_enrollment / cls.capacity) * 100)) || 0;
+              
+              return (
+                <Card key={cls._id} title={`${crs?.code || 'CRS'}`} className="glass card-hover animate-in" footer={
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', width: '100%' }}>
+                    <button onClick={() => openEdit(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>Sửa</button>
+                    <button onClick={() => remove(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.875rem' }}>Xóa</button>
+                  </div>
+                }>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 800, lineHeight: '1.2' }}>{crs?.title || 'Môn học mới'}</h3>
+                    <span className="badge badge-primary">{cls.semester}</span>
                   </div>
                   
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9375rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
-                      <MapPin size={16} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9375rem' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                        <User size={16} />
+                      </div>
+                      <span style={{ fontWeight: 600 }}>{tch?.full_name || 'Chưa chỉ định giảng viên'}</span>
                     </div>
-                    <span>Phòng học: <strong style={{ color: 'var(--foreground)' }}>{cls.room || 'TBA'}</strong></span>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9375rem' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                        <MapPin size={16} />
+                      </div>
+                      <span>Phòng học: <strong style={{ color: 'var(--foreground)' }}>{cls.room || 'TBA'}</strong></span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'start', gap: '0.75rem', fontSize: '0.9375rem' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', marginTop: '2px' }}>
+                        <Clock size={16} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        {cls.schedule?.length ? cls.schedule.map((s, idx) => (
+                          <div key={idx} style={{ marginBottom: '0.25rem' }}>{s.day}: <strong>{s.start}-{s.end}</strong></div>
+                        )) : <span style={{ color: 'var(--muted-foreground)' }}>Chưa có lịch học</span>}
+                      </div>
+                    </div>
+                    
+                    <div style={{ marginTop: '0.5rem', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.8125rem', fontWeight: 700 }}>
+                        <span style={{ color: 'var(--muted-foreground)' }}>TỶ LỆ GHI DANH</span>
+                        <span style={{ color: 'var(--primary)' }}>{cls.current_enrollment} / {cls.capacity}</span>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${enrollmentPercentage}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.5s ease' }} />
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'start', gap: '0.75rem', fontSize: '0.9375rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', marginTop: '2px' }}>
-                      <Clock size={16} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                       {cls.schedule?.length ? cls.schedule.map((s, idx) => (
-                         <div key={idx} style={{ marginBottom: '0.25rem' }}>{s.day}: <strong>{s.start}-{s.end}</strong></div>
-                       )) : <span style={{ color: 'var(--muted-foreground)' }}>Chưa có lịch học</span>}
-                    </div>
-                  </div>
-                  
-                  <div style={{ marginTop: '0.5rem', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.8125rem', fontWeight: 700 }}>
-                      <span style={{ color: 'var(--muted-foreground)' }}>TỶ LỆ GHI DANH</span>
-                      <span style={{ color: 'var(--primary)' }}>{cls.current_enrollment} / {cls.capacity}</span>
-                    </div>
-                    <div style={{ width: '100%', height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${enrollmentPercentage}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.5s ease' }} />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={classes.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+          />
+        </>
       )}
     </div>
   );

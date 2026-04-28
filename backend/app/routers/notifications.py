@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Dict, List
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
 
 from app.dependencies import check_admin_role, get_current_user
@@ -56,10 +56,16 @@ async def _broadcast_to_user(user_id: str, payload: dict):
     if stale:
         active_connections[user_id] = [ws for ws in active_connections[user_id] if ws not in stale]
 
-@router.get("/", response_model=List[NotificationOut])
-async def get_my_notifications(user: dict = Depends(get_current_user)):
+@router.get("/")
+async def get_my_notifications(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    user: dict = Depends(get_current_user),
+):
     db = get_database()
-    notifications = await db.notifications.find({"user_id": user["_id"]}).sort("created_at", -1).to_list(100)
+    query = {"user_id": user["_id"]}
+    total = await db.notifications.count_documents(query)
+    notifications = await db.notifications.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     normalized = []
     for item in notifications:
         normalized.append(
@@ -72,7 +78,12 @@ async def get_my_notifications(user: dict = Depends(get_current_user)):
                 "created_at": item.get("created_at") or datetime.utcnow(),
             }
         )
-    return normalized
+    return {
+        "data": normalized,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 @router.post("/{notification_id}/read")
 async def mark_as_read(notification_id: str, user: dict = Depends(get_current_user)):

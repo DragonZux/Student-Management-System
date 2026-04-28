@@ -5,6 +5,7 @@ import { Calendar, CheckCircle, XCircle, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { popupValidationError } from '@/lib/validation';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function TeacherAttendancePage() {
   const [classes, setClasses] = useState([]);
@@ -16,6 +17,9 @@ export default function TeacherAttendancePage() {
   const [submitError, setSubmitError] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
   const [submitting, setSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalStudents, setTotalStudents] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,6 +51,10 @@ export default function TeacherAttendancePage() {
   }, [classes, selectedClass]);
 
   useEffect(() => {
+    setPage(1);
+  }, [selectedClass]);
+
+  useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
@@ -54,14 +62,18 @@ export default function TeacherAttendancePage() {
       try {
         setLoading(true);
         setError('');
-        const res = await api.get(`/teacher/classes/${selectedClass}/students`);
+        const res = await api.get(`/teacher/classes/${selectedClass}/students`, {
+          params: { skip: (page - 1) * pageSize, limit: pageSize },
+        });
         if (!cancelled) {
-          const items = (res.data || []).map((x) => ({
+          const payload = res.data?.data || res.data || [];
+          const items = payload.map((x) => ({
             enrollment: x.enrollment,
             student: x.student,
             status: 'present',
           }));
           setStudents(items);
+          setTotalStudents(res.data?.total || payload.length);
         }
       } catch (e) {
         console.error('Failed to load students', e);
@@ -75,7 +87,7 @@ export default function TeacherAttendancePage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedClass]);
+  }, [selectedClass, page, pageSize]);
 
   const stats = useMemo(() => {
     const present = students.filter((s) => s.status === 'present').length;
@@ -256,6 +268,16 @@ export default function TeacherAttendancePage() {
             {submitting ? 'Đang gửi...' : 'Gửi điểm danh'}
           </button>
         </div>
+        <PaginationControls
+          page={page}
+          totalPages={Math.max(1, Math.ceil(totalStudents / pageSize))}
+          total={totalStudents}
+          currentCount={students.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          showPageSize
+        />
       </Card>
     </div>
   );

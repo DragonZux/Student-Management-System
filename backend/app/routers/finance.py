@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
 from app.dependencies import get_current_user, check_admin_role
 from app.routers.notifications import create_notification
@@ -27,18 +27,20 @@ async def get_my_tuition(student: dict = Depends(get_current_user)):
     
     db = get_database()
     # Find all enrollments
-    enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(100)
+    enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(1000)
     
     # Calculate tuition based on credits and active policy
     total_credits = 0
-    
-    for e in enrollments:
-        # Need to find class and then course to get credits
-        cls = await db.classes.find_one({"_id": e["class_id"]})
-        if cls:
-            course = await db.courses.find_one({"_id": cls["course_id"]})
-            if course:
-                total_credits += course["credits"]
+    class_ids = [item["class_id"] for item in enrollments if item.get("class_id")]
+    classes = await db.classes.find({"_id": {"$in": class_ids}}).to_list(len(set(class_ids))) if class_ids else []
+    course_ids = [item.get("course_id") for item in classes if item.get("course_id")]
+    courses = await db.courses.find({"_id": {"$in": list(set(course_ids))}}).to_list(len(set(course_ids))) if course_ids else []
+    course_by_id = {item["_id"]: item for item in courses}
+
+    for cls in classes:
+        course = course_by_id.get(cls.get("course_id"))
+        if course:
+            total_credits += course.get("credits", 0)
     
     cost_per_credit = await _get_active_cost_per_credit(db)
     total_amount = total_credits * cost_per_credit
@@ -66,12 +68,24 @@ async def get_my_tuition(student: dict = Depends(get_current_user)):
     return invoice_payload
 
 
-@router.get("/my-payments", response_model=List[PaymentOut])
-async def get_my_payments(student: dict = Depends(get_current_user)):
+@router.get("/my-payments")
+async def get_my_payments(
+    student: dict = Depends(get_current_user),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000)
+):
     if student["role"] != UserRole.STUDENT:
         raise HTTPException(status_code=403, detail="Only students can view payments")
     db = get_database()
-    return await db.payments.find({"student_id": student["_id"]}).sort("paid_at", -1).to_list(1000)
+    query = {"student_id": student["_id"]}
+    total = await db.payments.count_documents(query)
+    payments = await db.payments.find(query).sort("paid_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": payments,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.post("/update-payment/{student_id}", dependencies=[Depends(check_admin_role)])
 async def update_payment(student_id: str, amount: float):
@@ -102,7 +116,7 @@ async def update_payment(student_id: str, amount: float):
 
     await log_audit_event(
         action="admin.update_payment",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="finance",
         target_id=student_id,
         metadata={"amount": amount},
@@ -125,16 +139,36 @@ async def update_payment(student_id: str, amount: float):
     return {"message": "Payment recorded successfully"}
 
 
-@router.get("/invoices", dependencies=[Depends(check_admin_role)], response_model=List[InvoiceOut])
-async def list_invoices():
+@router.get("/invoices", dependencies=[Depends(check_admin_role)])
+async def list_invoices(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000)
+):
     db = get_database()
-    return await db.invoices.find().sort("updated_at", -1).to_list(1000)
+    total = await db.invoices.count_documents({})
+    invoices = await db.invoices.find().sort("updated_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": invoices,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 
-@router.get("/payments", dependencies=[Depends(check_admin_role)], response_model=List[PaymentOut])
-async def list_payments():
+@router.get("/payments", dependencies=[Depends(check_admin_role)])
+async def list_payments(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000)
+):
     db = get_database()
-    return await db.payments.find().sort("paid_at", -1).to_list(1000)
+    total = await db.payments.count_documents({})
+    payments = await db.payments.find().sort("paid_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": payments,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.post("/pay-my-tuition")
 async def pay_my_tuition(payload: dict, student: dict = Depends(get_current_user)):
@@ -212,7 +246,7 @@ async def create_fee_policy(payload: dict):
     await db.fee_policies.insert_one(policy)
     await log_audit_event(
         action="admin.create_fee_policy",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="fee_policy",
         target_id=policy["_id"],
         metadata={"semester": semester},
@@ -251,7 +285,7 @@ async def update_fee_policy(policy_id: str, payload: dict):
     updated = await db.fee_policies.find_one({"_id": policy_id})
     await log_audit_event(
         action="admin.update_fee_policy",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="fee_policy",
         target_id=policy_id,
         metadata={"fields": list(updatable.keys())},
@@ -266,7 +300,7 @@ async def delete_fee_policy(policy_id: str):
         raise HTTPException(status_code=404, detail="Policy not found")
     await log_audit_event(
         action="admin.delete_fee_policy",
-        actor_role=UserRole.ADMIN,
+        actor_role=UserRole.ADMIN.value,
         target_type="fee_policy",
         target_id=policy_id,
     )

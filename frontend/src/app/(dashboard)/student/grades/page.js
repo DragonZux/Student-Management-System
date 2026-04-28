@@ -1,37 +1,38 @@
 "use client";
 import Card from '@/components/ui/Card';
 import { Award, BookOpen, TrendingUp, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import api from '@/lib/api';
+import { useMemo } from 'react';
+import usePaginatedData from '@/hooks/usePaginatedData';
+import PaginationControls from '@/components/ui/PaginationControls';
 import styles from '@/styles/modules/student/grades.module.css';
 
 export default function StudentGradesPage() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/student/my-grades');
-        if (!cancelled) setData(res.data);
-      } catch (e) {
-        console.error('Failed to load grades', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được điểm số');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, []);
-
-  const gpa = data?.gpa ?? 0;
-  const gradedCredits = data?.graded_credits ?? 0;
-  const records = data?.records || [];
+  const {
+    data: records,
+    rawData,
+    loading,
+    error,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+  } = usePaginatedData('/student/my-grades', {
+    cacheKey: 'student_grades',
+    initialLimit: 8,
+    responseAdapter: (result, meta) => ({
+      data: result?.records || [],
+      total: result?.total || 0,
+      skip: result?.skip ?? meta.skip,
+    }),
+  });
+  const summary = useMemo(() => ({
+    gpa: rawData?.gpa ?? 0,
+    graded_credits: rawData?.graded_credits ?? 0,
+  }), [rawData]);
+  const gpa = summary.gpa;
+  const gradedCredits = summary.graded_credits;
 
   const gradeLetter = (value) => {
     const v = Number(value);
@@ -98,24 +99,36 @@ export default function StudentGradesPage() {
             <p>Chưa có dữ liệu điểm số cho học kỳ này.</p>
           </div>
         ) : (
-          <div className={styles.gradeList}>
-            {records.map((item, index) => (
-              <div key={index} className={styles.gradeItem}>
-                <div className={styles.courseInfo}>
-                  <div className={styles.courseTitle}>{item.course_code}: {item.course_title}</div>
-                  <div className={styles.courseMeta}>Số tín chỉ: {item.credits} • Giảng viên: {item.teacher_name || 'N/A'}</div>
-                </div>
-                <div className={styles.gradeValue}>
-                  <div className={styles.gradeLetter}>
-                    {item.grade == null ? '—' : gradeLetter(item.grade)}
+          <>
+            <div className={styles.gradeList}>
+              {records.map((item, index) => (
+                <div key={index} className={styles.gradeItem}>
+                  <div className={styles.courseInfo}>
+                    <div className={styles.courseTitle}>{item.course_code}: {item.course_title}</div>
+                    <div className={styles.courseMeta}>Số tín chỉ: {item.credits} • Giảng viên: {item.teacher_name || 'N/A'}</div>
                   </div>
-                  <div className={styles.gradeNumeric}>
-                    {item.grade == null ? 'Chưa nhập' : `Điểm số: ${item.grade}`}
+                  <div className={styles.gradeValue}>
+                    <div className={styles.gradeLetter}>
+                      {item.grade == null ? '—' : gradeLetter(item.grade)}
+                    </div>
+                    <div className={styles.gradeNumeric}>
+                      {item.grade == null ? 'Chưa nhập' : `Điểm số: ${item.grade}`}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <PaginationControls
+              page={currentPage}
+              totalPages={totalPages}
+              total={total}
+              currentCount={records.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              showPageSize
+            />
+          </>
         )}
       </Card>
     </div>

@@ -5,36 +5,25 @@ import { CheckCircle, XCircle, Clock, User, BookOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 
+import usePaginatedData from '@/hooks/usePaginatedData';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import PaginationControls from '@/components/ui/PaginationControls';
+
 export default function AdminWithdrawalsPage() {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const {
+    data: requests,
+    loading,
+    error,
+    total,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    pageSize,
+    setPageSize,
+    refresh
+  } = usePaginatedData('/admin/withdrawal-requests', { cacheKey: 'withdrawals' });
+
   const [actionLoading, setActionLoading] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadRequests = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/admin/withdrawal-requests');
-        if (!cancelled) {
-          setRequests(res.data || []);
-        }
-      } catch (e) {
-        console.error('Failed to load withdrawal requests', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách yêu cầu rút học phần');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadRequests();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const handleAction = async (id, action) => {
     try {
@@ -46,7 +35,7 @@ export default function AdminWithdrawalsPage() {
         if (reason === null) return;
         await api.post(`/admin/withdrawal-requests/${id}/reject`, { reason });
       }
-      await loadRequests();
+      refresh();
     } catch (e) {
       alert(e.response?.data?.detail || 'Thao tác thất bại');
     } finally {
@@ -61,15 +50,12 @@ export default function AdminWithdrawalsPage() {
         <p style={{ fontSize: '1.1rem' }}>Phê duyệt hoặc từ chối các yêu cầu rút học phần chính thức từ sinh viên.</p>
       </div>
 
-      <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>
+      {error && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>}
 
       {loading ? (
-        <div style={{ padding: '4rem', textAlign: 'center' }}>
-          <div className="animate-spin-slow" style={{ marginBottom: '1rem', display: 'inline-block' }}>
-            <Clock size={32} color="var(--primary)" />
-          </div>
-          <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang tải danh sách yêu cầu...</p>
-        </div>
+        <Card title="Đang tải danh sách yêu cầu...">
+          <TableSkeleton rows={4} columns={4} />
+        </Card>
       ) : (
         <div className="grid grid-cols-1" style={{ gap: '1.5rem' }}>
           {requests.map((req) => (
@@ -80,7 +66,7 @@ export default function AdminWithdrawalsPage() {
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>Sinh viên</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: 'var(--primary)' }}>
-                        {req.student_name[0]}
+                        {(req.student_name || 'U')[0]}
                       </div>
                       <div>
                         <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>{req.student_name}</div>
@@ -105,9 +91,9 @@ export default function AdminWithdrawalsPage() {
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>Ngày gửi</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.9375rem' }}>
                       <Clock size={16} />
-                      {new Date(req.requested_at).toLocaleDateString('vi-VN')}
+                      {req.requested_at ? new Date(req.requested_at).toLocaleDateString('vi-VN') : '--/--/----'}
                       <span style={{ color: 'var(--muted-foreground)', fontSize: '0.8125rem' }}>
-                        {new Date(req.requested_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        {req.requested_at ? new Date(req.requested_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
                     </div>
                   </div>
@@ -143,7 +129,18 @@ export default function AdminWithdrawalsPage() {
             </Card>
           ))}
           
-          {requests.length === 0 && (
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={requests.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+          />
+
+          {requests.length === 0 && !loading && (
             <div style={{ padding: '5rem 2rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '2rem', border: '2px dashed var(--border)' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
                 <CheckCircle size={32} color="var(--muted-foreground)" />

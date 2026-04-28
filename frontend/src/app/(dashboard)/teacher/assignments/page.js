@@ -5,11 +5,11 @@ import { Plus, FileText, Calendar, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { popupValidationError } from '@/lib/validation';
+import usePaginatedData from '@/hooks/usePaginatedData';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function TeacherAssignmentsPage() {
   const [classes, setClasses] = useState([]);
-  const [assignments, setAssignments] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -17,27 +17,35 @@ export default function TeacherAssignmentsPage() {
   const [form, setForm] = useState({ class_id: '', title: '', description: '', deadline: '' });
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
+  const [submissionPage, setSubmissionPage] = useState(1);
+  const [submissionPageSize, setSubmissionPageSize] = useState(5);
+  const [submissionTotal, setSubmissionTotal] = useState(0);
+
+  const {
+    data: assignments,
+    loading,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+    refresh,
+  } = usePaginatedData('/teacher/assignments', { cacheKey: 'teacher_assignments', initialLimit: 6 });
 
   useEffect(() => {
     let cancelled = false;
 
     const init = async () => {
       try {
-        setLoading(true);
         setError('');
-        const [clsRes, asmRes] = await Promise.all([
-          api.get('/teacher/my-classes'),
-          api.get('/teacher/assignments'),
-        ]);
+        const clsRes = await api.get('/teacher/my-classes');
         if (!cancelled) {
           setClasses(clsRes.data || []);
-          setAssignments(asmRes.data || []);
         }
       } catch (e) {
         console.error('Failed to load teacher assignments', e);
         if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách bài tập');
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     };
 
@@ -102,7 +110,7 @@ export default function TeacherAssignmentsPage() {
       });
       setShowForm(false);
       setForm({ class_id: classes?.[0]?._id || '', title: '', description: '', deadline: '' });
-      await load();
+      refresh();
     } catch (e) {
       console.error('Failed to create assignment', e);
       setFormError(e.response?.data?.detail || 'Tạo bài tập thất bại');
@@ -112,14 +120,40 @@ export default function TeacherAssignmentsPage() {
   const openSubmissions = async (asm) => {
     setActionError('');
     setSelectedAssignment(asm);
+    setSubmissionPage(1);
     try {
-      const res = await api.get(`/teacher/submissions/${asm._id}`);
-      setSubmissions(res.data || []);
+      const res = await api.get(`/teacher/submissions/${asm._id}`, {
+        params: { skip: 0, limit: submissionPageSize },
+      });
+      setSubmissions(res.data?.data || res.data || []);
+      setSubmissionTotal(res.data?.total || 0);
     } catch (e) {
       console.error('Failed to load submissions', e);
       setActionError(e.response?.data?.detail || 'Không tải được bài nộp');
     }
   };
+
+  useEffect(() => {
+    if (!selectedAssignment?._id) return;
+    let cancelled = false;
+    const reloadSubmissions = async () => {
+      try {
+        const res = await api.get(`/teacher/submissions/${selectedAssignment._id}`, {
+          params: { skip: (submissionPage - 1) * submissionPageSize, limit: submissionPageSize },
+        });
+        if (!cancelled) {
+          setSubmissions(res.data?.data || res.data || []);
+          setSubmissionTotal(res.data?.total || 0);
+        }
+      } catch (e) {
+        if (!cancelled) setActionError(e.response?.data?.detail || 'Không tải được bài nộp');
+      }
+    };
+    reloadSubmissions();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAssignment, submissionPage, submissionPageSize]);
 
   return (
     <div>
@@ -193,6 +227,16 @@ export default function TeacherAssignmentsPage() {
             <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={() => setSelectedAssignment(null)} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', fontWeight: 700 }}>Đóng</button>
             </div>
+            <PaginationControls
+              page={submissionPage}
+              totalPages={Math.max(1, Math.ceil(submissionTotal / submissionPageSize))}
+              total={submissionTotal}
+              currentCount={submissions.length}
+              pageSize={submissionPageSize}
+              onPageChange={setSubmissionPage}
+              onPageSizeChange={setSubmissionPageSize}
+              showPageSize
+            />
           </Card>
         ) : null}
 
@@ -224,6 +268,16 @@ export default function TeacherAssignmentsPage() {
           </Card>
         ))}
         {!loading && !error && assignments.length === 0 ? <Card className="glass">Chưa có bài tập nào.</Card> : null}
+        <PaginationControls
+          page={currentPage}
+          totalPages={totalPages}
+          total={total}
+          currentCount={assignments.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          showPageSize
+        />
       </div>
     </div>
   );

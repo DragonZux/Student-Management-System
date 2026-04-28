@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { popupValidationError } from '@/lib/validation';
 import styles from '@/styles/modules/admin/departments.module.css';
+import useClientPagination from '@/hooks/useClientPagination';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState([]);
@@ -18,6 +20,16 @@ export default function DepartmentsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', faculty: '', description: '' });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, dept: null });
+
+  const {
+    data: pagedDepartments,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(departments, { initialPageSize: 8 });
 
   useEffect(() => {
     let cancelled = false;
@@ -145,48 +157,60 @@ export default function DepartmentsPage() {
           <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang tải danh sách đơn vị...</p>
         </div>
       ) : (
-        <div className={styles.grid}>
-          {departments.map((dept, index) => (
-            <Card 
-              key={dept._id} 
-              className={`${styles.deptCard} glass`} 
-              style={{ animationDelay: `${index * 0.05}s` }}
-              footer={
-              <div className={styles.cardFooter}>
-                <button onClick={() => openEdit(dept)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>Sửa</button>
-                <button onClick={() => handleDeleteClick(dept)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.875rem' }}>Xóa</button>
-              </div>
-            }>
-              <div className={styles.deptHeader}>
-                <div className={styles.iconWrapper}>
-                  <Building2 size={26} />
+        <>
+          <div className={styles.grid}>
+            {pagedDepartments.map((dept, index) => (
+              <Card 
+                key={dept._id} 
+                className={`${styles.deptCard} glass`} 
+                style={{ animationDelay: `${index * 0.05}s` }}
+                footer={
+                <div className={styles.cardFooter}>
+                  <button onClick={() => openEdit(dept)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>Sửa</button>
+                  <button onClick={() => handleDeleteClick(dept)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.875rem' }}>Xóa</button>
                 </div>
-                <div>
-                  <h3 className={styles.deptName}>{dept.name}</h3>
-                  <span className="badge badge-primary" style={{ fontSize: '0.7rem', marginTop: '0.25rem' }}>
-                    {dept.faculty ? `KHOA ${dept.faculty.toUpperCase()}` : 'ĐƠN VỊ ĐỘC LẬP'}
-                  </span>
+              }>
+                <div className={styles.deptHeader}>
+                  <div className={styles.iconWrapper}>
+                    <Building2 size={26} />
+                  </div>
+                  <div>
+                    <h3 className={styles.deptName}>{dept.name}</h3>
+                    <span className="badge badge-primary" style={{ fontSize: '0.7rem', marginTop: '0.25rem' }}>
+                      {dept.faculty ? `KHOA ${dept.faculty.toUpperCase()}` : 'ĐƠN VỊ ĐỘC LẬP'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              
-              <div className={styles.deptMeta}>
-                <div className={styles.description}>
-                  {dept.description || 'Chưa có thông tin mô tả chi tiết cho đơn vị này.'}
+                
+                <div className={styles.deptMeta}>
+                  <div className={styles.description}>
+                    {dept.description || 'Chưa có thông tin mô tả chi tiết cho đơn vị này.'}
+                  </div>
+                  <div className={styles.dateInfo}>
+                    <span>Thành lập</span>
+                    <span>{dept.created_at ? new Date(dept.created_at).toLocaleDateString('vi-VN') : '—'}</span>
+                  </div>
                 </div>
-                <div className={styles.dateInfo}>
-                  <span>Thành lập</span>
-                  <span>{dept.created_at ? new Date(dept.created_at).toLocaleDateString('vi-VN') : '—'}</span>
-                </div>
-              </div>
-            </Card>
-          ))}
-          {departments.length === 0 && (
-             <div className={styles.emptyState}>
-               <Building2 size={64} style={{ opacity: 0.1 }} />
-               <p>Hệ thống chưa ghi nhận đơn vị đào tạo nào.</p>
-             </div>
-          )}
-        </div>
+              </Card>
+            ))}
+            {departments.length === 0 && (
+               <div className={styles.emptyState}>
+                 <Building2 size={64} style={{ opacity: 0.1 }} />
+                 <p>Hệ thống chưa ghi nhận đơn vị đào tạo nào.</p>
+               </div>
+            )}
+          </div>
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={pagedDepartments.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+          />
+        </>
       )}
 
       <ConfirmModal 

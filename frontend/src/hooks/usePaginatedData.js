@@ -2,43 +2,75 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '@/lib/api';
 
-/**
- * Custom hook for paginated data with searching, debouncing, and caching.
- */
-export default function usePaginatedData(url, options = {}) {
+function normalizeOptions(optionsOrCacheKey, legacyLimit) {
+  if (typeof optionsOrCacheKey === 'string') {
+    return {
+      cacheKey: optionsOrCacheKey,
+      initialLimit: legacyLimit ?? 20,
+    };
+  }
+  return optionsOrCacheKey || {};
+}
+
+function normalizeResult(result, currentSkip) {
+  if (Array.isArray(result)) {
+    return {
+      data: result,
+      total: result.length,
+      skip: currentSkip,
+    };
+  }
+
+  if (Array.isArray(result?.data)) {
+    return {
+      data: result.data,
+      total: Number(result.total ?? result.data.length ?? 0),
+      skip: Number(result.skip ?? currentSkip ?? 0),
+    };
+  }
+
+  return {
+    data: [],
+    total: 0,
+    skip: Number(result?.skip ?? currentSkip ?? 0),
+  };
+}
+
+export default function usePaginatedData(url, optionsOrCacheKey = {}, legacyLimit) {
+  const options = normalizeOptions(optionsOrCacheKey, legacyLimit);
   const {
     initialLimit = 20,
     initialSkip = 0,
-    cacheKey = null,
-    cacheTime = 5 * 60 * 1000, // 5 minutes default
+    searchParam = 'search',
+    extraParams = {},
+    responseAdapter = null,
   } = options;
+  const extraParamsKey = JSON.stringify(extraParams || {});
 
   const [data, setData] = useState([]);
+  const [rawData, setRawData] = useState(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [skip, setSkip] = useState(initialSkip);
   const [limit, setLimit] = useState(initialLimit);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   
   const searchTimeoutRef = useRef(null);
   const currentRequestRef = useRef(null);
+  const responseAdapterRef = useRef(responseAdapter);
+  const extraParamsRef = useRef(extraParams || {});
+
+  useEffect(() => {
+    responseAdapterRef.current = responseAdapter;
+  }, [responseAdapter]);
+
+  useEffect(() => {
+    extraParamsRef.current = extraParamsKey ? JSON.parse(extraParamsKey) : {};
+  }, [extraParamsKey]);
 
   const fetchData = useCallback(async (currentSkip, currentLimit, currentSearch, force = false) => {
-    // 1. Check cache if not forced
-    if (cacheKey && !force && !currentSearch) {
-      const cached = localStorage.getItem(`cache_${cacheKey}_${currentSkip}_${currentLimit}`);
-      if (cached) {
-        const { timestamp, data: cachedData, total: cachedTotal } = JSON.parse(cached);
-        if (Date.now() - timestamp < cacheTime) {
-          setData(cachedData);
-          setTotal(cachedTotal);
-          setLoading(false);
-          return;
-        }
-      }
-    }
-
     try {
       setLoading(true);
       setError(null);
@@ -51,27 +83,23 @@ export default function usePaginatedData(url, options = {}) {
       const params = {
         skip: currentSkip,
         limit: currentLimit,
-        search: currentSearch || undefined
+        ...extraParamsRef.current,
       };
+      if (currentSearch) params[searchParam] = currentSearch;
 
       const response = await api.get(url, { params });
-      
-      // The backend now returns { data, total, skip, limit }
       const result = response.data;
-      const fetchedData = result.data || [];
-      const fetchedTotal = result.total || 0;
+      const adapted = typeof responseAdapterRef.current === 'function'
+        ? responseAdapterRef.current(result, { skip: currentSkip, limit: currentLimit, search: currentSearch })
+        : normalizeResult(result, currentSkip);
+      const fetchedData = adapted.data || [];
+      const fetchedTotal = Number(adapted.total || 0);
+      const resolvedSkip = Number(adapted.skip ?? currentSkip ?? 0);
 
       setData(fetchedData);
+      setRawData(result);
       setTotal(fetchedTotal);
-
-      // 2. Update cache
-      if (cacheKey && !currentSearch) {
-        localStorage.setItem(`cache_${cacheKey}_${currentSkip}_${currentLimit}`, JSON.stringify({
-          timestamp: Date.now(),
-          data: fetchedData,
-          total: fetchedTotal
-        }));
-      }
+      setSkip(resolvedSkip);
     } catch (err) {
       if (err.name !== 'CanceledError') {
         setError(err.message || 'Lỗi khi tải dữ liệu');
@@ -80,22 +108,26 @@ export default function usePaginatedData(url, options = {}) {
     } finally {
       setLoading(false);
     }
-  }, [url, cacheKey, cacheTime]);
+  }, [url, searchParam]);
 
-  // Initial fetch and on skip/limit change
   useEffect(() => {
-    fetchData(skip, limit, search);
-  }, [skip, limit, fetchData]);
+    fetchData(skip, limit, debouncedSearch);
+  }, [skip, limit, debouncedSearch, fetchData]);
 
-  // Handle search with debouncing
-  const handleSearch = (val) => {
-    setSearch(val);
+  useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    
     searchTimeoutRef.current = setTimeout(() => {
-      setSkip(0); // Reset to first page on search
-      fetchData(0, limit, val);
-    }, 500);
+      setSkip(0);
+      setDebouncedSearch(search);
+    }, 350);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [search]);
+
+  const handleSearch = (value) => {
+    setSearch(value);
   };
 
   const nextPage = () => {
@@ -110,20 +142,46 @@ export default function usePaginatedData(url, options = {}) {
     }
   };
 
-  const refresh = () => fetchData(skip, limit, search, true);
+  const setPage = (value) => {
+    const nextPageValue = typeof value === 'function'
+      ? value(Math.floor(skip / limit) + 1)
+      : value;
+    const normalizedPage = Math.max(1, Number(nextPageValue) || 1);
+    setSkip((normalizedPage - 1) * limit);
+  };
+
+  const setPageSize = (value) => {
+    const normalized = Math.max(1, Number(value) || initialLimit);
+    setLimit(normalized);
+    setSkip(0);
+  };
+
+  const refresh = () => fetchData(skip, limit, debouncedSearch, true);
+  const currentPage = Math.floor(skip / limit) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return {
     data,
+    rawData,
     total,
     loading,
     error,
     skip,
     limit,
+    page: currentPage,
+    pageSize: limit,
     search,
+    query: search,
     handleSearch,
+    setSearch,
+    setQuery: setSearch,
     nextPage,
     prevPage,
-    setPage: (p) => setSkip(p * limit),
-    refresh
+    setPage,
+    currentPage,
+    setCurrentPage: setPage,
+    totalPages,
+    setPageSize,
+    refresh,
   };
 }

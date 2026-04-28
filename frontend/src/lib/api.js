@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { showPopup } from '@/lib/popup';
+import { clearAuthCookies, getAuthTokenFromBrowser } from '@/lib/authCookies';
 
 function normalizeBaseUrl(value) {
   return typeof value === 'string' ? value.trim().replace(/\/$/, '') : '';
@@ -88,23 +89,18 @@ api.defaults.retryDelay = 1000;
 // Add a request interceptor to add the auth token
 api.interceptors.request.use(
   (config) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = typeof window !== 'undefined' ? getAuthTokenFromBrowser() : null;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    }
-    // Debug log to see the actual URL being called in the browser
-    if (typeof window !== 'undefined') {
-      console.log(`API Call: ${config.method.toUpperCase()} ${config.baseURL}${config.url}`);
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Add a response interceptor to handle token expiration
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
     const message = extractErrorMessage(error);
 
@@ -124,6 +120,7 @@ api.interceptors.response.use(
           showErrorPopup('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          clearAuthCookies();
           if (!isOnLoginPage) {
             window.location.href = '/login';
           }

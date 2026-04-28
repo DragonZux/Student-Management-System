@@ -7,39 +7,28 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { isInRange, matchesPattern, popupValidationError } from '@/lib/validation';
 
+import usePaginatedData from '@/hooks/usePaginatedData';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import PaginationControls from '@/components/ui/PaginationControls';
+
 export default function ClassroomsPage() {
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const {
+    data: rooms,
+    loading,
+    error,
+    total,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    pageSize,
+    setPageSize,
+    refresh
+  } = usePaginatedData('/admin/classrooms', { cacheKey: 'classrooms' });
+
   const [formError, setFormError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ code: '', building: '', capacity: 0, facilities: '' });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/admin/classrooms');
-        if (!cancelled) {
-          setRooms(res.data || []);
-        }
-      } catch (e) {
-        console.error('Failed to load classrooms', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách phòng học');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -70,37 +59,22 @@ export default function ClassroomsPage() {
       popupValidationError(setFormError, 'Vui lòng nhập Mã phòng.');
       return;
     }
-    if (!matchesPattern(payload.code, /^[A-Za-z0-9_-]{2,20}$/)) {
-      popupValidationError(setFormError, 'Mã phòng chỉ gồm chữ, số, dấu gạch và dài từ 2 đến 20 ký tự.');
-      return;
-    }
-    if (payload.capacity < 0) {
-      popupValidationError(setFormError, 'Sức chứa không được nhỏ hơn 0.');
-      return;
-    }
-    if (!isInRange(payload.capacity, 0, 1000)) {
-      popupValidationError(setFormError, 'Sức chứa phải trong khoảng 0 đến 1000.');
-      return;
-    }
     try {
       if (editing?._id) await api.patch(`/admin/classrooms/${editing._id}`, payload);
       else await api.post('/admin/classrooms', payload);
       setShowForm(false);
-      await load();
+      refresh();
     } catch (e) {
-      console.error('Failed to save classroom', e);
       setFormError(e.response?.data?.detail || 'Lưu phòng học thất bại');
     }
   };
   const remove = async (room) => {
     if (!confirm(`Xóa phòng học ${room.code}?`)) return;
     try {
-      setError('');
       await api.delete(`/admin/classrooms/${room._id}`);
-      await load();
+      refresh();
     } catch (e) {
-      console.error('Failed to delete classroom', e);
-      setError(e.response?.data?.detail || 'Xóa phòng học thất bại');
+      alert(e.response?.data?.detail || 'Xóa phòng học thất bại');
     }
   };
 
@@ -148,13 +122,12 @@ export default function ClassroomsPage() {
         </div>
       </Modal>
 
-      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>
+      {error && <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>}
 
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem 0', gap: '1rem' }}>
-          <div className="animate-spin" style={{ width: '40px', height: '40px', border: '4px solid var(--muted)', borderTopColor: 'var(--primary)', borderRadius: '50%' }} />
-          <p style={{ color: 'var(--muted-foreground)', fontWeight: 500 }}>Đang truy xuất dữ liệu phòng học...</p>
-        </div>
+        <Card title="Đang tải dữ liệu phòng học...">
+          <TableSkeleton rows={8} columns={4} />
+        </Card>
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
@@ -162,7 +135,7 @@ export default function ClassroomsPage() {
               <div key={room._id || room.code} style={{ 
                 padding: '1.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)',
                 display: 'flex', flexDirection: 'column', gap: '1rem'
-              }}>
+              }} className="glass card-hover">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <h3 style={{ margin: 0 }}>{room.code}</h3>
@@ -175,9 +148,7 @@ export default function ClassroomsPage() {
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {(room.facilities || []).map(item => (
-                    <span key={item} style={{ 
-                      padding: '0.25rem 0.5rem', background: 'var(--muted)', borderRadius: '4px', fontSize: '0.75rem', color: 'var(--muted-foreground)' 
-                    }}>
+                    <span key={item} className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
                       {item}
                     </span>
                   ))}
@@ -194,9 +165,23 @@ export default function ClassroomsPage() {
               </div>
             ))}
           </div>
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-            {!loading && !error && rooms.length === 0 ? <p>Không có phòng học nào được ghi nhận.</p> : null}
-          </div>
+
+          <PaginationControls
+            page={currentPage}
+            totalPages={totalPages}
+            total={total}
+            currentCount={rooms.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showPageSize
+          />
+
+          {!loading && rooms.length === 0 && (
+            <div style={{ padding: '4rem', textAlign: 'center' }}>
+              <p style={{ color: 'var(--muted-foreground)' }}>Không tìm thấy phòng học nào phù hợp.</p>
+            </div>
+          )}
         </>
       )}
     </div>

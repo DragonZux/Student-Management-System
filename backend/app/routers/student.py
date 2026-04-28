@@ -1,5 +1,5 @@
 from io import BytesIO
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from typing import List
 from app.dependencies import get_current_user, check_student_role
@@ -13,6 +13,22 @@ from datetime import datetime
 import uuid
 
 router = APIRouter(dependencies=[Depends(check_student_role)])
+
+
+async def _fetch_classes_by_ids(db, class_ids):
+    unique_ids = list({class_id for class_id in class_ids if class_id})
+    if not unique_ids:
+        return {}
+    classes = await db.classes.find({"_id": {"$in": unique_ids}}).to_list(len(unique_ids))
+    return {item["_id"]: item for item in classes}
+
+
+async def _fetch_courses_by_ids(db, course_ids):
+    unique_ids = list({course_id for course_id in course_ids if course_id})
+    if not unique_ids:
+        return {}
+    courses = await db.courses.find({"_id": {"$in": unique_ids}}).to_list(len(unique_ids))
+    return {item["_id"]: item for item in courses}
 
 
 def _build_simple_pdf(lines: List[str]) -> bytes:
@@ -50,14 +66,19 @@ def _build_simple_pdf(lines: List[str]) -> bytes:
     return bytes(pdf)
 
 @router.get("/available-classes")
-async def list_available_classes(student: dict = Depends(check_student_role)):
+async def list_available_classes(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    student: dict = Depends(check_student_role),
+):
     """
     List classes the student can enroll in (excluding already-enrolled classes).
     """
     db = get_database()
-    enrolled = await db.enrollments.find({"student_id": student["_id"]}).to_list(10000)
-    enrolled_class_ids = {e["class_id"] for e in enrolled}
-    classes = await db.classes.find({"_id": {"$nin": list(enrolled_class_ids)}}).to_list(1000)
+    enrolled_class_ids = set(await db.enrollments.distinct("class_id", {"student_id": student["_id"]}))
+    query = {"_id": {"$nin": list(enrolled_class_ids)}}
+    total = await db.classes.count_documents(query)
+    classes = await db.classes.find(query).skip(skip).limit(limit).to_list(limit)
     # Enrich with course/teacher info for UI
     teacher_ids = {c.get("teacher_id") for c in classes if c.get("teacher_id")}
     course_ids = {c.get("course_id") for c in classes if c.get("course_id")}
@@ -71,12 +92,23 @@ async def list_available_classes(student: dict = Depends(check_student_role)):
         cls["teacher_name"] = t.get("full_name") if t else None
         cls["course_code"] = crs.get("code") if crs else None
         cls["course_title"] = crs.get("title") if crs else None
-    return classes
+    return {
+        "data": classes,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 @router.get("/my-enrollments")
-async def list_my_enrollments(student: dict = Depends(check_student_role)):
+async def list_my_enrollments(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    student: dict = Depends(check_student_role),
+):
     db = get_database()
-    enrollments = await db.enrollments.find({"student_id": student["_id"]}).sort("enrolled_at", -1).to_list(1000)
+    query = {"student_id": student["_id"]}
+    total = await db.enrollments.count_documents(query)
+    enrollments = await db.enrollments.find(query).sort("enrolled_at", -1).skip(skip).limit(limit).to_list(limit)
     class_ids = [e["class_id"] for e in enrollments]
     classes = await db.classes.find({"_id": {"$in": class_ids}}).to_list(1000) if class_ids else []
     class_by_id = {c["_id"]: c for c in classes}
@@ -92,21 +124,47 @@ async def list_my_enrollments(student: dict = Depends(check_student_role)):
             "class": cls,
             "course": crs,
         })
-    return items
+    return {
+        "data": items,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 @router.get("/my-assignments")
-async def list_my_assignments(student: dict = Depends(check_student_role)):
+async def list_my_assignments(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    student: dict = Depends(check_student_role),
+):
     db = get_database()
-    enrollments = await db.enrollments.find({"student_id": student["_id"], "status": {"$in": ["enrolled", "completed"]}}).to_list(10000)
-    class_ids = [e["class_id"] for e in enrollments]
-    assignments = await db.assignments.find({"class_id": {"$in": class_ids}}).sort("deadline", 1).to_list(1000) if class_ids else []
-    return assignments
+    class_ids = await db.enrollments.distinct("class_id", {"student_id": student["_id"], "status": {"$in": ["enrolled", "completed"]}})
+    query = {"class_id": {"$in": class_ids}} if class_ids else {"class_id": {"$in": []}}
+    total = await db.assignments.count_documents(query)
+    assignments = await db.assignments.find(query).sort("deadline", 1).skip(skip).limit(limit).to_list(limit) if class_ids else []
+    return {
+        "data": assignments,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 @router.get("/my-submissions")
-async def list_my_submissions(student: dict = Depends(check_student_role)):
+async def list_my_submissions(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    student: dict = Depends(check_student_role),
+):
     db = get_database()
-    submissions = await db.submissions.find({"student_id": student["_id"]}).sort("submitted_at", -1).to_list(1000)
-    return submissions
+    query = {"student_id": student["_id"]}
+    total = await db.submissions.count_documents(query)
+    submissions = await db.submissions.find(query).sort("submitted_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": submissions,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 @router.post("/enroll/{class_id}")
 async def enroll_in_class(
@@ -135,20 +193,31 @@ async def enroll_in_class(
     # 4. Check Prerequisites
     course = await db.courses.find_one({"_id": target_class["course_id"]})
     if course and course.get("prerequisites"):
-        for prereq_code in course["prerequisites"]:
-            prereq_course = await db.courses.find_one({"code": prereq_code})
-            if not prereq_course:
-                raise HTTPException(status_code=400, detail=f"Prerequisite course {prereq_code} is not configured")
+        prereq_courses = await db.courses.find({"code": {"$in": course["prerequisites"]}}).to_list(len(course["prerequisites"]))
+        prereq_by_code = {item["code"]: item for item in prereq_courses}
 
-            prereq_classes = await db.classes.find({"course_id": prereq_course["_id"]}).to_list(1000)
-            prereq_class_ids = [cls["_id"] for cls in prereq_classes]
-            completed = await db.enrollments.find_one({
-                "student_id": student["_id"],
-                "class_id": {"$in": prereq_class_ids},
-                "status": "completed",
-                "grade": {"$gte": 2.0},
-            })
-            if not completed:
+        missing_configs = [code for code in course["prerequisites"] if code not in prereq_by_code]
+        if missing_configs:
+            raise HTTPException(status_code=400, detail=f"Prerequisite course {missing_configs[0]} is not configured")
+
+        prereq_course_ids = [item["_id"] for item in prereq_courses]
+        prereq_classes = await db.classes.find({"course_id": {"$in": prereq_course_ids}}).to_list(5000)
+        prereq_class_ids_by_course = {}
+        for cls in prereq_classes:
+            prereq_class_ids_by_course.setdefault(cls["course_id"], []).append(cls["_id"])
+
+        completed_enrollments = await db.enrollments.find({
+            "student_id": student["_id"],
+            "class_id": {"$in": [cls["_id"] for cls in prereq_classes]},
+            "status": "completed",
+            "grade": {"$gte": 2.0},
+        }).to_list(5000)
+        completed_class_ids = {item["class_id"] for item in completed_enrollments}
+
+        for prereq_code in course["prerequisites"]:
+            prereq_course = prereq_by_code[prereq_code]
+            prereq_class_ids = prereq_class_ids_by_course.get(prereq_course["_id"], [])
+            if not prereq_class_ids or not any(class_id in completed_class_ids for class_id in prereq_class_ids):
                 raise HTTPException(status_code=400, detail=f"Missing prerequisite: {prereq_code}")
 
     # 5. Perform Enrollment
@@ -219,29 +288,43 @@ async def submit_assignment(
     return {"message": "Assignment submitted successfully", "submission_id": submission["_id"]}
 
 @router.get("/my-schedule")
-async def get_my_schedule(student: dict = Depends(check_student_role)):
+async def get_my_schedule(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    student: dict = Depends(check_student_role),
+):
     db = get_database()
     
     # Get all enrollments for this student
-    enrollments = await db.enrollments.find({"student_id": student["_id"], "status": "enrolled"}).to_list(100)
+    enrollments = await db.enrollments.find({"student_id": student["_id"], "status": "enrolled"}).to_list(1000)
     
     class_ids = [e["class_id"] for e in enrollments]
     
     # Get class details including schedule
-    my_classes = await db.classes.find({"_id": {"$in": class_ids}}).to_list(100)
+    total = len(class_ids)
+    class_by_id = await _fetch_classes_by_ids(db, class_ids)
+    paginated_ids = class_ids[skip:skip + limit]
+    my_classes = [class_by_id[class_id] for class_id in paginated_ids if class_id in class_by_id]
     
     # Enrich with course titles
+    course_by_id = await _fetch_courses_by_ids(db, [c.get("course_id") for c in my_classes])
     for c in my_classes:
-        course = await db.courses.find_one({"_id": c["course_id"]})
+        course = course_by_id.get(c.get("course_id"))
         c["course_title"] = course["title"] if course else "Unknown Course"
         c["course_code"] = course["code"] if course else "???"
 
-    return my_classes
+    return {
+        "data": my_classes,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @router.get("/my-schedule/export")
 async def export_my_schedule(student: dict = Depends(check_student_role)):
-    my_classes = await get_my_schedule(student)
+    response = await get_my_schedule(skip=0, limit=1000, student=student)
+    my_classes = response.get("data", []) if isinstance(response, dict) else response
     lines = [
         f"Student schedule export for: {student.get('full_name', student.get('email', student['_id']))}",
         "",
@@ -269,19 +352,25 @@ async def export_my_schedule(student: dict = Depends(check_student_role)):
     )
 
 @router.get("/my-grades")
-async def get_my_grades(student: dict = Depends(check_student_role)):
+async def get_my_grades(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    student: dict = Depends(check_student_role),
+):
     db = get_database()
     enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(1000)
+    class_by_id = await _fetch_classes_by_ids(db, [enrollment["class_id"] for enrollment in enrollments])
+    course_by_id = await _fetch_courses_by_ids(db, [item.get("course_id") for item in class_by_id.values()])
 
     grade_items = []
     total_points = 0.0
     total_credits = 0
 
     for enrollment in enrollments:
-        cls = await db.classes.find_one({"_id": enrollment["class_id"]})
+        cls = class_by_id.get(enrollment["class_id"])
         if not cls:
             continue
-        course = await db.courses.find_one({"_id": cls["course_id"]})
+        course = course_by_id.get(cls.get("course_id"))
         if not course:
             continue
         grade = enrollment.get("grade")
@@ -300,7 +389,16 @@ async def get_my_grades(student: dict = Depends(check_student_role)):
             total_credits += credits
 
     gpa = round(total_points / total_credits, 2) if total_credits > 0 else 0.0
-    return {"records": grade_items, "gpa": gpa, "graded_credits": total_credits}
+    total_records = len(grade_items)
+    paginated_records = grade_items[skip:skip + limit]
+    return {
+        "records": paginated_records,
+        "total": total_records,
+        "skip": skip,
+        "limit": limit,
+        "gpa": gpa,
+        "graded_credits": total_credits,
+    }
 
 @router.post("/withdraw/{enrollment_id}")
 async def withdraw_course(enrollment_id: str, payload: dict, student: dict = Depends(check_student_role)):
@@ -406,11 +504,8 @@ async def get_dashboard_summary(student: dict = Depends(check_student_role)):
     completed_enrollments = [e for e in enrollments if e.get("status") == "completed" and e.get("grade") is not None]
 
     class_ids = [e["class_id"] for e in enrollments]
-    classes = await db.classes.find({"_id": {"$in": class_ids}}).to_list(1000) if class_ids else []
-    class_by_id = {item["_id"]: item for item in classes}
-    course_ids = {item.get("course_id") for item in classes if item.get("course_id")}
-    courses = await db.courses.find({"_id": {"$in": list(course_ids)}}).to_list(1000) if course_ids else []
-    course_by_id = {item["_id"]: item for item in courses}
+    class_by_id = await _fetch_classes_by_ids(db, class_ids)
+    course_by_id = await _fetch_courses_by_ids(db, [item.get("course_id") for item in class_by_id.values()])
 
     total_points = 0.0
     total_credits = 0

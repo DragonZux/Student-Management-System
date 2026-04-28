@@ -5,40 +5,48 @@ import { Upload, File, CheckCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { popupValidationError } from '@/lib/validation';
+import usePaginatedData from '@/hooks/usePaginatedData';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function StudentAssignmentsPage() {
-  const [assignments, setAssignments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [submissionsLoading, setSubmissionsLoading] = useState(true);
+  const [submissionsError, setSubmissionsError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [submittingFor, setSubmittingFor] = useState(null);
   const [content, setContent] = useState('');
 
+  const {
+    data: assignments,
+    loading,
+    error,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+    refresh,
+  } = usePaginatedData('/student/my-assignments', { cacheKey: 'student_assignments', initialLimit: 6 });
+
   useEffect(() => {
     let cancelled = false;
-
-    const load = async () => {
+    const loadSubmissions = async () => {
       try {
-        setLoading(true);
-        setError('');
-        const [aRes, sRes] = await Promise.all([
-          api.get('/student/my-assignments'),
-          api.get('/student/my-submissions'),
-        ]);
+        setSubmissionsLoading(true);
+        setSubmissionsError('');
+        const response = await api.get('/student/my-submissions', { params: { skip: 0, limit: 1000 } });
         if (!cancelled) {
-          setAssignments(aRes.data || []);
-          setSubmissions(sRes.data || []);
+          setSubmissions(response.data?.data || response.data || []);
         }
       } catch (e) {
-        console.error('Failed to load assignments', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được bài tập');
+        console.error('Failed to load submissions', e);
+        if (!cancelled) setSubmissionsError(e.response?.data?.detail || 'Không tải được bài nộp');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setSubmissionsLoading(false);
       }
     };
-
-    load();
+    loadSubmissions();
     return () => {
       cancelled = true;
     };
@@ -76,7 +84,9 @@ export default function StudentAssignmentsPage() {
         params: { submission_content: content.trim() },
       });
       setSubmittingFor(null);
-      await load();
+      refresh();
+      const response = await api.get('/student/my-submissions', { params: { skip: 0, limit: 1000 } });
+      setSubmissions(response.data?.data || response.data || []);
     } catch (e) {
       console.error('Failed to submit assignment', e);
       setSubmitError(e.response?.data?.detail || 'Gửi bài thất bại');
@@ -88,8 +98,9 @@ export default function StudentAssignmentsPage() {
       <h1>Assignments & Submissions</h1>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '2rem' }}>
-        {loading ? <Card className="glass">Đang tải...</Card> : null}
+        {(loading || submissionsLoading) ? <Card className="glass">Đang tải...</Card> : null}
         <InlineMessage variant="error">{error}</InlineMessage>
+        <InlineMessage variant="error">{submissionsError}</InlineMessage>
 
         {submittingFor ? (
           <Card title={`Submit: ${submittingFor.title}`} className="glass" footer={
@@ -187,6 +198,16 @@ export default function StudentAssignmentsPage() {
           );
         })}
         {!loading && !error && (assignments || []).length === 0 ? <Card className="glass">Chưa có bài tập nào.</Card> : null}
+        <PaginationControls
+          page={currentPage}
+          totalPages={totalPages}
+          total={total}
+          currentCount={assignments.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          showPageSize
+        />
       </div>
     </div>
   );

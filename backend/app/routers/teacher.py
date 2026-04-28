@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List
 from app.dependencies import get_current_user, check_teacher_role
 from app.routers.notifications import create_notification
@@ -85,12 +85,19 @@ async def list_my_classes(teacher: dict = Depends(check_teacher_role)):
     return classes
 
 @router.get("/classes/{class_id}/students")
-async def list_class_students(class_id: str, teacher: dict = Depends(check_teacher_role)):
+async def list_class_students(
+    class_id: str,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    teacher: dict = Depends(check_teacher_role),
+):
     db = get_database()
     target_class = await db.classes.find_one({"_id": class_id, "teacher_id": teacher["_id"]})
     if not target_class:
         raise HTTPException(status_code=403, detail="You do not teach this class")
-    enrollments = await db.enrollments.find({"class_id": class_id}).to_list(1000)
+    query = {"class_id": class_id}
+    total = await db.enrollments.count_documents(query)
+    enrollments = await db.enrollments.find(query).skip(skip).limit(limit).to_list(limit)
     student_ids = [e["student_id"] for e in enrollments]
     students = await db.users.find({"_id": {"$in": student_ids}}).to_list(1000) if student_ids else []
     student_by_id = {s["_id"]: s for s in students}
@@ -106,14 +113,31 @@ async def list_class_students(class_id: str, teacher: dict = Depends(check_teach
                 "department": s.get("department") if s else None,
             } if s else None,
         })
-    return items
+    return {
+        "data": items,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 @router.get("/assignments")
-async def list_my_assignments(teacher: dict = Depends(check_teacher_role)):
+async def list_my_assignments(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    teacher: dict = Depends(check_teacher_role),
+):
     db = get_database()
     classes = await db.classes.find({"teacher_id": teacher["_id"]}).to_list(1000)
     class_ids = [c["_id"] for c in classes]
-    return await db.assignments.find({"class_id": {"$in": class_ids}}).sort("created_at", -1).to_list(1000) if class_ids else []
+    query = {"class_id": {"$in": class_ids}} if class_ids else {"class_id": {"$in": []}}
+    total = await db.assignments.count_documents(query)
+    assignments = await db.assignments.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit) if class_ids else []
+    return {
+        "data": assignments,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 @router.get("/attendance/{class_id}")
 async def list_attendance(class_id: str, teacher: dict = Depends(check_teacher_role)):
@@ -124,7 +148,12 @@ async def list_attendance(class_id: str, teacher: dict = Depends(check_teacher_r
     return await db.attendance.find({"class_id": class_id}).sort("date", -1).to_list(200)
 
 @router.get("/submissions/{assignment_id}")
-async def list_assignment_submissions(assignment_id: str, teacher: dict = Depends(check_teacher_role)):
+async def list_assignment_submissions(
+    assignment_id: str,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    teacher: dict = Depends(check_teacher_role),
+):
     db = get_database()
     assignment = await db.assignments.find_one({"_id": assignment_id})
     if not assignment:
@@ -132,8 +161,15 @@ async def list_assignment_submissions(assignment_id: str, teacher: dict = Depend
     target_class = await db.classes.find_one({"_id": assignment["class_id"], "teacher_id": teacher["_id"]})
     if not target_class:
         raise HTTPException(status_code=403, detail="You do not teach this class")
-    submissions = await db.submissions.find({"assignment_id": assignment_id}).sort("submitted_at", -1).to_list(1000)
-    return submissions
+    query = {"assignment_id": assignment_id}
+    total = await db.submissions.count_documents(query)
+    submissions = await db.submissions.find(query).sort("submitted_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": submissions,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 # --- Attendance ---
 
@@ -284,10 +320,23 @@ async def grade_student(
     
     return {"message": "Grade updated successfully"}
 
-@router.get("/feedback/{class_id}", response_model=List[FeedbackOut])
-async def view_class_feedback(class_id: str, teacher: dict = Depends(check_teacher_role)):
+@router.get("/feedback/{class_id}")
+async def view_class_feedback(
+    class_id: str,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=2000),
+    teacher: dict = Depends(check_teacher_role),
+):
     db = get_database()
     target_class = await db.classes.find_one({"_id": class_id, "teacher_id": teacher["_id"]})
     if not target_class:
         raise HTTPException(status_code=403, detail="You do not teach this class")
-    return await db.feedback.find({"class_id": class_id}).sort("created_at", -1).to_list(1000)
+    query = {"class_id": class_id}
+    total = await db.feedback.count_documents(query)
+    items = await db.feedback.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {
+        "data": items,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }

@@ -5,6 +5,7 @@ import { CheckCircle, Clock, AlertCircle, MessageSquare } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isInRange, popupValidationError, toNumber } from '@/lib/validation';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function TeacherGradingPage() {
   const [classes, setClasses] = useState([]);
@@ -16,10 +17,16 @@ export default function TeacherGradingPage() {
   const [grade, setGrade] = useState('');
   const [comments, setComments] = useState('');
   const [formError, setFormError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
   const loadStudents = async (classId) => {
-    const res = await api.get(`/teacher/classes/${classId}/students`);
-    setItems(res.data || []);
+    const res = await api.get(`/teacher/classes/${classId}/students`, {
+      params: { skip: (page - 1) * pageSize, limit: pageSize },
+    });
+    setItems(res.data?.data || res.data || []);
+    setTotalItems(res.data?.total || 0);
   };
 
   useEffect(() => {
@@ -52,6 +59,10 @@ export default function TeacherGradingPage() {
   }, [classes, selectedClass]);
 
   useEffect(() => {
+    setPage(1);
+  }, [selectedClass]);
+
+  useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
@@ -59,9 +70,12 @@ export default function TeacherGradingPage() {
       try {
         setLoading(true);
         setError('');
-        const res = await api.get(`/teacher/classes/${selectedClass}/students`);
+        const res = await api.get(`/teacher/classes/${selectedClass}/students`, {
+          params: { skip: (page - 1) * pageSize, limit: pageSize },
+        });
         if (!cancelled) {
-          setItems(res.data || []);
+          setItems(res.data?.data || res.data || []);
+          setTotalItems(res.data?.total || 0);
         }
       } catch (e) {
         console.error('Failed to load students', e);
@@ -75,7 +89,7 @@ export default function TeacherGradingPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedClass]);
+  }, [selectedClass, page, pageSize]);
 
   const openGrade = (it) => {
     setGrading(it);
@@ -190,6 +204,16 @@ export default function TeacherGradingPage() {
           ))}
           {!loading && !error && items.length === 0 ? <div style={{ padding: '1rem' }}>Không có dữ liệu đăng ký.</div> : null}
         </div>
+        <PaginationControls
+          page={page}
+          totalPages={Math.max(1, Math.ceil(totalItems / pageSize))}
+          total={totalItems}
+          currentCount={items.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          showPageSize
+        />
       </Card>
     </div>
   );

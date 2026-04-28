@@ -8,7 +8,6 @@ export const metadata = {
 
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import PopupHost from '@/components/providers/PopupHost';
-import { NotificationProvider } from '@/components/providers/NotificationProvider';
 
 const beVietnamPro = Be_Vietnam_Pro({
   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
@@ -21,10 +20,8 @@ export default function RootLayout({ children }) {
     <html lang="vi">
       <body className={beVietnamPro.className}>
         <AuthProvider>
-          <NotificationProvider>
-            <PopupHost />
-            {children}
-          </NotificationProvider>
+          <PopupHost />
+          {children}
         </AuthProvider>
       </body>
     </html>

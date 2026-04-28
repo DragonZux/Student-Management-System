@@ -2,12 +2,24 @@
 import Card from '@/components/ui/Card';
 import { Bell, Clock, Info, CheckCircle, Trash2, CheckCheck, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useNotifications } from '@/components/providers/NotificationProvider';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '@/lib/api';
+import usePaginatedData from '@/hooks/usePaginatedData';
+import PaginationControls from '@/components/ui/PaginationControls';
 
 export default function NotificationsPage() {
-  const { notifications, loading, markRead, markAllRead } = useNotifications();
   const [markingAll, setMarkingAll] = useState(false);
+  const {
+    data: notifications,
+    loading,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
+    refresh,
+  } = usePaginatedData('/notifications/', { cacheKey: 'notifications_page', initialLimit: 10 });
 
   const formatTimeAgo = (iso) => {
     const ts = iso ? new Date(iso).getTime() : 0;
@@ -33,13 +45,18 @@ export default function NotificationsPage() {
   }, [notifications]);
 
   const handleMarkAll = async () => {
-    if (!markAllRead) return;
     setMarkingAll(true);
     try {
-      await markAllRead();
+      await api.post('/notifications/mark-all-read');
+      refresh();
     } finally {
       setMarkingAll(false);
     }
+  };
+
+  const markRead = async (id) => {
+    await api.post(`/notifications/${id}/read`);
+    refresh();
   };
 
   const getCategoryStyles = (cat) => {
@@ -226,6 +243,17 @@ export default function NotificationsPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <PaginationControls
+        page={currentPage}
+        totalPages={totalPages}
+        total={total}
+        currentCount={items.length}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+        showPageSize
+      />
     </div>
   );
 }
