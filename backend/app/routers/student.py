@@ -335,10 +335,14 @@ async def withdraw_course(enrollment_id: str, payload: dict, student: dict = Dep
         metadata={"class_id": enrollment["class_id"], "reason": reason},
     )
 
-    # Notify admins so they can approve/reject promptly
-    admins = await db.users.find({"role": UserRole.ADMIN}).to_list(1000)
     cls = await db.classes.find_one({"_id": enrollment.get("class_id")}) if enrollment.get("class_id") else None
     course = await db.courses.find_one({"_id": cls.get("course_id")}) if cls and cls.get("course_id") else None
+    # Notify admins and the class teacher so they can review the request promptly
+    admins = await db.users.find({"role": UserRole.ADMIN}).to_list(1000)
+    recipient_ids = {admin.get("_id") for admin in admins if admin.get("_id")}
+    teacher_id = cls.get("teacher_id") if cls else None
+    if teacher_id:
+        recipient_ids.add(teacher_id)
     course_label = ""
     if course:
         code = course.get("code") or ""
@@ -354,14 +358,12 @@ async def withdraw_course(enrollment_id: str, payload: dict, student: dict = Dep
         message += f" - lớp {class_id}"
     message += "."
 
-    for admin in admins:
-        admin_id = admin.get("_id")
-        if admin_id:
-            await create_notification(
-                user_id=admin_id,
-                title="Yêu cầu rút học phần mới",
-                message=message,
-            )
+    for recipient_id in recipient_ids:
+        await create_notification(
+            user_id=recipient_id,
+            title="Yêu cầu rút học phần mới",
+            message=message,
+        )
 
     return {"message": "Withdrawal request submitted for approval"}
 

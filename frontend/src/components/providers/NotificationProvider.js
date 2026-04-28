@@ -5,6 +5,22 @@ import { showPopup } from "@/lib/popup";
 
 const NotificationContext = createContext(null);
 
+function normalizeBaseUrl(value) {
+  return typeof value === 'string' ? value.trim().replace(/\/$/, '') : '';
+}
+
+function getWebSocketBaseUrl() {
+  const configuredWsBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_WS_BASE_URL);
+  if (configuredWsBase) return configuredWsBase;
+
+  const configuredApiBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
+  if (configuredApiBase && /^https?:\/\//i.test(configuredApiBase)) {
+    return configuredApiBase.replace(/^http/i, 'ws');
+  }
+
+  return 'ws://localhost:8000/api';
+}
+
 function normalizeNotification(raw) {
   if (!raw) return null;
   const id = raw._id || raw.id;
@@ -69,9 +85,7 @@ export function NotificationProvider({ children }) {
     if (!token) return undefined;
 
     const getWsUrl = () => {
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host = window.location.host;
-      return `${protocol}//${host}/api/notifications/ws`;
+      return `${getWebSocketBaseUrl()}/notifications/ws`;
     };
 
     const connect = () => {
