@@ -70,7 +70,7 @@ async def get_my_tuition(student: dict = Depends(get_current_user)):
 async def get_my_payments(
     student: dict = Depends(get_current_user),
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     if student["role"] != UserRole.STUDENT:
         raise HTTPException(status_code=403, detail="Only students can view payments")
@@ -140,7 +140,7 @@ async def update_payment(student_id: str, amount: float):
 @router.get("/invoices", dependencies=[Depends(check_admin_role)])
 async def list_invoices(
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     total = await db.invoices.count_documents({})
@@ -156,7 +156,7 @@ async def list_invoices(
 @router.get("/payments", dependencies=[Depends(check_admin_role)])
 async def list_payments(
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     total = await db.payments.count_documents({})

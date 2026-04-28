@@ -46,7 +46,7 @@ async def create_user(user_in: UserCreate):
 async def get_users(
     role: Optional[UserRole] = Query(default=None),
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     query = {"role": role} if role else {}
@@ -66,7 +66,7 @@ async def get_users(
 async def get_users_by_role(
     role: UserRole,
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     query = {"role": role}
@@ -185,7 +185,7 @@ async def create_course(course: CourseCreate):
 @router.get("/courses")
 async def list_courses(
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     total = await db.courses.count_documents({})
@@ -312,7 +312,7 @@ async def create_class(class_data: ClassCreate):
 @router.get("/classes")
 async def list_classes(
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     total = await db.classes.count_documents({})
@@ -487,7 +487,7 @@ async def create_classroom(payload: ClassroomCreate):
 @router.get("/classrooms")
 async def list_classrooms(
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     total = await db.classrooms.count_documents({})
@@ -548,7 +548,7 @@ async def list_audit_logs(
     action: Optional[str] = None, 
     actor_id: Optional[str] = None,
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=200)
+    limit: int = Query(default=50, ge=1, le=2000)
 ):
     db = get_database()
     query = {}
@@ -574,7 +574,7 @@ async def list_audit_logs(
 @router.get("/withdrawal-requests")
 async def list_withdrawal_requests(
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100)
+    limit: int = Query(default=20, ge=1, le=2000)
 ):
     db = get_database()
     query = {"status": "withdrawal_pending"}
