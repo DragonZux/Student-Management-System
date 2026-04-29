@@ -3,6 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   compress: true, // Enable gzip compression
   swcMinify: true, // Use SWC minifier for faster builds and better performance
+  // Prevent Next.js from auto-redirecting /api/* slash variants.
+  // Backend may normalize differently, which can otherwise create redirect loops.
+  skipTrailingSlashRedirect: true,
   images: {
     formats: ['image/avif', 'image/webp'], // Support modern image formats
   },

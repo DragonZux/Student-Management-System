@@ -33,12 +33,15 @@ function showErrorPopup(message) {
 
 // Use an explicit browser-facing base URL so local dev and Docker do not depend on rewrites.
 // The backend container hostname is not resolvable from the browser, so keep a public URL here.
-const configuredBrowserApiBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 const apiBaseUrl = normalizeBaseUrl(
   typeof window !== 'undefined'
-    ? (/^https?:\/\//i.test(configuredBrowserApiBase) ? configuredBrowserApiBase : 'http://localhost:8000/api')
-    : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://backend:8000/api')
+    ? '/api/'
+    : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://backend:8000/api/')
 );
+
+if (typeof window !== 'undefined') {
+  console.log('[API] Client Base URL:', apiBaseUrl);
+}
 
 const api = axios.create({
   baseURL: apiBaseUrl,
@@ -86,9 +89,14 @@ api.defaults.retry = 3;
 api.defaults.retryDelay = 1000;
 
 
-// Add a request interceptor to add the auth token
+// Add a request interceptor to handle auth token and path normalization
 api.interceptors.request.use(
   (config) => {
+    // Ensure relative URLs do not start with / to prevent axios from stripping the baseURL path
+    if (config.url && config.url.startsWith('/') && !/^https?:\/\//i.test(config.url)) {
+      config.url = config.url.substring(1);
+    }
+
     const token = typeof window !== 'undefined' ? getAuthTokenFromBrowser() : null;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

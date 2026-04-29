@@ -114,6 +114,24 @@ export default function usePaginatedData(url, optionsOrCacheKey = {}, legacyLimi
     fetchData(skip, limit, debouncedSearch);
   }, [skip, limit, debouncedSearch, fetchData]);
 
+  // Listen for global notification events to trigger realtime refresh
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    
+    // We only auto-refresh if this hook is watching notifications
+    // or if we want global refresh for all paginated data.
+    // For now, let's refresh if it's the notifications endpoint.
+    if (!url.includes('notifications')) return undefined;
+
+    const handleNotification = () => {
+      console.log('[usePaginatedData] Notification received, refreshing...', url);
+      fetchData(skip, limit, debouncedSearch, true);
+    };
+
+    window.addEventListener('notification-received', handleNotification);
+    return () => window.removeEventListener('notification-received', handleNotification);
+  }, [url, skip, limit, debouncedSearch, fetchData]);
+
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {

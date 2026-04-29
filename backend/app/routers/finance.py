@@ -9,7 +9,7 @@ from app.schemas.user import UserRole
 import uuid
 from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 async def _get_active_cost_per_credit(db, semester: Optional[str] = None) -> float:
     query = {"is_active": True}
@@ -139,6 +139,7 @@ async def update_payment(student_id: str, amount: float):
     return {"message": "Payment recorded successfully"}
 
 
+@router.get("")
 @router.get("/invoices", dependencies=[Depends(check_admin_role)])
 async def list_invoices(
     skip: int = Query(default=0, ge=0),
@@ -155,6 +156,7 @@ async def list_invoices(
     }
 
 
+@router.get("")
 @router.get("/payments", dependencies=[Depends(check_admin_role)])
 async def list_payments(
     skip: int = Query(default=0, ge=0),

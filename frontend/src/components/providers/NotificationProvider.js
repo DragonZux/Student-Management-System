@@ -2,6 +2,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/api";
 import { showPopup } from "@/lib/popup";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 const NotificationContext = createContext(null);
 
@@ -11,14 +12,25 @@ function normalizeBaseUrl(value) {
 
 function getWebSocketBaseUrl() {
   const configuredWsBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_WS_BASE_URL);
-  if (configuredWsBase) return configuredWsBase;
+  if (configuredWsBase && !configuredWsBase.includes('backend')) return configuredWsBase;
 
-  const configuredApiBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
-  if (configuredApiBase && /^https?:\/\//i.test(configuredApiBase)) {
+  const configuredApiBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL);
+  if (configuredApiBase && /^https?:\/\//i.test(configuredApiBase) && !configuredApiBase.includes('backend')) {
     return configuredApiBase.replace(/^http/i, 'ws');
   }
 
-  return 'ws://localhost:8000/api';
+  if (typeof window !== 'undefined') {
+    // If on localhost, hit the backend directly on port 8000 to bypass Next.js proxy (which doesn't support WS rewrites)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'ws://localhost:8000/api';
+    }
+    // Fallback for ngrok or other external access
+    const wsBase = window.location.origin.replace(/^http/i, 'ws') + '/api';
+    console.log('[WS] Client Base URL:', wsBase);
+    return wsBase;
+  }
+
+  return 'ws://backend:8000/api';
 }
 
 function normalizeNotification(raw) {
@@ -35,6 +47,7 @@ function normalizeNotification(raw) {
 }
 
 export function NotificationProvider({ children }) {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const wsRef = useRef(null);
@@ -54,7 +67,7 @@ export function NotificationProvider({ children }) {
     }
     try {
       setLoading(true);
-      const res = await api.get("/notifications/");
+      const res = await api.get('/notifications', { params: { skip: 0, limit: 10 } });
       const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       const normalized = list.map(normalizeNotification).filter(Boolean);
       setNotifications(normalized);
@@ -138,10 +151,13 @@ export function NotificationProvider({ children }) {
       const nextToken = localStorage.getItem("token");
       if (!nextToken) return;
 
-      const ws = new WebSocket(`${getWsUrl()}?token=${encodeURIComponent(nextToken)}`);
+      const fullUrl = `${getWsUrl()}?token=${encodeURIComponent(nextToken)}`;
+      console.log('[WS] Connecting to:', fullUrl);
+      const ws = new WebSocket(fullUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
+        console.log('[WS] Connected successfully');
         reconnectAttemptRef.current = 0;
         if (reconnectTimerRef.current) {
           window.clearTimeout(reconnectTimerRef.current);
@@ -184,6 +200,7 @@ export function NotificationProvider({ children }) {
       };
 
       ws.onmessage = (event) => {
+        console.log('[WS] Received message:', event.data);
         try {
           const payload = JSON.parse(event.data);
           if (payload?.type !== "notification" || !payload.data) return;
@@ -207,8 +224,11 @@ export function NotificationProvider({ children }) {
           // Alert/popup ngay khi có thông báo mới
           const popupText = incoming.message ? `${incoming.title}: ${incoming.message}` : incoming.title;
           showPopup(popupText, { type: "success", durationMs: 4500 });
-        } catch {
-          // ignore
+
+          // Dispatch global event so other components (like NotificationsPage) can refresh
+          window.dispatchEvent(new CustomEvent('notification-received', { detail: incoming }));
+        } catch (e) {
+          console.error('[WS] Error processing message:', e);
         }
       };
     };
@@ -254,7 +274,7 @@ export function NotificationProvider({ children }) {
       }
       wsRef.current = null;
     };
-  }, []);
+  }, [user?._id]); // Re-connect if user changes (login/logout)
 
   const value = useMemo(
     () => ({
