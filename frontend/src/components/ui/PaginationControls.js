@@ -48,29 +48,37 @@ export default function PaginationControls({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: '1rem',
+        gap: '1.5rem',
         flexWrap: 'wrap',
-        marginTop: '1.5rem',
-        paddingTop: '1rem',
+        marginTop: '2.5rem',
+        paddingTop: '1.5rem',
         borderTop: '1px solid var(--border)',
       }}
     >
-      <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-        {total > 0 ? `Hiển thị ${from}-${to} / ${total}` : 'Không có dữ liệu'}
+      <div style={{ color: 'var(--muted-foreground)', fontSize: '0.9rem', fontWeight: 600 }}>
+        {total > 0 ? (
+          <>
+            Đang xem <span style={{ color: 'var(--foreground)', fontWeight: 800 }}>{from}-{to}</span> trên tổng số <span style={{ color: 'var(--foreground)', fontWeight: 800 }}>{total}</span>
+          </>
+        ) : 'Không có dữ liệu'}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         {showPageSize ? (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
-            <span style={{ color: 'var(--muted-foreground)' }}>Mỗi trang</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+            <span style={{ color: 'var(--muted-foreground)', fontWeight: 600 }}>Số hàng</span>
             <select
               value={pageSize}
               onChange={(event) => onPageSizeChange?.(Number(event.target.value))}
               style={{
                 border: '1px solid var(--border)',
-                borderRadius: '0.75rem',
-                background: 'var(--card)',
-                padding: '0.45rem 0.65rem',
+                borderRadius: '0.85rem',
+                background: 'var(--surface-1)',
+                padding: '0.5rem 0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                outline: 'none',
+                transition: 'all 0.2s'
               }}
             >
               {pageSizeOptions.map((option) => (
@@ -79,53 +87,76 @@ export default function PaginationControls({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
         ) : null}
 
-        <button
-          type="button"
-          onClick={() => onPageChange?.(page - 1)}
-          disabled={page <= 1}
-          className="btn-primary"
-          style={{ padding: '0.5rem 0.9rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)', boxShadow: 'none' }}
-        >
-          Trước
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => onPageChange?.(page - 1)}
+            disabled={page <= 1}
+            className="action-icon-btn"
+            style={{ 
+              padding: '0.6rem 1.1rem', 
+              background: 'var(--surface-1)', 
+              color: page <= 1 ? 'var(--muted-foreground)' : 'var(--foreground)', 
+              border: '1px solid var(--border)', 
+              borderRadius: '1rem',
+              fontWeight: 700,
+              cursor: page <= 1 ? 'not-allowed' : 'pointer',
+              opacity: page <= 1 ? 0.5 : 1
+            }}
+          >
+            Trước
+          </button>
 
-        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {items.map((item) => (
-            typeof item === 'string' ? (
-              <span key={item} style={{ color: 'var(--muted-foreground)', padding: '0 0.25rem' }}>...</span>
-            ) : (
-              <button
-                key={item}
-                type="button"
-                onClick={() => onPageChange?.(item)}
-                className="btn-primary"
-                style={{
-                  padding: '0.5rem 0.85rem',
-                  minWidth: '2.5rem',
-                  background: item === page ? 'var(--primary)' : 'transparent',
-                  color: item === page ? '#fff' : 'var(--foreground)',
-                  border: '1px solid var(--border)',
-                  boxShadow: 'none',
-                }}
-              >
-                {item}
-              </button>
-            )
-          ))}
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+            {items.map((item) => (
+              typeof item === 'string' ? (
+                <span key={item} style={{ color: 'var(--muted-foreground)', fontWeight: 800 }}>...</span>
+              ) : (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => onPageChange?.(item)}
+                  style={{
+                    minWidth: '2.75rem',
+                    height: '2.75rem',
+                    borderRadius: '1rem',
+                    background: item === page ? 'var(--primary)' : 'var(--surface-1)',
+                    color: item === page ? '#fff' : 'var(--foreground)',
+                    border: '1px solid',
+                    borderColor: item === page ? 'var(--primary)' : 'var(--border)',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s var(--ease-out-expo)',
+                    boxShadow: item === page ? 'var(--shadow-primary)' : 'none'
+                  }}
+                >
+                  {item}
+                </button>
+              )
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onPageChange?.(page + 1)}
+            disabled={page >= totalPages}
+            style={{ 
+              padding: '0.6rem 1.1rem', 
+              background: 'var(--surface-1)', 
+              color: page >= totalPages ? 'var(--muted-foreground)' : 'var(--foreground)', 
+              border: '1px solid var(--border)', 
+              borderRadius: '1rem',
+              fontWeight: 700,
+              cursor: page >= totalPages ? 'not-allowed' : 'pointer',
+              opacity: page >= totalPages ? 0.5 : 1
+            }}
+          >
+            Sau
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onPageChange?.(page + 1)}
-          disabled={page >= totalPages}
-          className="btn-primary"
-          style={{ padding: '0.5rem 0.9rem', background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)', boxShadow: 'none' }}
-        >
-          Sau
-        </button>
       </div>
     </div>
   );

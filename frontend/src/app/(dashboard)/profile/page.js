@@ -1,10 +1,5 @@
-"use client";
-import { useEffect, useState } from 'react';
-import Card from '@/components/ui/Card';
-import InlineMessage from '@/components/ui/InlineMessage';
-import { Lock, Shield } from 'lucide-react';
-import api from '@/lib/api';
-import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
+import styles from '@/styles/modules/profile.module.css';
+import { User, ShieldCheck } from 'lucide-react';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -127,101 +122,110 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="animate-in">
-      <div style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ marginBottom: '0.5rem' }}>Hồ sơ & Bảo mật</h1>
-        <p style={{ fontSize: '1.1rem' }}>Quản lý thông tin cá nhân và thiết lập an toàn cho tài khoản của bạn.</p>
-      </div>
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <h1>Thiết lập Tài khoản</h1>
+        <p>Quản lý thông tin cá nhân và cài đặt bảo mật nâng cao.</p>
+      </header>
 
-      <div className="grid grid-cols-1" style={{ gap: '2.5rem' }}>
-        <Card title="Thông tin cá nhân" className="glass">
-          {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <div className="animate-spin" style={{ display: 'inline-block', width: '2rem', height: '2rem', border: '3px solid var(--muted)', borderTopColor: 'var(--primary)', borderRadius: '50%' }} />
-              <p style={{ marginTop: '1rem' }}>Đang tải thông tin hồ sơ...</p>
+      <div className={styles.sectionGrid}>
+        <section className={`${styles.profileCard} slide-right stagger-2`}>
+          <div className={styles.cardHeader}>
+            <div className={styles.iconBox}>
+              <User size={32} />
             </div>
-          ) : null}
-          
-          <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{error}</InlineMessage>
-          <InlineMessage variant="success" style={{ marginBottom: '1rem' }}>{profileMessage}</InlineMessage>
-          <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{profileError}</InlineMessage>
+            <div className={styles.cardTitle}>Thông tin cá nhân</div>
+          </div>
 
-          {!loading && !error ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem 2.5rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Họ và tên</label>
+          {loading ? (
+            <div style={{ padding: '4rem', textAlign: 'center' }}>
+              <div className="spinner" style={{ margin: '0 auto 1.5rem' }} />
+              <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang đồng bộ dữ liệu hồ sơ...</p>
+            </div>
+          ) : (
+            <div className="animate-in">
+              {error && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>}
+              {profileMessage && <InlineMessage variant="success" style={{ marginBottom: '2rem' }}>{profileMessage}</InlineMessage>}
+              {profileError && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{profileError}</InlineMessage>}
+
+              <div className={styles.formGrid}>
+                <div className={styles.formField}>
+                  <label>Họ và tên đầy đủ</label>
                   <input
+                    className={styles.input}
                     value={profileForm.full_name}
                     onChange={(e) => setProfileForm((p) => ({ ...p, full_name: e.target.value }))}
-                    placeholder="Nhập họ và tên đầy đủ"
+                    placeholder="Nhập họ và tên"
                   />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Email liên hệ</label>
+                <div className={styles.formField}>
+                  <label>Địa chỉ Email liên hệ</label>
                   <input
+                    className={styles.input}
                     value={profileForm.email}
                     onChange={(e) => setProfileForm((p) => ({ ...p, email: e.target.value }))}
                     placeholder="email@example.com"
                   />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Vai trò</label>
-                  <div style={{ padding: '0.75rem 1rem', background: 'var(--muted)', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div className={styles.formField}>
+                  <label>Vai trò hệ thống</label>
+                  <div className={styles.readOnlyField}>
                     <Shield size={18} color="var(--primary)" />
-                    <span style={{ fontWeight: 700, textTransform: 'capitalize' }}>{profile?.role || 'Người dùng'}</span>
+                    <span style={{ textTransform: 'uppercase' }}>{profile?.role || 'Người dùng'}</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Khoa / Bộ môn</label>
-                  <input
-                    value={profileForm.department}
-                    readOnly
-                    style={{ background: 'var(--muted)', cursor: 'not-allowed', opacity: 0.8 }}
-                    title="Liên hệ Quản trị viên để thay đổi"
-                  />
-                  <p style={{ fontSize: '0.75rem', fontStyle: 'italic' }}>* Chỉ Admin mới có quyền thay đổi thông tin này.</p>
+                <div className={styles.formField}>
+                  <label>Khoa / Đơn vị công tác</label>
+                  <div className={styles.readOnlyField} style={{ opacity: 0.8 }}>
+                    <span>{profileForm.department || 'Chưa cập nhật'}</span>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', fontStyle: 'italic', marginTop: '0.25rem', color: 'var(--muted-foreground)' }}>
+                    * Vui lòng liên hệ Quản trị viên để thay đổi thông tin này.
+                  </p>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <div className={styles.actions}>
                 <button
                   onClick={saveProfile}
                   disabled={saving}
                   className="btn-primary"
+                  style={{ padding: '1rem 2.5rem', borderRadius: '1.25rem' }}
                 >
-                  {saving ? 'Đang lưu...' : 'Lưu thay đổi hồ sơ'}
+                  {saving ? 'Đang lưu hồ sơ...' : 'Cập nhật thông tin'}
                 </button>
               </div>
             </div>
-          ) : null}
-        </Card>
+          )}
+        </section>
 
-        <Card title="Bảo mật tài khoản" className="glass">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ padding: '0.85rem', background: 'rgba(244, 63, 94, 0.1)', borderRadius: '1rem' }}>
-                <Lock size={24} color="var(--accent)" />
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Thay đổi mật khẩu</h3>
-                <p style={{ margin: 0, fontSize: '0.875rem' }}>Nên sử dụng mật khẩu mạnh để bảo vệ tài khoản.</p>
-              </div>
+        <section className={`${styles.profileCard} slide-right stagger-3`}>
+          <div className={styles.cardHeader}>
+            <div className={styles.iconBox} style={{ color: 'var(--accent)', background: 'rgba(244, 63, 94, 0.05)' }}>
+              <Lock size={32} />
             </div>
+            <div className={styles.cardTitle}>An ninh & Mật khẩu</div>
+          </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Mật khẩu hiện tại</label>
+          <div className={styles.passwordSection}>
+            {passwordMessage && <InlineMessage variant="success" style={{ marginBottom: '2rem' }}>{passwordMessage}</InlineMessage>}
+            {passwordError && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{passwordError}</InlineMessage>}
+
+            <div className={styles.formGrid}>
+              <div className={styles.formField}>
+                <label>Mật khẩu hiện tại</label>
                 <input
+                  className={styles.input}
                   type="password"
                   placeholder="••••••••"
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm((p) => ({ ...p, current_password: e.target.value }))}
                 />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted-foreground)' }}>Mật khẩu mới</label>
+              <div className={styles.formField}>
+                <label>Mật khẩu mới</label>
                 <input
+                  className={styles.input}
                   type="password"
                   placeholder="Tối thiểu 8 ký tự"
                   value={passwordForm.new_password}
@@ -230,25 +234,22 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-                <Shield size={16} />
-                <span>Mã hóa bảo mật 256-bit</span>
+            <div className={styles.passwordFooter}>
+              <div className={styles.securityNote}>
+                <ShieldCheck size={20} color="#059669" />
+                <span>Tài khoản của bạn đang được bảo vệ bởi mã hóa AES-256</span>
               </div>
               <button
                 onClick={changePassword}
                 disabled={passwordLoading}
                 className="btn-primary"
-                style={{ background: 'var(--foreground)' }}
+                style={{ background: 'var(--foreground)', color: 'var(--background)', padding: '1rem 2.5rem', borderRadius: '1.25rem' }}
               >
-                {passwordLoading ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
+                {passwordLoading ? 'Đang xác thực...' : 'Đổi mật khẩu ngay'}
               </button>
             </div>
-            
-            <InlineMessage variant="success">{passwordMessage}</InlineMessage>
-            <InlineMessage variant="error">{passwordError}</InlineMessage>
           </div>
-        </Card>
+        </section>
       </div>
     </div>
   );

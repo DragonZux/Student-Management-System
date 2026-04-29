@@ -2,10 +2,11 @@
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import Modal from '@/components/ui/Modal';
-import { Building2, User, Clock, MapPin } from 'lucide-react';
+import { Building2, User, Clock, MapPin, Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isInRange, popupValidationError } from '@/lib/validation';
+import styles from '@/styles/modules/admin/classes.module.css';
 
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { TableSkeleton } from '@/components/ui/Skeleton';
@@ -160,16 +161,17 @@ export default function ClassesPage() {
   };
 
   return (
-    <div className="animate-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-        <div>
-          <h1 style={{ marginBottom: '0.5rem' }}>Lớp học & Phân công Giảng dạy</h1>
-          <p style={{ fontSize: '1.1rem' }}>Quản lý kế hoạch giảng dạy, sắp xếp phòng học và điều phối giảng viên.</p>
+    <div className={`${styles.container} animate-in`}>
+      <header className={styles.header}>
+        <div className="slide-right stagger-1">
+          <h1>Lớp học & Phân công</h1>
+          <p>Quản lý kế hoạch giảng dạy, sắp xếp phòng học và điều phối giảng viên.</p>
         </div>
-        <button className="btn-primary" onClick={openCreate} disabled={depsLoading}>
-          + Thiết lập lớp mới
+        <button className="btn-primary slide-right stagger-2" onClick={openCreate} disabled={depsLoading}>
+          <Plus size={18} />
+          Thiết lập lớp mới
         </button>
-      </div>
+      </header>
 
       <Modal 
         isOpen={showForm} 
@@ -177,140 +179,157 @@ export default function ClassesPage() {
         title={editing ? 'Điều chỉnh thông tin lớp học' : 'Thiết lập lớp học mới'}
         maxWidth="800px"
       >
-        <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Học phần / Môn học</label>
-            <select value={form.course_id} onChange={(e) => setForm((p) => ({ ...p, course_id: e.target.value }))} style={{ width: '100%' }}>
-              <option value="">-- Lựa chọn môn học --</option>
-              {(courses || []).map((c) => (
-                <option key={c._id} value={c._id}>{c.code} - {c.title}</option>
-              ))}
-            </select>
+        <div className="modal-inner">
+          <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{formError}</InlineMessage>
+          <div className={styles.formGrid}>
+            <div className={styles.formField}>
+              <label>Học phần / Môn học</label>
+              <select value={form.course_id} onChange={(e) => setForm((p) => ({ ...p, course_id: e.target.value }))}>
+                <option value="">-- Lựa chọn môn học --</option>
+                {(courses || []).map((c) => (
+                  <option key={c._id} value={c._id}>{c.code} - {c.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formField}>
+              <label>Giảng viên phụ trách</label>
+              <select value={form.teacher_id} onChange={(e) => setForm((p) => ({ ...p, teacher_id: e.target.value }))}>
+                <option value="">-- Lựa chọn giảng viên --</option>
+                {(teachers || []).map((t) => (
+                  <option key={t._id} value={t._id}>{t.full_name}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formField}>
+              <label>Học kỳ (Semester)</label>
+              <input value={form.semester} onChange={(e) => setForm((p) => ({ ...p, semester: e.target.value }))} placeholder="Ví dụ: 2026-Spring" />
+            </div>
+            <div className={styles.formField}>
+              <label>Phòng học dự kiến</label>
+              <select 
+                value={form.room} 
+                onChange={(e) => {
+                  const rCode = e.target.value;
+                  const rObj = classrooms.find(r => r.code === rCode);
+                  setForm(p => ({ ...p, room: rCode, capacity: rObj ? rObj.capacity : p.capacity }));
+                }} 
+              >
+                <option value="">-- Lựa chọn phòng học --</option>
+                {(classrooms || []).map((rm) => (
+                  <option key={rm._id} value={rm.code}>{rm.code} (Tòa: {rm.building} - Max: {rm.capacity})</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formField}>
+              <label>Sức chứa tối đa (Capacity)</label>
+              <input type="number" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} />
+            </div>
+            <div className={`${styles.formField} ${styles.fullWidth}`}>
+              <label>Lịch học chi tiết (Ví dụ: Monday 08:00-10:00; Wednesday 13:00-15:00)</label>
+              <input value={form.scheduleText} onChange={(e) => setForm((p) => ({ ...p, scheduleText: e.target.value }))} placeholder="Nhập lịch học theo định dạng 'Thứ Thời Gian'" />
+            </div>
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Giảng viên phụ trách</label>
-            <select value={form.teacher_id} onChange={(e) => setForm((p) => ({ ...p, teacher_id: e.target.value }))} style={{ width: '100%' }}>
-              <option value="">-- Lựa chọn giảng viên --</option>
-              {(teachers || []).map((t) => (
-                <option key={t._id} value={t._id}>{t.full_name}</option>
-              ))}
-            </select>
+          <div className={styles.formActions}>
+            <button onClick={() => setShowForm(false)} className="btn-secondary" style={{ padding: '0.875rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface-1)', fontWeight: 700, cursor: 'pointer' }}>Hủy bỏ</button>
+            <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận tạo'}</button>
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Học kỳ (Semester)</label>
-            <input value={form.semester} onChange={(e) => setForm((p) => ({ ...p, semester: e.target.value }))} placeholder="Ví dụ: 2026-Spring" style={{ width: '100%' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Phòng học dự kiến</label>
-            <select 
-              value={form.room} 
-              onChange={(e) => {
-                const rCode = e.target.value;
-                const rObj = classrooms.find(r => r.code === rCode);
-                setForm(p => ({ ...p, room: rCode, capacity: rObj ? rObj.capacity : p.capacity }));
-              }} 
-              style={{ width: '100%' }}
-            >
-              <option value="">-- Lựa chọn phòng học --</option>
-              {(classrooms || []).map((rm) => (
-                <option key={rm._id} value={rm.code}>{rm.code} (Tòa: {rm.building} - Max: {rm.capacity})</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Sức chứa tối đa (Capacity)</label>
-            <input type="number" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} style={{ width: '100%' }} />
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Lịch học chi tiết (Ví dụ: Monday 08:00-10:00; Wednesday 13:00-15:00)</label>
-            <input value={form.scheduleText} onChange={(e) => setForm((p) => ({ ...p, scheduleText: e.target.value }))} placeholder="Nhập lịch học theo định dạng 'Thứ Thời Gian'" style={{ width: '100%' }} />
-          </div>
-        </div>
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-          <button onClick={() => setShowForm(false)} className="btn-primary" style={{ background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)' }}>Hủy bỏ</button>
-          <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận tạo'}</button>
         </div>
       </Modal>
 
       {(classesLoading || depsLoading) ? (
-        <Card title="Đang đồng bộ dữ liệu lớp học...">
-          <TableSkeleton rows={6} columns={4} />
+        <Card>
+          <div style={{ padding: '1rem' }}>
+            <TableSkeleton rows={8} columns={4} />
+          </div>
         </Card>
       ) : (classesError || depsError) ? (
-        <InlineMessage variant="error">{classesError || depsError}</InlineMessage>
+        <div className="error-state glass" style={{ textAlign: 'center', padding: '4rem', borderRadius: '2rem' }}>
+          <InlineMessage variant="error">{classesError || depsError}</InlineMessage>
+        </div>
       ) : (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
+        <div className="slide-right stagger-3">
+          <div className={styles.classGrid}>
             {classes.map((cls) => {
               const crs = courseById.get(cls.course_id);
               const tch = teacherById.get(cls.teacher_id);
               const enrollmentPercentage = Math.min(100, Math.round((cls.current_enrollment / cls.capacity) * 100)) || 0;
               
               return (
-                <Card key={cls._id} title={`${crs?.code || 'CRS'}`} className="glass card-hover animate-in" footer={
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', width: '100%' }}>
-                    <button onClick={() => openEdit(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none', fontSize: '0.875rem' }}>Sửa</button>
-                    <button onClick={() => remove(cls)} className="btn-primary" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--accent)', border: 'none', boxShadow: 'none', fontSize: '0.875rem' }}>Xóa</button>
-                  </div>
-                }>
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 800, lineHeight: '1.2' }}>{crs?.title || 'Môn học mới'}</h3>
-                    <span className="badge badge-primary">{cls.semester}</span>
+                <div key={cls._id} className={styles.classCard}>
+                  <div className={styles.cardTop}>
+                    <div className={styles.courseCode}>{crs?.code || 'CRS'}</div>
+                    <h3 className={styles.courseTitle}>{crs?.title || 'Môn học mới'}</h3>
+                    <div className="badge badge-primary" style={{ marginTop: '0.75rem' }}>{cls.semester}</div>
                   </div>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9375rem' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                        <User size={16} />
+                  <div className={styles.infoList}>
+                    <div className={styles.infoItem}>
+                      <div className={styles.iconWrapper} style={{ background: 'rgba(var(--primary-rgb), 0.08)', color: 'var(--primary)' }}>
+                        <User size={18} />
                       </div>
-                      <span style={{ fontWeight: 600 }}>{tch?.full_name || 'Chưa chỉ định giảng viên'}</span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9375rem' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
-                        <MapPin size={16} />
-                      </div>
-                      <span>Phòng học: <strong style={{ color: 'var(--foreground)' }}>{cls.room || 'TBA'}</strong></span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'start', gap: '0.75rem', fontSize: '0.9375rem' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', marginTop: '2px' }}>
-                        <Clock size={16} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        {cls.schedule?.length ? cls.schedule.map((s, idx) => (
-                          <div key={idx} style={{ marginBottom: '0.25rem' }}>{s.day}: <strong>{s.start}-{s.end}</strong></div>
-                        )) : <span style={{ color: 'var(--muted-foreground)' }}>Chưa có lịch học</span>}
+                      <div className={styles.infoText}>
+                        <span className={styles.infoLabel}>Giảng viên</span>
+                        <strong>{tch?.full_name || 'Chưa chỉ định'}</strong>
                       </div>
                     </div>
                     
-                    <div style={{ marginTop: '0.5rem', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '1rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.8125rem', fontWeight: 700 }}>
-                        <span style={{ color: 'var(--muted-foreground)' }}>TỶ LỆ GHI DANH</span>
-                        <span style={{ color: 'var(--primary)' }}>{cls.current_enrollment} / {cls.capacity}</span>
+                    <div className={styles.infoItem}>
+                      <div className={styles.iconWrapper} style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }}>
+                        <MapPin size={18} />
                       </div>
-                      <div style={{ width: '100%', height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${enrollmentPercentage}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.5s ease' }} />
+                      <div className={styles.infoText}>
+                        <span className={styles.infoLabel}>Phòng học</span>
+                        <strong>{cls.room || 'TBA'}</strong>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.infoItem}>
+                      <div className={styles.iconWrapper} style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981' }}>
+                        <Clock size={18} />
+                      </div>
+                      <div className={styles.infoText}>
+                        <span className={styles.infoLabel}>Lịch học</span>
+                        <div>
+                          {cls.schedule?.length ? cls.schedule.map((s, idx) => (
+                            <div key={idx} style={{ marginBottom: '0.125rem' }}>{s.day}: <strong>{s.start}-{s.end}</strong></div>
+                          )) : <span style={{ color: 'var(--muted-foreground)' }}>Chưa có lịch</span>}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </Card>
+                  
+                  <div className={styles.statsSection}>
+                    <div className={styles.statsHeader}>
+                      <span className={styles.statsLabel}>TỶ LỆ GHI DANH</span>
+                      <span className={styles.statsValue}>{cls.current_enrollment} / {cls.capacity}</span>
+                    </div>
+                    <div className={styles.progressBar}>
+                      <div className={styles.progressFill} style={{ width: `${enrollmentPercentage}%` }} />
+                    </div>
+                  </div>
+
+                  <div className={styles.actions}>
+                    <button onClick={() => openEdit(cls)} className="action-icon-btn" style={{ flex: 1, background: 'rgba(var(--primary-rgb), 0.08)', color: 'var(--primary)', border: 'none', padding: '0.75rem', borderRadius: '1rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>Sửa</button>
+                    <button onClick={() => remove(cls)} className="action-icon-btn" style={{ flex: 1, background: 'rgba(244, 63, 94, 0.08)', color: '#f43f5e', border: 'none', padding: '0.75rem', borderRadius: '1rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>Xóa</button>
+                  </div>
+                </div>
               );
             })}
           </div>
 
-          <PaginationControls
-            page={currentPage}
-            totalPages={totalPages}
-            total={total}
-            currentCount={classes.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-            showPageSize
-          />
-        </>
+          <div style={{ marginTop: '3.5rem' }}>
+            <PaginationControls
+              page={currentPage}
+              totalPages={totalPages}
+              total={total}
+              currentCount={classes.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              showPageSize
+            />
+          </div>
+        </div>
       )}
     </div>
   );

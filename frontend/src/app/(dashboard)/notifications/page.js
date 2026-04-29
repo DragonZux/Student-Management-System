@@ -7,6 +7,8 @@ import api from '@/lib/api';
 import usePaginatedData from '@/hooks/usePaginatedData';
 import PaginationControls from '@/components/ui/PaginationControls';
 
+import styles from '@/styles/modules/notifications.module.css';
+
 export default function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false);
   const {
@@ -72,36 +74,22 @@ export default function NotificationsPage() {
 
   const getCategoryConfig = (cat) => {
     switch (cat) {
-      case 'finance': return { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', icon: CreditCard };
-      case 'class': return { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', icon: BookOpen };
-      case 'security': return { bg: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', icon: ShieldCheck };
-      default: return { bg: 'rgba(100, 116, 139, 0.1)', color: '#64748b', icon: Info };
+      case 'finance': return { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', icon: CreditCard, label: 'Tài chính' };
+      case 'class': return { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', icon: BookOpen, label: 'Học vụ' };
+      case 'security': return { bg: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', icon: ShieldCheck, label: 'Bảo mật' };
+      default: return { bg: 'rgba(100, 116, 139, 0.1)', color: '#64748b', icon: Info, label: 'Hệ thống' };
     }
   };
 
   return (
-    <div className="notifications-container animate-in">
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '2.5rem',
-        padding: '0 0.5rem'
-      }}>
-        <div>
-          <h1 style={{ 
-            fontSize: '2.25rem', 
-            fontWeight: 900, 
-            letterSpacing: '-0.02em',
-            background: 'linear-gradient(to right, var(--foreground), var(--muted-foreground))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '0.5rem'
-          }}>
-            Thông báo
-          </h1>
-          <p style={{ color: 'var(--muted-foreground)', fontSize: '1.05rem', fontWeight: 500 }}>
-            {total > 0 ? `Bạn có ${items.filter(n => !n.read).length} thông báo mới chưa đọc.` : 'Luôn cập nhật những thay đổi mới nhất.'}
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <div className={styles.headerTitle}>
+          <h1>Thông báo</h1>
+          <p>
+            {total > 0 ? (
+              <>Bạn có <span className={styles.highlight}>{items.filter(n => !n.read).length}</span> tin nhắn mới chưa xem.</>
+            ) : 'Trung tâm cập nhật và tin tức hệ thống của bạn.'}
           </p>
         </div>
 
@@ -109,200 +97,76 @@ export default function NotificationsPage() {
           <button
             onClick={handleMarkAll}
             disabled={markingAll}
-            className="glass-button"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.625rem',
-              padding: '0.875rem 1.5rem',
-              borderRadius: '1.25rem',
-              background: 'var(--primary)',
-              color: 'white',
-              border: 'none',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.4)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
+            className={styles.markAllBtn}
           >
-            {markingAll ? <Loader2 className="animate-spin" size={20} /> : <CheckCheck size={20} />}
-            <span>Đánh dấu tất cả</span>
+            {markingAll ? <Loader2 className="animate-spin" size={22} /> : <CheckCheck size={22} />}
+            Đánh dấu tất cả
           </button>
         )}
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <div className={styles.list}>
         {loading && items.length === 0 ? (
-          <div style={{ 
-            padding: '6rem 2rem', 
-            textAlign: 'center', 
-            background: 'var(--glass-bg)',
-            borderRadius: '2rem',
-            border: '1px solid var(--glass-border)'
-          }}>
-            <Loader2 className="animate-spin" size={48} style={{ color: 'var(--primary)', marginBottom: '1.5rem' }} />
-            <h3 style={{ fontWeight: 700 }}>Đang làm mới dữ liệu...</h3>
+          <div className={styles.loadingState}>
+            <div className="spinner" />
+            <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang cập nhật luồng thông báo...</p>
           </div>
-        ) : null}
-
-        <AnimatePresence mode="popLayout">
-          {!loading && items.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-            >
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '6rem 2rem',
-                background: 'var(--glass-bg)',
-                borderRadius: '2.5rem',
-                border: '1px solid var(--glass-border)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-              }}>
-                <div style={{
-                  width: '100px',
-                  height: '100px',
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)',
-                  borderRadius: '2.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '2rem',
-                  transform: 'rotate(-10deg)'
-                }}>
-                  <Bell size={48} style={{ color: 'var(--primary)', opacity: 0.8 }} />
-                </div>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.75rem' }}>Tất cả đã xong!</h2>
-                <p style={{ color: 'var(--muted-foreground)', fontSize: '1.1rem', maxWidth: '400px', lineHeight: 1.6 }}>
-                  Bạn hiện không có thông báo nào. Chúng tôi sẽ báo cho bạn khi có tin mới.
-                </p>
-              </div>
-            </motion.div>
-          ) : (
-            items.map((n, idx) => {
-              const notificationKey = n.id || n._id || `${n.created_at || 'notification'}-${idx}`;
+        ) : items.length === 0 ? (
+          <div className={`${styles.emptyState} scale-in`}>
+            <div className={styles.emptyIconWrapper}>
+              <Bell size={64} />
+            </div>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.75rem' }}>Hộp thư trống</h2>
+            <p style={{ color: 'var(--muted-foreground)', fontWeight: 500, maxWidth: '300px' }}>
+              Tuyệt vời! Bạn đã xem hết tất cả thông báo. Hãy quay lại sau nhé.
+            </p>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {items.map((n, idx) => {
               const config = getCategoryConfig(n.category);
               const CategoryIcon = config.icon;
 
               return (
                 <motion.div
-                  key={notificationKey}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: idx * 0.05 }}
+                  key={n._id || n.id || idx}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4, delay: idx * 0.04 }}
                   layout
                 >
                   <div 
                     onClick={() => !n.read && markRead(n._id || n.id)}
-                    style={{
-                      padding: '1.5rem',
-                      background: n.read ? 'var(--glass-bg)' : 'white',
-                      border: '1px solid',
-                      borderColor: n.read ? 'var(--glass-border)' : 'rgba(99, 102, 241, 0.2)',
-                      borderRadius: '1.75rem',
-                      display: 'flex',
-                      gap: '1.5rem',
-                      alignItems: 'flex-start',
-                      boxShadow: n.read ? 'none' : '0 12px 24px -8px rgba(99, 102, 241, 0.12)',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      position: 'relative',
-                      cursor: n.read ? 'default' : 'pointer'
-                    }}
-                    className={!n.read ? 'notification-card-unread' : ''}
+                    className={`${styles.card} ${!n.read ? styles.unread : styles.read}`}
                   >
-                    {!n.read && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '1.75rem',
-                        right: '1.75rem',
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        background: 'var(--primary)',
-                        boxShadow: '0 0 12px var(--primary)',
-                        zIndex: 10
-                      }} />
-                    )}
+                    {!n.read && <div className={styles.unreadDot} />}
 
-                    <div style={{
-                      padding: '1rem',
-                      background: config.bg,
-                      borderRadius: '1.25rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: config.color,
-                      flexShrink: 0
-                    }}>
-                      <CategoryIcon size={24} />
+                    <div className={styles.categoryIcon} style={{ backgroundColor: config.bg, color: config.color }}>
+                      <CategoryIcon size={26} />
                     </div>
 
-                    <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'flex-start', 
-                        marginBottom: '0.625rem' 
-                      }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <span style={{ 
-                            fontSize: '0.75rem', 
-                            fontWeight: 800, 
-                            color: config.color, 
-                            textTransform: 'uppercase', 
-                            letterSpacing: '0.05em' 
-                          }}>
-                            {n.category === 'finance' ? 'Tài chính' : 
-                             n.category === 'class' ? 'Lớp học' : 
-                             n.category === 'security' ? 'Bảo mật' : 'Hệ thống'}
-                          </span>
-                          <h3 style={{ 
-                            margin: 0,
-                            fontWeight: 800, 
-                            fontSize: '1.125rem', 
-                            color: n.read ? 'var(--muted-foreground)' : 'var(--foreground)',
-                            lineHeight: 1.3
-                          }}>
-                            {n.title}
-                          </h3>
+                    <div className={styles.content}>
+                      <div className={styles.cardHeader}>
+                        <div className={styles.meta}>
+                          <span className={styles.tag} style={{ color: config.color }}>{config.label}</span>
+                          <h3 className={styles.title}>{n.title}</h3>
                         </div>
-                        <span style={{
-                          fontSize: '0.8125rem',
-                          color: 'var(--muted-foreground)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          fontWeight: 600,
-                          padding: '0.35rem 0.75rem',
-                          background: 'rgba(0,0,0,0.03)',
-                          borderRadius: '0.75rem'
-                        }}>
-                          <Clock size={14} /> {n.time}
+                        <span className={styles.time}>
+                          <Clock size={16} /> {n.time}
                         </span>
                       </div>
-                      <p style={{
-                        margin: 0,
-                        fontSize: '1rem',
-                        color: n.read ? 'var(--muted-foreground)' : 'var(--muted-foreground)',
-                        opacity: n.read ? 0.7 : 0.9,
-                        lineHeight: 1.6,
-                        fontWeight: 500
-                      }}>
-                        {n.message}
-                      </p>
+                      <p className={styles.message}>{n.message}</p>
                     </div>
                   </div>
                 </motion.div>
               );
-            })
-          )}
-        </AnimatePresence>
+            })}
+          </AnimatePresence>
+        )}
       </div>
 
-      <div style={{ marginTop: '3rem' }}>
+      <div className={`${styles.pagination} slide-right`}>
         <PaginationControls
           page={currentPage}
           totalPages={totalPages}
@@ -314,22 +178,6 @@ export default function NotificationsPage() {
           showPageSize
         />
       </div>
-
-      <style jsx>{`
-        .notification-card-unread:hover {
-          transform: translateY(-4px);
-          border-color: var(--primary) !important;
-          box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.2) !important;
-        }
-        .glass-button:hover {
-          transform: translateY(-2px);
-          filter: brightness(1.1);
-          box-shadow: 0 12px 25px -5px rgba(99, 102, 241, 0.5) !important;
-        }
-        .glass-button:active {
-          transform: translateY(0);
-        }
-      `}</style>
     </div>
   );
 }

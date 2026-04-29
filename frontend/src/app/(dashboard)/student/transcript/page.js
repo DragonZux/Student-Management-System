@@ -67,58 +67,65 @@ export default function TranscriptPage() {
 
   return (
     <div className={`${styles.container} animate-in`}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Bảng điểm học tập</h1>
-        <p className={styles.subtitle}>Tạo và tải xuống bảng điểm chính thức của bạn.</p>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <h1 className={styles.title}>Bảng điểm Học tập</h1>
+        <p className={styles.subtitle}>Tạo và xuất bảng điểm chính thức phục vụ các mục đích hành chính.</p>
       </header>
 
       {downloadError && (
-        <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>
+        <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>
           {downloadError}
         </InlineMessage>
       )}
 
-      <div className={styles.statsGrid}>
+      <div className={`${styles.statsGrid} slide-right stagger-2`}>
         <Card 
-          title="Bảng điểm chính thức (PDF)" 
-          className="glass"
-          headerExtra={<FileText size={20} className="text-primary" />}
+          title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 900 }}>Trích xuất Bảng điểm (PDF)</div>}
+          headerExtra={<FileText size={20} color="var(--primary)" />}
         >
-          <p className={styles.infoText}>
-            Tài liệu này chứa toàn bộ lịch sử học tập, bao gồm các môn học, điểm số và GPA đã tính. 
-            Bạn có thể sử dụng bản in này cho các mục đích hành chính chính thức.
-          </p>
-          <button 
-            className={styles.downloadButton}
-            onClick={download}
-            disabled={authLoading || loading || downloading || !user?._id}
-          >
-            {downloading ? (
-              <>Đang xử lý...</>
-            ) : (
-              <>
-                <Download size={20} />
-                Tải xuống bản PDF
-              </>
-            )}
-          </button>
+          <div className="animate-in">
+            <p className={styles.infoText}>
+              Bản trích xuất chứa toàn bộ lịch sử kết quả học tập từ khi nhập học đến thời điểm hiện tại. 
+              Tài liệu này bao gồm danh sách các môn học, số tín chỉ tương ứng, điểm số chi tiết và GPA tích lũy.
+            </p>
+            <button 
+              className={styles.downloadButton}
+              onClick={download}
+              disabled={authLoading || loading || downloading || !user?._id}
+            >
+              {downloading ? (
+                <>
+                  <div className="spinner-sm" />
+                  Đang chuẩn bị tài liệu...
+                </>
+              ) : (
+                <>
+                  <Download size={22} />
+                  Xuất Bảng điểm chính thức
+                </>
+              )}
+            </button>
+          </div>
         </Card>
 
-        <Card title="Trạng thái học tập" className="glass">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 900 }}>Tóm tắt Tiến độ</div>}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div className={styles.statRow}>
-              <span className={styles.statLabel}>Tổng tín chỉ tích lũy</span>
+              <span className={styles.statLabel}>Tổng tín chỉ đã tích lũy</span>
               <span className={styles.statValue}>{loading ? '...' : stats.totalCredits}</span>
             </div>
             <div className={styles.statRow}>
-              <span className={styles.statLabel}>Điểm trung bình (GPA)</span>
-              <span className={styles.statValue}>{loading ? '...' : stats.gpa.toFixed(2)}</span>
+              <span className={styles.statLabel}>Điểm trung bình (CGPA)</span>
+              <span className={styles.statValue} style={{ color: 'var(--primary)' }}>{loading ? '...' : stats.gpa.toFixed(2)}</span>
             </div>
             <div className={styles.statRow}>
-              <span className={styles.statLabel}>Trạng thái xác minh</span>
+              <span className={styles.statLabel}>Hồ sơ sinh viên</span>
               <span className={styles.statusVerified}>
-                <CheckCircle size={16} /> Đã xác minh
+                <CheckCircle size={18} /> Đã xác thực
               </span>
+            </div>
+            <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--surface-1)', borderRadius: '1rem', border: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--muted-foreground)', fontWeight: 600, fontStyle: 'italic' }}>
+              * Bảng điểm điện tử có giá trị tương đương với bản giấy có dấu mộc trong các giao dịch nội bộ.
             </div>
           </div>
         </Card>

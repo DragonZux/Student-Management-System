@@ -7,6 +7,9 @@ import api from '@/lib/api';
 import usePaginatedData from '@/hooks/usePaginatedData';
 import PaginationControls from '@/components/ui/PaginationControls';
 
+import styles from '@/styles/modules/student/enrollment.module.css';
+import { Book, User, Clock, CheckCircle } from 'lucide-react';
+
 export default function StudentEnrollmentPage() {
   const [success, setSuccess] = useState('');
   const [actionError, setActionError] = useState('');
@@ -29,73 +32,91 @@ export default function StudentEnrollmentPage() {
     setSuccess('');
     try {
       await api.post(`/student/enroll/${classId}`);
-      setSuccess('Đăng ký lớp thành công!');
+      setSuccess('Đăng ký lớp học thành công! Chào mừng bạn đến với khóa học.');
       refresh();
     } catch (err) {
-      setActionError(err.response?.data?.detail || 'Đăng ký thất bại.');
+      setActionError(err.response?.data?.detail || 'Đăng ký thất bại. Vui lòng thử lại sau.');
     }
   };
 
-  if (loading) return <div>Đang tải lớp học khả dụng...</div>;
-
   return (
-    <div>
-      <h1>Đăng ký học phần</h1>
-      <p style={{ marginBottom: '2.5rem' }}>Chọn lớp học cho học kỳ hiện tại.</p>
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <h1>Đăng ký Học phần</h1>
+        <p>Chọn và đăng ký các lớp học phù hợp cho lộ trình học tập của bạn.</p>
+      </header>
       
-      <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{error}</InlineMessage>
-      <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{actionError}</InlineMessage>
-      <InlineMessage variant="success" style={{ marginBottom: '1rem' }}>{success}</InlineMessage>
+      {error && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>}
+      {actionError && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{actionError}</InlineMessage>}
+      {success && <InlineMessage variant="success" style={{ marginBottom: '2rem' }}>{success}</InlineMessage>}
 
-      <div className="grid grid-cols-1" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {availableClasses.map((cls) => (
-          <Card key={cls._id} className="glass">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                <div style={{ padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)' }}>
-                  <Book color="var(--primary)" />
+      <div className={`${styles.classList} slide-right stagger-2`}>
+        {loading ? (
+          <div style={{ padding: '6rem', textAlign: 'center' }}>
+            <div className="spinner" style={{ margin: '0 auto 1.5rem' }} />
+            <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang tìm kiếm các lớp học khả dụng...</p>
+          </div>
+        ) : availableClasses.length === 0 ? (
+          <div style={{ padding: '8rem', textAlign: 'center', background: 'var(--surface-1)', borderRadius: '2rem', border: '1px dashed var(--border)' }}>
+            <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Hiện không có lớp học nào mở đăng ký.</p>
+          </div>
+        ) : availableClasses.map((cls, index) => {
+          const fillPercentage = Math.min(100, (cls.current_enrollment / cls.capacity) * 100);
+          return (
+            <div 
+              key={cls._id} 
+              className={styles.classCard}
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <div className={styles.mainInfo}>
+                <div className={styles.iconBox}>
+                  <Book size={28} />
                 </div>
-                <div>
-                  <h3 style={{ margin: 0 }}>Môn học: {cls.course_code || cls.course_title || cls.course_id || '—'}</h3>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
-                    Giảng viên: {cls.teacher_name || cls.teacher_id || '—'} | Phòng: {cls.room || '—'}
-                  </p>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-                    Lịch học: {(cls.schedule || []).map((s) => `${s.day || 'N/A'} ${s.start || '--:--'}-${s.end || '--:--'}`).join(', ') || 'Chưa cập nhật'}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-                    Đã đăng ký: {cls.current_enrollment} / {cls.capacity}
+                <div className={styles.details}>
+                  <h3>{cls.course_code || 'N/A'} — {cls.course_title || cls.course_id || 'Môn học mới'}</h3>
+                  <div className={styles.teacherInfo}>
+                    <User size={16} />
+                    Giảng viên: {cls.teacher_name || 'Đang cập nhật'}
+                  </div>
+                  <div className={styles.scheduleInfo}>
+                    <Clock size={16} />
+                    {(cls.schedule || []).map((s) => `${s.day} ${s.start}-${s.end}`).join(', ') || 'Chưa có lịch cụ thể'}
+                  </div>
+                  <div className={styles.capacityWrapper}>
+                    <div className={styles.capacityBar}>
+                      <div className={styles.capacityFill} style={{ width: `${fillPercentage}%` }} />
+                    </div>
+                    <span className={styles.capacityText}>
+                      {cls.current_enrollment} / {cls.capacity} sinh viên
+                    </span>
                   </div>
                 </div>
               </div>
               
               <button 
                 onClick={() => handleEnroll(cls._id)}
-                className="glass" style={{ 
-                padding: '0.75rem 2rem', borderRadius: 'var(--radius)', 
-                background: 'var(--primary)', 
-                color: 'white',
-                border: 'none', cursor: 'pointer',
-                fontWeight: 600
-              }}>
-                Đăng ký ngay
+                className={styles.enrollBtn}
+                disabled={cls.current_enrollment >= cls.capacity}
+              >
+                {cls.current_enrollment >= cls.capacity ? 'Lớp đã đầy' : 'Đăng ký ngay'}
               </button>
             </div>
-          </Card>
-        ))}
-        {availableClasses.length === 0 && <p>Không có lớp học nào khả dụng.</p>}
+          );
+        })}
       </div>
 
-      <PaginationControls
-        page={currentPage}
-        totalPages={totalPages}
-        total={total}
-        currentCount={availableClasses.length}
-        pageSize={pageSize}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={setPageSize}
-        showPageSize
-      />
+      <div className="slide-right stagger-3">
+        <PaginationControls
+          page={currentPage}
+          totalPages={totalPages}
+          total={total}
+          currentCount={availableClasses.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          showPageSize
+        />
+      </div>
     </div>
   );
 }

@@ -165,12 +165,12 @@ export default function TeachersPage() {
 
   return (
     <div className={`${styles.container} animate-in`}>
-      <header className={`${styles.header} slide-right stagger-1`}>
-        <div className={styles.headerInfo}>
+      <header className={styles.header}>
+        <div className={`${styles.headerInfo} slide-right stagger-1`}>
           <h1>Đội ngũ Giảng viên</h1>
           <p>Hệ thống quản lý thông tin nhân sự và chuyên môn giảng dạy.</p>
         </div>
-        <button className="btn-primary" onClick={openCreate}>
+        <button className="btn-primary slide-right stagger-2" onClick={openCreate}>
           <UserPlus size={18} />
           Thêm giảng viên
         </button>
@@ -182,39 +182,41 @@ export default function TeachersPage() {
         title={editing ? 'Cập nhật hồ sơ giảng viên' : 'Đăng ký giảng viên mới'}
         maxWidth="800px"
       >
-        <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
-        <div className={styles.formGrid}>
-          <div className="form-group">
-            <label>Họ và tên giảng viên</label>
-            <input value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="Ví dụ: TS. Nguyễn Văn A" />
+        <div className="modal-inner">
+          <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{formError}</InlineMessage>
+          <div className={styles.formGrid}>
+            <div className="form-group">
+              <label style={{ fontWeight: 800, marginBottom: '0.5rem', display: 'block' }}>Họ và tên giảng viên</label>
+              <input value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="Ví dụ: TS. Nguyễn Văn A" />
+            </div>
+            <div className="form-group">
+              <label style={{ fontWeight: 800, marginBottom: '0.5rem', display: 'block' }}>Khoa / Bộ môn công tác</label>
+              <select value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))}>
+                <option value="">-- Lựa chọn Khoa --</option>
+                {(departments || []).map((d) => (
+                  <option key={d._id} value={d.name}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label style={{ fontWeight: 800, marginBottom: '0.5rem', display: 'block' }}>Địa chỉ Email công vụ</label>
+              <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="teacher@university.edu.vn" />
+            </div>
+            <div className="form-group">
+              <label style={{ fontWeight: 800, marginBottom: '0.5rem', display: 'block' }}>{editing ? 'Mật khẩu mới (để trống nếu không đổi)' : 'Mật khẩu khởi tạo'}</label>
+              <input type="password" value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} placeholder="Tối thiểu 8 ký tự" />
+            </div>
           </div>
-          <div className="form-group">
-            <label>Khoa / Bộ môn công tác</label>
-            <select value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))}>
-              <option value="">-- Lựa chọn Khoa --</option>
-              {(departments || []).map((d) => (
-                <option key={d._id} value={d.name}>{d.name}</option>
-              ))}
-            </select>
+          <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <button onClick={() => setShowForm(false)} className="btn-secondary" style={{ padding: '0.875rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface-1)', fontWeight: 700, cursor: 'pointer' }}>Hủy bỏ</button>
+            <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận thêm'}</button>
           </div>
-          <div className="form-group">
-            <label>Địa chỉ Email công vụ</label>
-            <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="teacher@university.edu.vn" />
-          </div>
-          <div className="form-group">
-            <label>{editing ? 'Mật khẩu mới (để trống nếu không đổi)' : 'Mật khẩu khởi tạo'}</label>
-            <input type="password" value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} placeholder="Tối thiểu 8 ký tự" />
-          </div>
-        </div>
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-          <button onClick={() => setShowForm(false)} className="btn-secondary">Hủy bỏ</button>
-          <button onClick={submit} className="btn-primary">{editing ? 'Lưu thay đổi' : 'Xác nhận thêm'}</button>
         </div>
       </Modal>
 
       <div className={`${styles.searchSection} slide-right stagger-2`}>
         <div className={styles.searchWrapper}>
-          <Search size={20} className={styles.searchIcon} />
+          <Search size={22} className={styles.searchIcon} />
           <input
             className={styles.searchInput}
             value={query}
@@ -224,17 +226,19 @@ export default function TeachersPage() {
         </div>
       </div>
 
-      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{teachersError}</InlineMessage>
+      {teachersError && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{teachersError}</InlineMessage>}
       
       {teachersLoading ? (
-        <Card title="Đang tải danh sách giảng viên...">
-          <TableSkeleton rows={6} columns={4} />
+        <Card>
+          <div style={{ padding: '1rem' }}>
+            <TableSkeleton rows={6} columns={4} />
+          </div>
         </Card>
       ) : (
-        <>
+        <div className="slide-right stagger-3">
           <div className={styles.teacherGrid}>
             {teachers.map((teacher, index) => (
-              <Card key={teacher._id} className={`${styles.teacherCard} glass card-hover scale-in`} style={{ animationDelay: `${(index * 0.05) + 0.3}s` }}>
+              <div key={teacher._id} className={styles.teacherCard}>
                 <div className={styles.cardHeader}>
                   <div className={styles.avatar}>
                     {(teacher.full_name || teacher.email || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -247,44 +251,46 @@ export default function TeachersPage() {
                 
                 <div className={styles.detailsList}>
                   <div className={styles.detailItem}>
-                    <Mail size={16} className={styles.detailIcon} />
+                    <Mail size={18} className={styles.detailIcon} />
                     <span title={teacher.email}>{teacher.email}</span>
                   </div>
                   <div className={styles.detailItem}>
-                    <BookOpen size={16} className={styles.detailIcon} />
-                    <span className="badge badge-primary">ID: {teacher._id.substring(0, 8).toUpperCase()}</span>
+                    <BookOpen size={18} className={styles.detailIcon} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>ID: {teacher._id.substring(0, 8).toUpperCase()}</span>
                   </div>
                 </div>
 
                 <div className={styles.actions}>
                   <button onClick={() => openEdit(teacher)} className={styles.editBtn}>
-                    <Edit3 size={16} style={{ marginRight: '0.5rem' }} /> Sửa
+                    <Edit3 size={18} /> Sửa
                   </button>
                   <button onClick={() => remove(teacher)} className={styles.deleteBtn}>
-                    <Trash2 size={16} style={{ marginRight: '0.5rem' }} /> Xóa
+                    <Trash2 size={18} /> Xóa
                   </button>
                 </div>
-              </Card>
-            ))}
-            {teachers.length === 0 ? (
-              <div className={styles.emptyState}>
-                <Search size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
-                <p>Không tìm thấy giảng viên nào phù hợp với yêu cầu tìm kiếm.</p>
               </div>
-            ) : null}
+            ))}
+            {teachers.length === 0 && (
+              <div className={styles.emptyState}>
+                <Search size={64} style={{ opacity: 0.1, marginBottom: '1.5rem', color: 'var(--primary)' }} />
+                <p>Không tìm thấy giảng viên nào phù hợp.</p>
+              </div>
+            )}
           </div>
 
-          <PaginationControls
-            page={currentPage}
-            totalPages={totalPages}
-            total={total}
-            currentCount={teachers.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-            showPageSize
-          />
-        </>
+          <div style={{ marginTop: '3rem' }}>
+            <PaginationControls
+              page={currentPage}
+              totalPages={totalPages}
+              total={total}
+              currentCount={teachers.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              showPageSize
+            />
+          </div>
+        </div>
       )}
     </div>
   );

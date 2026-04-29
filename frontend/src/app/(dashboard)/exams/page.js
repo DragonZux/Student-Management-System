@@ -1,12 +1,6 @@
-"use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Card from "@/components/ui/Card";
-import InlineMessage from "@/components/ui/InlineMessage";
-import api from "@/lib/api";
-import { useAuth } from "@/components/providers/AuthProvider";
-import { isInRange, popupValidationError, toNumber } from "@/lib/validation";
-import usePaginatedData from "@/hooks/usePaginatedData";
-import PaginationControls from "@/components/ui/PaginationControls";
+import { Calendar, Clock, Award, Trash2, Plus, Edit3, CheckCircle, AlertCircle, FileText, Send } from "lucide-react";
+import styles from "@/styles/modules/exams.module.css";
+import Modal from "@/components/ui/Modal";
 
 export default function ExamsPage() {
   const { user } = useAuth();
@@ -75,7 +69,8 @@ export default function ExamsPage() {
 
   useEffect(() => {
     if (!createForm.class_id && myClasses.length > 0) {
-      setCreateForm((p) => ({ ...p, class_id: myClasses[0]._id || myClasses[0].id }));
+      const firstClassId = myClasses[0]._id || myClasses[0].id;
+      if (firstClassId) setCreateForm((p) => ({ ...p, class_id: firstClassId }));
     }
   }, [myClasses, createForm.class_id]);
 
@@ -134,7 +129,7 @@ export default function ExamsPage() {
   };
 
   const deleteExam = async (exam) => {
-    if (!confirm(`Delete exam "${exam.title}"?`)) return;
+    if (!confirm(`Xóa kỳ thi "${exam.title}"?`)) return;
     setActionError("");
     try {
       await api.delete(`/exams/${exam._id}`);
@@ -220,280 +215,327 @@ export default function ExamsPage() {
   }, [exams]);
 
   return (
-    <div className="animate-in">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2.5rem" }}>
-        <div>
-          <h1 style={{ marginBottom: "0.5rem" }}>Quản lý Kỳ thi</h1>
-          <p style={{ fontSize: "1.1rem" }}>Lịch thi, bài làm và hệ thống chấm điểm trực tuyến.</p>
+    <div className={`${styles.container} animate-in`}>
+      <header className={styles.header}>
+        <div className="slide-right stagger-1">
+          <h1>Quản lý Kỳ thi</h1>
+          <p>Lịch thi, bài làm và hệ thống chấm điểm trực tuyến.</p>
         </div>
-        {user?.role === "admin" ? (
+        {user?.role === "admin" && (
           <button
-            onClick={() => setShowCreate((v) => !v)}
-            className="btn-primary"
-            style={{ background: showCreate ? "var(--foreground)" : "var(--primary)" }}
+            onClick={() => setShowCreate(true)}
+            className="btn-primary slide-right stagger-2"
           >
-            {showCreate ? "Đóng trình tạo" : "+ Tạo kỳ thi mới"}
+            <Plus size={18} /> Tạo kỳ thi mới
           </button>
-        ) : null}
-      </div>
+        )}
+      </header>
 
-      {showCreate ? (
-        <Card className="glass animate-in" title="Tạo kỳ thi mới">
-          <InlineMessage variant="error" style={{ marginBottom: "1.5rem" }}>{createError}</InlineMessage>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Lớp học mục tiêu</label>
-              <select
-                value={createForm.class_id}
-                onChange={(e) => setCreateForm((p) => ({ ...p, class_id: e.target.value }))}
-                style={{ width: "100%" }}
-              >
-                <option value="">-- Chọn lớp học --</option>
-                {myClasses.map((c) => (
-                  <option key={c._id || c.id} value={c._id || c.id}>
-                    {c.course_code || "Môn học"}: {c.course_title || c.course_id}
-                  </option>
-                ))}
-              </select>
+      <Modal
+        isOpen={showCreate}
+        onClose={() => setShowCreate(false)}
+        title="Thiết lập kỳ thi mới"
+        maxWidth="800px"
+      >
+        <div className="modal-inner">
+          <InlineMessage variant="error" style={{ marginBottom: "2rem" }}>{createError}</InlineMessage>
+          <div className={styles.formGrid}>
+            <div className={styles.fullWidth}>
+              <div className={styles.formField}>
+                <label>Lớp học mục tiêu</label>
+                <select
+                  value={createForm.class_id}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, class_id: e.target.value }))}
+                >
+                  <option value="">-- Chọn lớp học --</option>
+                  {myClasses.map((c) => (
+                    <option key={c._id || c.id} value={c._id || c.id}>
+                      {c.course_code || "Môn học"}: {c.course_title || c.course_id}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Thời gian thi</label>
+            <div className={styles.formField}>
+              <label>Thời gian thi</label>
               <input
                 type="datetime-local"
                 value={createForm.scheduled_at}
                 onChange={(e) => setCreateForm((p) => ({ ...p, scheduled_at: e.target.value }))}
-                style={{ width: "100%" }}
               />
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Thời lượng (phút)</label>
+            <div className={styles.formField}>
+              <label>Thời lượng (phút)</label>
               <input
                 type="number"
                 min="1"
                 value={createForm.duration_minutes}
                 onChange={(e) => setCreateForm((p) => ({ ...p, duration_minutes: e.target.value }))}
-                style={{ width: "100%" }}
               />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Tiêu đề kỳ thi</label>
-              <input
-                value={createForm.title}
-                onChange={(e) => setCreateForm((p) => ({ ...p, title: e.target.value }))}
-                placeholder="Ví dụ: Kiểm tra giữa kỳ môn Giải tích"
-                style={{ width: "100%" }}
-              />
+            <div className={styles.fullWidth}>
+              <div className={styles.formField}>
+                <label>Tiêu đề kỳ thi</label>
+                <input
+                  value={createForm.title}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="Ví dụ: Kiểm tra giữa kỳ môn Giải tích"
+                />
+              </div>
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Mô tả & Hướng dẫn</label>
-              <textarea
-                value={createForm.description}
-                onChange={(e) => setCreateForm((p) => ({ ...p, description: e.target.value }))}
-                placeholder="Nhập hướng dẫn làm bài cho sinh viên..."
-                style={{ width: "100%", minHeight: 120 }}
-              />
+            <div className={styles.fullWidth}>
+              <div className={styles.formField}>
+                <label>Mô tả & Hướng dẫn</label>
+                <textarea
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Nhập hướng dẫn làm bài cho sinh viên..."
+                  style={{ minHeight: 120 }}
+                />
+              </div>
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Thang điểm tối đa</label>
+            <div className={styles.formField}>
+              <label>Thang điểm tối đa</label>
               <input
                 type="number"
                 min="1"
                 value={createForm.max_score}
                 onChange={(e) => setCreateForm((p) => ({ ...p, max_score: e.target.value }))}
-                style={{ width: "100%" }}
               />
             </div>
           </div>
-          <div style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
-            <button onClick={() => setShowCreate(false)} className="btn-primary" style={{ background: "transparent", color: "var(--foreground)", border: "1px solid var(--border)" }}>Hủy</button>
+          <div className={styles.formActions}>
+            <button onClick={() => setShowCreate(false)} className="btn-secondary" style={{ padding: '0.875rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface-1)', fontWeight: 700, cursor: 'pointer' }}>Hủy bỏ</button>
             <button onClick={createExam} className="btn-primary">Phát hành kỳ thi</button>
           </div>
-        </Card>
-      ) : null}
+        </div>
+      </Modal>
 
-      {gradeExam ? (
-        <Card className="glass animate-in" title={`Hệ thống ghi điểm: ${gradeExam.title}`}>
-          <InlineMessage variant="error" style={{ marginBottom: "1.5rem" }}>{gradeError}</InlineMessage>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-            {gradeExam.submissions?.length > 0 && !gradeForm.student_id && (
-              <div style={{ gridColumn: "1 / -1", marginBottom: "1rem" }}>
-                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Chọn sinh viên đã nộp bài:</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+      <Modal
+        isOpen={!!gradeExam}
+        onClose={() => setGradeExam(null)}
+        title={`Chấm điểm: ${gradeExam?.title}`}
+        maxWidth="800px"
+      >
+        <div className="modal-inner">
+          <InlineMessage variant="error" style={{ marginBottom: "2rem" }}>{gradeError}</InlineMessage>
+          <div className={styles.formGrid}>
+            {gradeExam?.submissions?.length > 0 && !gradeForm.student_id && (
+              <div className={styles.fullWidth}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 800, marginBottom: "1rem", color: "var(--muted-foreground)" }}>CHỌN BÀI LÀM ĐÃ NỘP:</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
                   {gradeExam.submissions.map(s => (
                     <button 
                       key={s.student_id} 
                       onClick={() => selectStudentToGrade(s)}
-                      className="btn-primary" 
-                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}
+                      style={{ padding: "0.6rem 1.25rem", fontSize: "0.85rem", background: "var(--surface-1)", color: "var(--primary)", border: "1px solid var(--border)", borderRadius: "0.85rem", fontWeight: 800, cursor: "pointer" }}
                     >
-                      {s.student_id.split("-")[0]}... (Nộp lúc {new Date(s.submitted_at).toLocaleTimeString()})
+                      {s.student_id.split("-")[0]}... ({new Date(s.submitted_at).toLocaleTimeString()})
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            <div>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Mã sinh viên</label>
+            <div className={styles.formField}>
+              <label>Mã sinh viên</label>
               <input
                 value={gradeForm.student_id}
                 onChange={(e) => setGradeForm((p) => ({ ...p, student_id: e.target.value }))}
                 placeholder="Ví dụ: SV12345"
-                style={{ width: "100%" }}
               />
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Điểm đạt được</label>
+            <div className={styles.formField}>
+              <label>Điểm đạt được</label>
               <input
                 value={gradeForm.score}
                 onChange={(e) => setGradeForm((p) => ({ ...p, score: e.target.value }))}
-                placeholder={`0 - ${gradeExam.max_score}`}
-                style={{ width: "100%" }}
+                placeholder={`0 - ${gradeExam?.max_score}`}
               />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Nhận xét giảng viên</label>
-              <textarea
-                value={gradeForm.comments}
-                onChange={(e) => setGradeForm((p) => ({ ...p, comments: e.target.value }))}
-                placeholder="Phản hồi về bài làm của sinh viên..."
-                style={{ width: "100%", minHeight: 80 }}
-              />
+            <div className={styles.fullWidth}>
+              <div className={styles.formField}>
+                <label>Nhận xét giảng viên</label>
+                <textarea
+                  value={gradeForm.comments}
+                  onChange={(e) => setGradeForm((p) => ({ ...p, comments: e.target.value }))}
+                  placeholder="Phản hồi về bài làm của sinh viên..."
+                  style={{ minHeight: 100 }}
+                />
+              </div>
             </div>
-            {gradeForm.student_id && gradeExam.submissions?.find(s => s.student_id === gradeForm.student_id) && (
-              <div style={{ gridColumn: "1 / -1", marginTop: "1rem", padding: "1.5rem", background: "rgba(99, 102, 241, 0.05)", borderRadius: "1rem", border: "1px solid rgba(99, 102, 241, 0.1)" }}>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", marginBottom: "1rem" }}>Nội dung sinh viên đã nộp:</label>
-                <div style={{ whiteSpace: "pre-wrap", fontSize: "1rem", lineHeight: "1.6", color: "var(--foreground)" }}>
+            {gradeForm.student_id && gradeExam?.submissions?.find(s => s.student_id === gradeForm.student_id) && (
+              <div className={styles.submissionPreview}>
+                <span className={styles.previewLabel}>NỘI DUNG BÀI LÀM CỦA SINH VIÊN</span>
+                <div className={styles.previewContent}>
                   {gradeExam.submissions.find(s => s.student_id === gradeForm.student_id).content}
                 </div>
-                <div style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border)" }}>
-                  📅 Thời gian nộp: {new Date(gradeExam.submissions.find(s => s.student_id === gradeForm.student_id).submitted_at).toLocaleString()}
+                <div style={{ fontSize: "0.85rem", color: "var(--muted-foreground)", marginTop: "2rem", fontWeight: 700, borderTop: "1px solid var(--border)", paddingTop: "1.5rem" }}>
+                  📅 Nộp lúc: {new Date(gradeExam.submissions.find(s => s.student_id === gradeForm.student_id).submitted_at).toLocaleString('vi-VN')}
                 </div>
               </div>
             )}
           </div>
-          <div style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
-            <button onClick={() => setGradeExam(null)} className="btn-primary" style={{ background: "transparent", color: "var(--foreground)", border: "1px solid var(--border)" }}>Đóng</button>
+          <div className={styles.formActions}>
+            <button onClick={() => setGradeExam(null)} className="btn-secondary" style={{ padding: '0.875rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface-1)', fontWeight: 700, cursor: 'pointer' }}>Hủy bỏ</button>
             <button onClick={submitGrade} className="btn-primary">Xác nhận ghi điểm</button>
           </div>
-        </Card>
-      ) : null}
+        </div>
+      </Modal>
 
-      {takeExam ? (
-        <Card className="glass animate-in" title={`Làm bài thi: ${takeExam.title}`}>
-          <InlineMessage variant="error" style={{ marginBottom: "1.5rem" }}>{takeError}</InlineMessage>
-          <div style={{ marginBottom: "2rem", padding: "1.25rem", background: "rgba(0,0,0,0.02)", borderRadius: "1rem" }}>
-            <p style={{ fontSize: "1rem", color: "var(--foreground)", marginBottom: "1rem", lineHeight: "1.5" }}>{takeExam.description || "Hãy thực hiện bài thi theo yêu cầu của giảng viên."}</p>
-            <div style={{ display: "flex", gap: "1.5rem" }}>
-               <span className="badge badge-primary">Điểm tối đa: {takeExam.max_score}</span>
-               <span className="badge badge-warning">Thời lượng: {takeExam.duration_minutes} phút</span>
+      <Modal
+        isOpen={!!takeExam}
+        onClose={() => setTakeExam(null)}
+        title={`Làm bài thi: ${takeExam?.title}`}
+        maxWidth="1000px"
+      >
+        <div className={styles.takeExamArea}>
+          <InlineMessage variant="error" style={{ marginBottom: "2rem" }}>{takeError}</InlineMessage>
+          <div className={styles.takeExamHeader}>
+            <p style={{ fontSize: "1.1rem", color: "var(--foreground)", marginBottom: "1.5rem", lineHeight: "1.6", fontWeight: 500 }}>{takeExam?.description || "Hãy thực hiện bài thi theo yêu cầu của giảng viên."}</p>
+            <div style={{ display: "flex", gap: "1rem" }}>
+               <span className="badge badge-primary" style={{ padding: '0.5rem 1rem', borderRadius: '0.75rem', fontWeight: 800 }}>Điểm tối đa: {takeExam?.max_score}</span>
+               <span className="badge badge-warning" style={{ padding: '0.5rem 1rem', borderRadius: '0.75rem', fontWeight: 800 }}>Thời lượng: {takeExam?.duration_minutes} phút</span>
             </div>
           </div>
-          <div>
-            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>Nội dung bài làm của bạn</label>
+          <div className={styles.formField}>
+            <label style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: '0.75rem', display: 'block' }}>NỘI DUNG BÀI LÀM CỦA BẠN</label>
             <textarea
+              className={styles.takeExamTextarea}
               value={takeForm.content}
               onChange={(e) => setTakeForm({ content: e.target.value })}
               placeholder="Nhập câu trả lời chi tiết của bạn tại đây..."
-              style={{ width: "100%", minHeight: "350px", fontSize: "1rem", lineHeight: "1.6", padding: "1.25rem" }}
             />
           </div>
-          <div style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
-            <button onClick={() => setTakeExam(null)} className="btn-primary" style={{ background: "transparent", color: "var(--foreground)", border: "1px solid var(--border)" }}>Tạm ẩn</button>
-            <button onClick={submitTake} className="btn-primary" style={{ padding: "0.75rem 2.5rem" }}>Nộp bài thi ngay</button>
+          <div className={styles.formActions}>
+            <button onClick={() => setTakeExam(null)} className="btn-secondary" style={{ padding: '1rem 2rem', borderRadius: '1.25rem', fontWeight: 800, cursor: 'pointer' }}>Tạm ẩn</button>
+            <button onClick={submitTake} className="btn-primary" style={{ padding: "1rem 3rem", borderRadius: '1.25rem' }}>
+              <Send size={18} /> Nộp bài ngay
+            </button>
           </div>
-        </Card>
-      ) : null}
+        </div>
+      </Modal>
 
-      <InlineMessage variant="error" style={{ marginBottom: "1rem" }}>{error || actionError}</InlineMessage>
-      {loading && !exams.length ? <Card className="glass">Đang tải danh sách kỳ thi...</Card> : null}
+      {error || actionError ? <InlineMessage variant="error" style={{ marginBottom: "2rem" }}>{error || actionError}</InlineMessage> : null}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-        {sorted.map((e) => {
-          const isGraded = e.grades?.some(g => g.student_id === user?.id);
-          const isSubmitted = e.submissions?.some(s => s.student_id === user?.id);
-          const studentGrade = e.grades?.find(g => g.student_id === user?.id);
-          
-          return (
-            <Card key={e._id || e.id} className="glass" title={e.title} footer={
-              (user?.role === "teacher" || user?.role === "admin") ? (
-                <div style={{ display: "flex", gap: "1rem", width: "100%" }}>
-                  <button onClick={() => openGrade(e)} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "transparent", color: "var(--primary)", border: "1px solid var(--primary)" }}>
-                    Ghi điểm / Xem bài làm
-                  </button>
-                  {user?.role === "admin" && (
-                    <button onClick={() => deleteExam(e)} className="btn-primary" style={{ background: "rgba(244, 63, 94, 0.1)", color: "var(--accent)", border: "none", boxShadow: "none" }}>
-                      Xóa
-                    </button>
-                  )}
-                </div>
-              ) : user?.role === "student" ? (
-                <button
-                  onClick={() => { 
-                    const existing = e.submissions?.find(s => s.student_id === user?.id);
-                    setTakeExam(e); 
-                    setTakeForm({ content: existing?.content || "" }); 
-                  }}
-                  disabled={isGraded}
-                  className="btn-primary"
-                  style={{ 
-                    width: "100%", 
-                    justifyContent: "center",
-                    background: isGraded ? "var(--muted)" : (isSubmitted ? "var(--foreground)" : "var(--primary)"),
-                    color: isGraded ? "var(--muted-foreground)" : "white",
-                    opacity: isGraded ? 0.6 : 1
-                  }}
-                >
-                  {isGraded ? "Đã có điểm" : (isSubmitted ? "Cập nhật bài làm" : "Bắt đầu làm bài")}
-                </button>
-              ) : null
-            }>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "2rem" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem" }}>
-                    <span className="badge badge-primary">{e.course_code || e.class_id}</span>
-                    {e.class_name && <span className="badge badge-primary" style={{ background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)" }}>{e.class_name}</span>}
-                    <span className="badge badge-warning">{e.duration_minutes} phút</span>
-                  </div>
-                  <p style={{ margin: 0, color: "var(--muted-foreground)", fontSize: "0.925rem", lineHeight: "1.5" }}>
-                    {e.description || "Kỳ thi được tổ chức trực tuyến trên hệ thống."}
-                  </p>
-                  {isGraded && studentGrade && (
-                    <div style={{ marginTop: "1.25rem", padding: "1rem", background: "rgba(16, 185, 129, 0.05)", borderRadius: "1rem", border: "1px solid rgba(16, 185, 129, 0.2)", color: "#059669" }}>
-                      <div style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "0.25rem" }}>
-                        Kết quả: {studentGrade.score} / {e.max_score}
+      <div className={styles.examList}>
+        {loading && !exams.length ? (
+          <Card>
+            <div style={{ padding: '2rem' }}>
+              <div className="spinner" style={{ margin: '0 auto 1.5rem' }} />
+              <p style={{ textAlign: 'center', fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang tải danh sách kỳ thi...</p>
+            </div>
+          </Card>
+        ) : (
+          <>
+            {sorted.map((e, idx) => {
+              const isGraded = e.grades?.some(g => g.student_id === user?.id);
+              const isSubmitted = e.submissions?.some(s => s.student_id === user?.id);
+              const studentGrade = e.grades?.find(g => g.student_id === user?.id);
+              
+              return (
+                <div key={e._id || e.id} className={`${styles.examCard} slide-right`} style={{ animationDelay: `${idx * 0.1 + 0.3}s` }}>
+                  <div className={styles.cardBody}>
+                    <div className={styles.examInfo}>
+                      <div className={styles.badgeRow}>
+                        <span className="badge badge-primary" style={{ fontWeight: 800 }}>{e.course_code || e.class_id}</span>
+                        {e.class_name && <span className="badge badge-primary" style={{ background: "rgba(var(--primary-rgb), 0.1)", color: "var(--primary)", fontWeight: 800 }}>{e.class_name}</span>}
+                        <span className="badge badge-warning" style={{ fontWeight: 800 }}>{e.duration_minutes} PHÚT</span>
                       </div>
-                      {studentGrade.comments && (
-                        <div style={{ fontSize: "0.875rem", opacity: 0.9, fontStyle: "italic" }}>
-                          &quot;{studentGrade.comments}&quot;
+                      <h2 className={styles.examTitle}>{e.title}</h2>
+                      <p className={styles.examDescription}>
+                        {e.description || "Kỳ thi được tổ chức trực tuyến trên hệ thống đào tạo."}
+                      </p>
+                      
+                      {isGraded && studentGrade && (
+                        <div className={styles.gradeBox}>
+                          <div className={styles.gradeTitle}>
+                            <Award size={20} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+                            Kết quả: {studentGrade.score} / {e.max_score}
+                          </div>
+                          {studentGrade.comments && (
+                            <div className={styles.gradeComments}>
+                              &ldquo;{studentGrade.comments}&rdquo;
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-                <div style={{ textAlign: "right", minWidth: "200px" }}>
-                  <div style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)", marginBottom: "0.5rem", fontWeight: 600 }}>Thời gian bắt đầu</div>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--foreground)" }}>
-                    {e.scheduled_at ? new Date(e.scheduled_at).toLocaleString() : "—"}
+                    
+                    <div className={styles.examMeta}>
+                      <div>
+                        <span className={styles.metaLabel}>Thời gian bắt đầu</span>
+                        <div className={styles.metaValue}>
+                          <Calendar size={16} style={{ verticalAlign: 'middle', marginRight: '0.5rem', opacity: 0.5 }} />
+                          {e.scheduled_at ? new Date(e.scheduled_at).toLocaleString('vi-VN') : "—"}
+                        </div>
+                      </div>
+                      <div className={styles.statusRow}>
+                        <CheckCircle size={14} />
+                        <span>{e.grades?.length || 0} bài đã chấm điểm</span>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ marginTop: "0.75rem", fontSize: "0.8125rem" }}>
-                    Tình trạng: <span style={{ fontWeight: 700, color: "var(--primary)" }}>{e.grades?.length || 0} đã chấm</span>
+                  
+                  <div className={styles.cardFooter}>
+                    {canManage ? (
+                      <>
+                        <button onClick={() => openGrade(e)} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "var(--surface-1)", color: "var(--primary)", border: "1px solid var(--border)", boxShadow: 'none' }}>
+                          <Edit3 size={18} /> Ghi điểm / Xem bài làm
+                        </button>
+                        {user?.role === "admin" && (
+                          <button onClick={() => deleteExam(e)} className="action-icon-btn" style={{ background: "rgba(244, 63, 94, 0.08)", color: "#f43f5e", border: "none", padding: "0.75rem", borderRadius: "1rem" }}>
+                            <Trash2 size={20} />
+                          </button>
+                        )}
+                      </>
+                    ) : user?.role === "student" ? (
+                      <button
+                        onClick={() => { 
+                          const existing = e.submissions?.find(s => s.student_id === user?.id);
+                          setTakeExam(e); 
+                          setTakeForm({ content: existing?.content || "" }); 
+                        }}
+                        disabled={isGraded}
+                        className="btn-primary"
+                        style={{ 
+                          width: "100%", 
+                          justifyContent: "center",
+                          background: isGraded ? "var(--surface-2)" : (isSubmitted ? "var(--foreground)" : "var(--primary)"),
+                          color: isGraded ? "var(--muted-foreground)" : "white",
+                          opacity: isGraded ? 0.6 : 1,
+                          padding: '1rem',
+                          borderRadius: '1.25rem'
+                        }}
+                      >
+                        {isGraded ? "Đã hoàn thành & Có điểm" : (isSubmitted ? "Cập nhật bài làm" : "Bắt đầu làm bài thi")}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
+              );
+            })}
+            
+            {!loading && sorted.length === 0 && (
+              <div className="error-state glass" style={{ textAlign: "center", padding: "6rem", borderRadius: "2rem" }}>
+                <FileText size={64} style={{ opacity: 0.1, color: "var(--primary)", marginBottom: "1.5rem" }} />
+                <p style={{ color: "var(--muted-foreground)", fontWeight: 600 }}>Chưa có kỳ thi nào được lên lịch.</p>
               </div>
-            </Card>
-          );
-        })}
-        {!loading && sorted.length === 0 ? <Card className="glass" style={{ textAlign: "center", padding: "3rem" }}>Chưa có kỳ thi nào được lên lịch.</Card> : null}
-        <PaginationControls
-          page={currentPage}
-          totalPages={totalPages}
-          total={total}
-          currentCount={sorted.length}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-          showPageSize
-        />
+            )}
+            
+            <div style={{ marginTop: '2.5rem' }}>
+              <PaginationControls
+                page={currentPage}
+                totalPages={totalPages}
+                total={total}
+                currentCount={sorted.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                showPageSize
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,159 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 4rem;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--foreground) 30%, var(--muted-foreground));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header p {
+  font-size: 1.1rem;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.classList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.classCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+  transition: all 0.4s var(--ease-out-expo);
+}
+
+.classCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+}
+
+.mainInfo {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.iconBox {
+  width: 64px;
+  height: 64px;
+  border-radius: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+
+.details h3 {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.teacherInfo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scheduleInfo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.capacityWrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.capacityBar {
+  width: 120px;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.capacityFill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.6s var(--ease-out-expo);
+}
+
+.capacityText {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.enrollBtn {
+  padding: 1rem 2.5rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 1.25rem;
+  font-weight: 900;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: var(--shadow-md);
+}
+
+.enrollBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  filter: brightness(1.1);
+}
+
+.enrollBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .classCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+  .enrollBtn {
+    width: 100%;
+  }
+}

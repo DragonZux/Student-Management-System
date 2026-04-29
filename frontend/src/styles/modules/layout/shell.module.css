@@ -1,0 +1,129 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: radial-gradient(circle at 100% 0%, rgba(var(--primary-rgb), 0.03) 0%, transparent 40%),
+              radial-gradient(circle at 0% 100%, rgba(124, 58, 237, 0.03) 0%, transparent 40%);
+}
+
+.main {
+  flex: 1;
+  padding: 2.5rem 3.5rem;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.welcomeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted-foreground);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.greeting {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.roleBadge {
+  padding: 0.625rem 1.25rem;
+  border-radius: 1rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.roleDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--primary);
+}
+
+.roleText {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--foreground);
+}
+
+.profileButton {
+  width: 48px;
+  height: 48px;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 1.15rem;
+  box-shadow: var(--shadow-primary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.profileButton:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 20px -4px rgba(var(--primary-rgb), 0.4);
+}
+
+@media (max-width: 1024px) {
+  .main {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  
+  .actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .greeting {
+    font-size: 1.5rem;
+  }
+}

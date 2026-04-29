@@ -188,116 +188,120 @@ export default function AdminFinancePage() {
   return (
     <div className={`${styles.container} animate-in`}>
       <header className={`${styles.header} slide-right stagger-1`}>
-        <div className={styles.headerInfo}>
+        <div>
           <h1>Quản lý Tài chính</h1>
           <p>Giám sát nguồn thu, công nợ và thiết lập chính sách học phí.</p>
         </div>
         <div className={styles.actions}>
           <button onClick={exportTransactions} className={styles.exportBtn}>
-            <Download size={18} /> Giao dịch
+            <Download size={18} /> Xuất Giao dịch (CSV)
           </button>
         </div>
       </header>
 
       <div className={`${styles.statsGrid} slide-right stagger-2`}>
-        <Card className="glass">
+        <Card>
           <div className={styles.statCard}>
             <div>
               <p className={styles.statLabel}>Tổng doanh thu</p>
               <h2 className={styles.statValue}>{(depsLoading || paymentsLoading) ? '...' : `$${stats.totalRevenue.toLocaleString()}`}</h2>
             </div>
-            <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
-              <TrendingUp color="#059669" size={24} />
+            <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.08)' }}>
+              <TrendingUp color="#059669" size={28} />
             </div>
           </div>
         </Card>
-        <Card className="glass">
+        <Card>
           <div className={styles.statCard}>
             <div>
               <p className={styles.statLabel}>Công nợ chưa thu</p>
-              <h2 className={styles.statValue} style={{ color: '#e11d48' }}>{(depsLoading || paymentsLoading) ? '...' : `$${stats.outstanding.toLocaleString()}`}</h2>
+              <h2 className={styles.statValue} style={{ color: '#f43f5e' }}>{(depsLoading || paymentsLoading) ? '...' : `$${stats.outstanding.toLocaleString()}`}</h2>
             </div>
-            <div className={styles.statIcon} style={{ background: 'rgba(244, 63, 94, 0.1)' }}>
-              <DollarSign color="#e11d48" size={24} />
+            <div className={styles.statIcon} style={{ background: 'rgba(244, 63, 94, 0.08)' }}>
+              <DollarSign color="#f43f5e" size={28} />
             </div>
           </div>
         </Card>
-        <Card className="glass">
+        <Card>
           <div className={styles.statCard}>
             <div>
               <p className={styles.statLabel}>Tỷ lệ thu hồi</p>
-              <h2 className={styles.statValue}>{(depsLoading || paymentsLoading) ? '...' : `${stats.collectionRate.toFixed(1)}%`}</h2>
+              <h2 className={styles.statValue} style={{ color: 'var(--primary)' }}>{(depsLoading || paymentsLoading) ? '...' : `${stats.collectionRate.toFixed(1)}%`}</h2>
             </div>
-            <div className={styles.statIcon} style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
-              <PieChart color="#2563eb" size={24} />
+            <div className={styles.statIcon} style={{ background: 'rgba(var(--primary-rgb), 0.08)' }}>
+              <PieChart color="var(--primary)" size={28} />
             </div>
           </div>
         </Card>
       </div>
 
-      <InlineMessage variant="error" style={{ marginBottom: '1rem' }}>{error || actionError || paymentsError}</InlineMessage>
-      <InlineMessage variant="success" style={{ marginBottom: '1rem' }}>{actionMessage}</InlineMessage>
+      {(error || actionError || paymentsError) && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error || actionError || paymentsError}</InlineMessage>}
+      {actionMessage && <InlineMessage variant="success" style={{ marginBottom: '2rem' }}>{actionMessage}</InlineMessage>}
 
-      <Card 
-        title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={20} /> Lịch sử Giao dịch</div>}
-        className={`${styles.tableSection} glass slide-right stagger-3`}
-        style={{ padding: 0 }}
-      >
-        <div className={styles.tableContainer}>
-          {paymentsLoading ? (
-            <div style={{ padding: '1.5rem' }}><TableSkeleton rows={8} columns={4} /></div>
-          ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Sinh viên</th>
-                  <th>Số tiền</th>
-                  <th>Ngày thanh toán</th>
-                  <th>Trạng thái</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedTransactions.length === 0 ? (
-                  <tr><td colSpan={5} style={{ padding: '4rem', textAlign: 'center' }}>Không có dữ liệu giao dịch.</td></tr>
-                ) : paginatedTransactions.map((tx, index) => (
-                  <tr key={tx.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
-                    <td>
-                      <div className={styles.studentName}>{tx.student}</div>
-                      <div className={styles.studentEmail}>{tx.email}</div>
-                    </td>
-                    <td><span className={styles.amount}>${tx.amount.toLocaleString()}</span></td>
-                    <td>{tx.date}</td>
-                    <td><span className="badge badge-success">Thành công</span></td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button className={styles.pageBtn} title="Tải biên lai"><Download size={18} /></button>
-                    </td>
+      <div className="slide-right stagger-3">
+        <Card 
+          title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 900 }}><History size={20} /> Lịch sử Giao dịch</div>}
+          className={styles.tableSection}
+          style={{ padding: 0 }}
+        >
+          <div className={styles.tableContainer}>
+            {paymentsLoading ? (
+              <div style={{ padding: '2rem' }}><TableSkeleton rows={8} columns={4} /></div>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Sinh viên</th>
+                    <th>Số tiền</th>
+                    <th>Ngày thanh toán</th>
+                    <th>Trạng thái</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {paginatedTransactions.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: '6rem', textAlign: 'center', color: 'var(--muted-foreground)', fontWeight: 600 }}>Không có dữ liệu giao dịch trong hệ thống.</td></tr>
+                  ) : paginatedTransactions.map((tx, index) => (
+                    <tr key={tx.id} className={styles.tableRow}>
+                      <td>
+                        <div className={styles.studentName}>{tx.student}</div>
+                        <div className={styles.studentEmail}>{tx.email}</div>
+                      </td>
+                      <td><span className={styles.amount}>${tx.amount.toLocaleString()}</span></td>
+                      <td>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{tx.date}</div>
+                      </td>
+                      <td><span className="badge badge-success" style={{ fontWeight: 800 }}>Thành công</span></td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="action-icon-btn" title="Tải biên lai" style={{ background: 'var(--surface-2)', border: 'none', padding: '0.5rem', borderRadius: '0.5rem' }}><Download size={18} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
 
-        <div className={styles.pagination}>
-          <PaginationControls
-            page={txPage}
-            totalPages={totalTxPages}
-            total={total}
-            currentCount={payments.length}
-            pageSize={txPageSize}
-            onPageChange={setTxPage}
-            onPageSizeChange={setTxPageSize}
-            showPageSize
-          />
-        </div>
-      </Card>
+          <div className={styles.pagination}>
+            <PaginationControls
+              page={txPage}
+              totalPages={totalTxPages}
+              total={total}
+              currentCount={payments.length}
+              pageSize={txPageSize}
+              onPageChange={setTxPage}
+              onPageSizeChange={setTxPageSize}
+              showPageSize
+            />
+          </div>
+        </Card>
+      </div>
 
-      <div className={styles.formsGrid}>
-        <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><DollarSign size={20} /> Ghi nhận Thanh toán</div>} className="glass scale-in" style={{ animationDelay: '0.5s' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div className={`${styles.formsGrid} slide-right stagger-4`}>
+        <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 900 }}><DollarSign size={20} /> Ghi nhận Thanh toán</div>}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '0.5rem' }}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Chọn Sinh viên</label>
+              <label className={styles.formLabel}>Chọn Sinh viên mục tiêu</label>
               <select 
                 className={styles.select}
                 value={paymentForm.student_id} 
@@ -311,53 +315,58 @@ export default function AdminFinancePage() {
               </select>
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Số tiền ($)</label>
+              <label className={styles.formLabel}>Số tiền quyết toán ($)</label>
               <input 
                 className={styles.input}
                 type="number" min="1" value={paymentForm.amount} 
                 onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))} 
                 placeholder="0.00"
-                style={{ fontSize: '1.25rem', fontWeight: 800 }}
+                style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'JetBrains Mono, monospace' }}
               />
             </div>
-            <button onClick={submitPayment} className="btn-primary" style={{ padding: '1rem', width: '100%', justifyContent: 'center', fontSize: '1.1rem' }} disabled={depsLoading}>
-              Xác nhận Thanh toán
+            <button onClick={submitPayment} className="btn-primary" style={{ padding: '1.15rem', width: '100%', justifyContent: 'center', fontSize: '1.1rem', borderRadius: '1.25rem' }} disabled={depsLoading}>
+              Xác nhận & Cập nhật số dư
             </button>
           </div>
         </Card>
 
-        <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Settings size={20} /> Chính sách Học phí</div>} className="glass scale-in" style={{ animationDelay: '0.6s' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 900 }}><Settings size={20} /> Thiết lập Học phí</div>}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Kỳ học</label>
-                <input className={styles.input} value={policyForm.semester} onChange={(e) => setPolicyForm((p) => ({ ...p, semester: e.target.value }))} placeholder="HK2-2024" />
+                <label className={styles.formLabel}>Kỳ học áp dụng</label>
+                <input className={styles.input} value={policyForm.semester} onChange={(e) => setPolicyForm((p) => ({ ...p, semester: e.target.value }))} placeholder="Ví dụ: HK2-2024" />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Phí / Tín chỉ ($)</label>
+                <label className={styles.formLabel}>Đơn giá / Tín chỉ ($)</label>
                 <input className={styles.input} type="number" min="1" value={policyForm.cost_per_credit} onChange={(e) => setPolicyForm((p) => ({ ...p, cost_per_credit: e.target.value }))} />
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                <input type="checkbox" checked={policyForm.is_active} onChange={(e) => setPolicyForm((p) => ({ ...p, is_active: e.target.checked }))} style={{ width: '1.2rem', height: '1.2rem' }} />
-                Kích hoạt
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-1)', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 800, cursor: 'pointer', userSelect: 'none' }}>
+                <input type="checkbox" checked={policyForm.is_active} onChange={(e) => setPolicyForm((p) => ({ ...p, is_active: e.target.checked }))} style={{ width: '1.25rem', height: '1.25rem', accentColor: 'var(--primary)' }} />
+                Kích hoạt ngay chính sách này
               </label>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                {editingPolicyId && <button onClick={startCreatePolicy} className="btn-secondary">Hủy</button>}
-                <button onClick={submitPolicy} className="btn-primary">{editingPolicyId ? 'Cập nhật' : 'Tạo mới'}</button>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                {editingPolicyId && <button onClick={startCreatePolicy} className="btn-secondary" style={{ fontWeight: 800 }}>Hủy</button>}
+                <button onClick={submitPolicy} className="btn-primary" style={{ fontWeight: 800 }}>{editingPolicyId ? 'Cập nhật' : 'Thêm mới'}</button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-              {policies.map((policy) => (
-                <div key={policy._id} className={styles.policyItem}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <label className={styles.formLabel} style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>DANH SÁCH CHÍNH SÁCH ĐÃ LƯU</label>
+              {policies.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', background: 'var(--surface-1)', borderRadius: '1rem', border: '1px dashed var(--border)', fontSize: '0.85rem', color: 'var(--muted-foreground)' }}>
+                  Chưa có chính sách học phí nào.
+                </div>
+              ) : policies.map((policy) => (
+                <div key={policy._id} className={styles.policyItem} style={{ borderLeft: policy.is_active ? '4px solid #059669' : '4px solid var(--border)' }}>
                   <div className={styles.policyMeta}>
                     <div className={styles.policyTitle}>{policy.semester}</div>
                     <div className={styles.policyDetails}>
-                      ${Number(policy.cost_per_credit).toLocaleString()} / tín chỉ • 
-                      <span style={{ color: policy.is_active ? '#059669' : '#e11d48', marginLeft: '0.5rem' }}>
-                        {policy.is_active ? 'Đang áp dụng' : 'Ngưng'}
+                      <span style={{ fontWeight: 900, color: 'var(--foreground)' }}>${Number(policy.cost_per_credit).toLocaleString()}</span> / tín chỉ • 
+                      <span style={{ color: policy.is_active ? '#059669' : '#f43f5e', marginLeft: '0.5rem', fontWeight: 800 }}>
+                        {policy.is_active ? 'Đang hiệu lực' : 'Đã ngưng'}
                       </span>
                     </div>
                   </div>
@@ -377,7 +386,7 @@ export default function AdminFinancePage() {
         onClose={() => setConfirmModal({ isOpen: false, policyId: null })}
         onConfirm={deletePolicy}
         title="Xác nhận xóa chính sách"
-        message="Bạn có chắc chắn muốn xóa chính sách học phí này? Hành động này có thể ảnh hưởng đến việc tính toán học phí của sinh viên."
+        message="Hành động này không thể hoàn tác. Các hóa đơn cũ sẽ được giữ nguyên nhưng chính sách này sẽ biến mất khỏi hệ thống."
       />
     </div>
   );

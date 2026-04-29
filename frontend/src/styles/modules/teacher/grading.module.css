@@ -1,0 +1,248 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3.5rem;
+}
+
+.headerTitle h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--foreground) 30%, var(--muted-foreground));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.headerTitle p {
+  font-size: 1.1rem;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.classSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-bottom: 3rem;
+}
+
+.selectorLabel {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.select {
+  padding: 1rem 1.5rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  max-width: 450px;
+}
+
+.select:focus {
+  border-color: var(--primary);
+  background: var(--card);
+}
+
+.gradingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.gradingModal {
+  width: 100%;
+  max-width: 600px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-2xl);
+  overflow: hidden;
+}
+
+.modalHeader {
+  padding: 2rem;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.modalHeader h2 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+}
+
+.modalHeader p {
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.modalBody {
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.formLabel {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input, .textarea {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  transition: all 0.3s;
+}
+
+.input:focus, .textarea:focus {
+  border-color: var(--primary);
+  background: var(--card);
+  outline: none;
+}
+
+.modalFooter {
+  padding: 2rem;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 1rem;
+}
+
+.queueCard {
+  overflow: hidden;
+  border-radius: 2rem;
+}
+
+.studentItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  transition: all 0.3s;
+}
+
+.studentItem:hover {
+  background: rgba(var(--primary-rgb), 0.02);
+}
+
+.studentMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.studentName {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.courseMeta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.timeInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  margin-top: 0.5rem;
+}
+
+.rightMeta {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gradeBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1.15rem;
+  background: var(--surface-1);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.gradeBtn:hover {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 8px 16px rgba(var(--primary-rgb), 0.2);
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .studentItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .rightMeta {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
