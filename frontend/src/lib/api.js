@@ -113,7 +113,7 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         const isLoginPath = error.config?.url?.includes('/auth/login');
         const isOnLoginPage = window.location?.pathname === '/login';
-        
+
         if (isLoginPath) {
           // For login failures, we let the LoginPage handle the error message.
         } else {

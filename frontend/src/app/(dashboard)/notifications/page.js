@@ -39,8 +39,8 @@ export default function NotificationsPage() {
       ...n,
       time: formatTimeAgo(n.created_at),
       // Categorize based on keywords in title or message
-      category: n.title?.toLowerCase().includes('học phí') ? 'finance' : 
-                n.title?.toLowerCase().includes('lớp') ? 'class' : 'system'
+      category: n.title?.toLowerCase().includes('học phí') ? 'finance' :
+        n.title?.toLowerCase().includes('lớp') ? 'class' : 'system'
     }));
   }, [notifications]);
 
@@ -69,11 +69,11 @@ export default function NotificationsPage() {
 
   return (
     <div className="animate-in">
-      <header style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'flex-end', 
-        marginBottom: '2.5rem' 
+      <header style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        marginBottom: '2.5rem'
       }}>
         <div>
           <h1 style={{ marginBottom: '0.5rem' }}>Trung tâm thông báo</h1>
@@ -81,14 +81,14 @@ export default function NotificationsPage() {
             Cập nhật những tin tức và thay đổi mới nhất từ hệ thống.
           </p>
         </div>
-        
+
         {items.some(n => !n.read) && (
-          <button 
+          <button
             onClick={handleMarkAll}
             disabled={markingAll}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
               gap: '0.5rem',
               padding: '0.75rem 1.25rem',
               borderRadius: '1rem',
@@ -123,13 +123,13 @@ export default function NotificationsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
             >
               <Card className="glass" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-                <div style={{ 
-                  width: '80px', 
-                  height: '80px', 
-                  background: 'rgba(0,0,0,0.03)', 
-                  borderRadius: '50%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  background: 'rgba(0,0,0,0.03)',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
                   margin: '0 auto 1.5rem'
                 }}>
@@ -141,22 +141,23 @@ export default function NotificationsPage() {
             </motion.div>
           ) : (
             items.map((n, idx) => {
+              const notificationKey = n.id || n._id || `${n.created_at || 'notification'}-${idx}`;
               const styles = getCategoryStyles(n.category);
               return (
                 <motion.div
-                  key={n.id}
+                  key={notificationKey}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   layout
                 >
-                  <div style={{ 
-                    padding: '1.5rem', 
-                    background: n.read ? 'rgba(255, 255, 255, 0.4)' : 'white', 
-                    border: '1px solid var(--border)', 
+                  <div style={{
+                    padding: '1.5rem',
+                    background: n.read ? 'rgba(255, 255, 255, 0.4)' : 'white',
+                    border: '1px solid var(--border)',
                     borderRadius: '1.5rem',
-                    display: 'flex', 
-                    gap: '1.25rem', 
+                    display: 'flex',
+                    gap: '1.25rem',
                     alignItems: 'flex-start',
                     boxShadow: n.read ? 'none' : '0 10px 25px -5px rgba(0,0,0,0.05)',
                     transition: 'all 0.3s ease',
@@ -164,21 +165,21 @@ export default function NotificationsPage() {
                     opacity: n.read ? 0.8 : 1
                   }}>
                     {!n.read && (
-                      <div style={{ 
-                        position: 'absolute', 
-                        top: '1.5rem', 
-                        right: '1.5rem', 
-                        width: '8px', 
-                        height: '8px', 
-                        borderRadius: '50%', 
+                      <div style={{
+                        position: 'absolute',
+                        top: '1.5rem',
+                        right: '1.5rem',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
                         background: 'var(--primary)',
                         boxShadow: '0 0 10px var(--primary)'
                       }} />
                     )}
 
-                    <div style={{ 
-                      padding: '0.75rem', 
-                      background: styles.bg, 
+                    <div style={{
+                      padding: '0.75rem',
+                      background: styles.bg,
                       borderRadius: '1rem',
                       display: 'flex',
                       alignItems: 'center',
@@ -192,26 +193,26 @@ export default function NotificationsPage() {
                         <span style={{ fontWeight: 800, fontSize: '1.05rem', color: n.read ? 'var(--muted-foreground)' : 'inherit' }}>
                           {n.title}
                         </span>
-                        <span style={{ 
-                          fontSize: '0.75rem', 
-                          color: 'var(--muted-foreground)', 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                        <span style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--muted-foreground)',
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: '0.35rem',
                           fontWeight: 600
                         }}>
                           <Clock size={14} /> {n.time}
                         </span>
                       </div>
-                      <p style={{ 
-                        margin: 0, 
-                        fontSize: '0.9375rem', 
+                      <p style={{
+                        margin: 0,
+                        fontSize: '0.9375rem',
                         color: 'var(--muted-foreground)',
-                        lineHeight: 1.6 
+                        lineHeight: 1.6
                       }}>
                         {n.message}
                       </p>
-                      
+
                       {!n.read && (
                         <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem' }}>
                           <button

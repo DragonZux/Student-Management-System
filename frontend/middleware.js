@@ -8,6 +8,11 @@ function resolveHomePath(role) {
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === '/favicon.ico') {
+    return NextResponse.rewrite(new URL('/favicon.svg', request.url));
+  }
+
   const token = request.cookies.get('sms_token')?.value;
   const role = request.cookies.get('sms_role')?.value;
 
@@ -45,5 +50,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/login', '/admin/:path*', '/teacher/:path*', '/student/:path*', '/notifications/:path*', '/profile/:path*', '/exams/:path*'],
+  matcher: ['/favicon.ico', '/login', '/admin/:path*', '/teacher/:path*', '/student/:path*', '/notifications/:path*', '/profile/:path*', '/exams/:path*'],
 };
