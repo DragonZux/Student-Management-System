@@ -92,9 +92,12 @@ api.defaults.retryDelay = 1000;
 // Add a request interceptor to handle auth token and path normalization
 api.interceptors.request.use(
   (config) => {
-    // Ensure relative URLs do not start with / to prevent axios from stripping the baseURL path
-    if (config.url && config.url.startsWith('/') && !/^https?:\/\//i.test(config.url)) {
-      config.url = config.url.substring(1);
+    // Normalize relative paths so callers can pass `/foo`, `foo`, or `/foo/`
+    // without triggering slash-based routing mismatches on the backend.
+    if (config.url && !/^https?:\/\//i.test(config.url)) {
+      const [pathPart, suffix = ''] = String(config.url).split(/([?#].*)/, 2);
+      const normalizedPath = pathPart.replace(/^\/+/, '').replace(/\/+$/, '');
+      config.url = `${normalizedPath}${suffix}`;
     }
 
     const token = typeof window !== 'undefined' ? getAuthTokenFromBrowser() : null;

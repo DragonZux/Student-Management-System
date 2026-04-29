@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from app.routers import auth, student, teacher, finance, notifications, reports, exams
 from app.internal import admin
 
-api_router = APIRouter()
+api_router = APIRouter(redirect_slashes=False)
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin Management"])

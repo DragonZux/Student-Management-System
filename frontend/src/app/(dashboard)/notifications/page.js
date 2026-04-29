@@ -196,7 +196,7 @@ export default function NotificationsPage() {
                   layout
                 >
                   <div 
-                    onClick={() => !n.read && markRead(n.id)}
+                    onClick={() => !n.read && markRead(n._id || n.id)}
                     style={{
                       padding: '1.5rem',
                       background: n.read ? 'var(--glass-bg)' : 'white',

@@ -5,7 +5,9 @@ services:
       - "8000:8000"
     environment:
       - MONGO_URI=mongodb://mongodb:27017/sms_db
-      - DEBUG=false
+      - DEBUG=true
+    volumes:
+      - ./backend:/app
     depends_on:
       - mongodb
 
@@ -17,7 +19,11 @@ services:
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
       - NEXT_PUBLIC_WS_BASE_URL=ws://localhost:8000/api
       - INTERNAL_API_BASE_URL=http://backend:8000/api
-      - NODE_ENV=production
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
 
   mongodb:
     image: mongo:latest

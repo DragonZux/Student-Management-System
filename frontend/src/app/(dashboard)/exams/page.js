@@ -75,7 +75,7 @@ export default function ExamsPage() {
 
   useEffect(() => {
     if (!createForm.class_id && myClasses.length > 0) {
-      setCreateForm((p) => ({ ...p, class_id: myClasses[0]._id }));
+      setCreateForm((p) => ({ ...p, class_id: myClasses[0]._id || myClasses[0].id }));
     }
   }, [myClasses, createForm.class_id]);
 
@@ -151,6 +151,14 @@ export default function ExamsPage() {
     setGradeForm({ student_id: "", score: "", comments: "" });
   };
 
+  const selectStudentToGrade = (submission) => {
+    setGradeForm({
+      student_id: submission.student_id,
+      score: "",
+      comments: ""
+    });
+  };
+
   const submitGrade = async () => {
     if (!gradeExam?._id) return;
     setGradeError("");
@@ -158,8 +166,8 @@ export default function ExamsPage() {
       popupValidationError(setGradeError, "Vui lòng nhập mã sinh viên và điểm.");
       return;
     }
-    const score = toNumber(gradeForm.score);
-    if (score === null) {
+    const score = toNumber(gradeForm.score, -1);
+    if (score < 0) {
       popupValidationError(setGradeError, "Điểm không hợp lệ.");
       return;
     }
@@ -242,7 +250,7 @@ export default function ExamsPage() {
               >
                 <option value="">-- Chọn lớp học --</option>
                 {myClasses.map((c) => (
-                  <option key={c._id} value={c._id}>
+                  <option key={c._id || c.id} value={c._id || c.id}>
                     {c.course_code || "Môn học"}: {c.course_title || c.course_id}
                   </option>
                 ))}
@@ -307,6 +315,23 @@ export default function ExamsPage() {
         <Card className="glass animate-in" title={`Hệ thống ghi điểm: ${gradeExam.title}`}>
           <InlineMessage variant="error" style={{ marginBottom: "1.5rem" }}>{gradeError}</InlineMessage>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            {gradeExam.submissions?.length > 0 && !gradeForm.student_id && (
+              <div style={{ gridColumn: "1 / -1", marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Chọn sinh viên đã nộp bài:</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                  {gradeExam.submissions.map(s => (
+                    <button 
+                      key={s.student_id} 
+                      onClick={() => selectStudentToGrade(s)}
+                      className="btn-primary" 
+                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}
+                    >
+                      {s.student_id.split("-")[0]}... (Nộp lúc {new Date(s.submitted_at).toLocaleTimeString()})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Mã sinh viên</label>
               <input
@@ -334,7 +359,7 @@ export default function ExamsPage() {
                 style={{ width: "100%", minHeight: 80 }}
               />
             </div>
-            {gradeExam.submissions?.find(s => s.student_id === gradeForm.student_id) && (
+            {gradeForm.student_id && gradeExam.submissions?.find(s => s.student_id === gradeForm.student_id) && (
               <div style={{ gridColumn: "1 / -1", marginTop: "1rem", padding: "1.5rem", background: "rgba(99, 102, 241, 0.05)", borderRadius: "1rem", border: "1px solid rgba(99, 102, 241, 0.1)" }}>
                 <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", marginBottom: "1rem" }}>Nội dung sinh viên đã nộp:</label>
                 <div style={{ whiteSpace: "pre-wrap", fontSize: "1rem", lineHeight: "1.6", color: "var(--foreground)" }}>
@@ -384,11 +409,12 @@ export default function ExamsPage() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         {sorted.map((e) => {
-          const isGraded = e.grades?.some(g => g.student_id === user?._id);
-          const isSubmitted = e.submissions?.some(s => s.student_id === user?._id);
+          const isGraded = e.grades?.some(g => g.student_id === user?.id);
+          const isSubmitted = e.submissions?.some(s => s.student_id === user?.id);
+          const studentGrade = e.grades?.find(g => g.student_id === user?.id);
           
           return (
-            <Card key={e._id} className="glass" title={e.title} footer={
+            <Card key={e._id || e.id} className="glass" title={e.title} footer={
               (user?.role === "teacher" || user?.role === "admin") ? (
                 <div style={{ display: "flex", gap: "1rem", width: "100%" }}>
                   <button onClick={() => openGrade(e)} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "transparent", color: "var(--primary)", border: "1px solid var(--primary)" }}>
@@ -402,7 +428,11 @@ export default function ExamsPage() {
                 </div>
               ) : user?.role === "student" ? (
                 <button
-                  onClick={() => { setTakeExam(e); setTakeForm({ content: "" }); }}
+                  onClick={() => { 
+                    const existing = e.submissions?.find(s => s.student_id === user?.id);
+                    setTakeExam(e); 
+                    setTakeForm({ content: existing?.content || "" }); 
+                  }}
                   disabled={isGraded}
                   className="btn-primary"
                   style={{ 
@@ -420,12 +450,25 @@ export default function ExamsPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "2rem" }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem" }}>
-                    <span className="badge badge-primary">{e.class_id}</span>
+                    <span className="badge badge-primary">{e.course_code || e.class_id}</span>
+                    {e.class_name && <span className="badge badge-primary" style={{ background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)" }}>{e.class_name}</span>}
                     <span className="badge badge-warning">{e.duration_minutes} phút</span>
                   </div>
                   <p style={{ margin: 0, color: "var(--muted-foreground)", fontSize: "0.925rem", lineHeight: "1.5" }}>
                     {e.description || "Kỳ thi được tổ chức trực tuyến trên hệ thống."}
                   </p>
+                  {isGraded && studentGrade && (
+                    <div style={{ marginTop: "1.25rem", padding: "1rem", background: "rgba(16, 185, 129, 0.05)", borderRadius: "1rem", border: "1px solid rgba(16, 185, 129, 0.2)", color: "#059669" }}>
+                      <div style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "0.25rem" }}>
+                        Kết quả: {studentGrade.score} / {e.max_score}
+                      </div>
+                      {studentGrade.comments && (
+                        <div style={{ fontSize: "0.875rem", opacity: 0.9, fontStyle: "italic" }}>
+                          &quot;{studentGrade.comments}&quot;
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: "right", minWidth: "200px" }}>
                   <div style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)", marginBottom: "0.5rem", fontWeight: 600 }}>Thời gian bắt đầu</div>
