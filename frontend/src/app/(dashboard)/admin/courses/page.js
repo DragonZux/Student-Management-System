@@ -3,10 +3,10 @@ import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { BookOpen, Plus, Search, Layers, Loader2, BookCheck } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { BookOpen, Plus, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import api from '@/lib/api';
-import { isInRange, matchesPattern, popupValidationError } from '@/lib/validation';
+import { popupValidationError } from '@/lib/validation';
 import styles from '@/styles/modules/admin/courses.module.css';
 
 import usePaginatedData from '@/hooks/usePaginatedData';
@@ -34,6 +34,15 @@ export default function CoursesPage() {
   const [form, setForm] = useState({ code: '', title: '', credits: 3, description: '', prerequisites: '' });
   const [formError, setFormError] = useState('');
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, course: null });
+
+  const normalizedCourses = useMemo(
+    () =>
+      (courses || []).map((course, index) => ({
+        ...course,
+        _rowKey: course._id || course.code || `${course.title || 'course'}-${index}`,
+      })),
+    [courses]
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -184,7 +193,7 @@ export default function CoursesPage() {
                 </tr>
               </thead>
               <tbody>
-                {courses.length === 0 ? (
+                {normalizedCourses.length === 0 ? (
                   <tr>
                     <td colSpan={5}>
                       <div className={styles.emptyState}>
@@ -193,8 +202,8 @@ export default function CoursesPage() {
                       </div>
                     </td>
                   </tr>
-                ) : courses.map((course, index) => (
-                  <tr key={course._id || course.code} className={`${styles.tableRow} table-row-hover`} style={{ animationDelay: `${index * 0.04}s` }}>
+                ) : normalizedCourses.map((course, index) => (
+                  <tr key={course._rowKey} className={`${styles.tableRow} table-row-hover`} style={{ animationDelay: `${index * 0.04}s` }}>
                     <td>
                       <code className={styles.courseCode}>{course.code}</code>
                     </td>
@@ -232,7 +241,7 @@ export default function CoursesPage() {
             page={currentPage}
             totalPages={totalPages}
             total={total}
-            currentCount={courses.length}
+            currentCount={normalizedCourses.length}
             pageSize={pageSize}
             onPageChange={setCurrentPage}
             onPageSizeChange={setPageSize}

@@ -4,6 +4,9 @@ import { Be_Vietnam_Pro } from 'next/font/google';
 export const metadata = {
   title: 'Hệ thống Quản lý Sinh viên',
   description: 'Quản lý học tập, điểm số và tài chính theo cách rõ ràng, gọn gàng.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 import { AuthProvider } from '@/components/providers/AuthProvider';
