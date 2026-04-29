@@ -14,7 +14,7 @@ from app.schemas.user import UserRole
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("")
 async def list_exams(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=2000),
@@ -38,7 +38,7 @@ async def list_exams(
     }
 
 
-@router.post("/", response_model=ExamOut)
+@router.post("", response_model=ExamOut)
 async def create_exam(payload: ExamCreate, admin: dict = Depends(check_admin_role)):
     db = get_database()
     target_class = await db.classes.find_one({"_id": payload.class_id})

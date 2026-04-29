@@ -8,7 +8,7 @@ from app.core.audit import log_audit_event
 from app.db.database import get_database
 from app.schemas.user import UserRole
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def _build_simple_pdf(lines: List[str]) -> bytes:

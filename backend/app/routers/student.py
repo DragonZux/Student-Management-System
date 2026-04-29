@@ -12,7 +12,7 @@ from app.schemas.user import UserRole
 from datetime import datetime
 import uuid
 
-router = APIRouter(dependencies=[Depends(check_student_role)])
+router = APIRouter(dependencies=[Depends(check_student_role)], redirect_slashes=False)
 
 
 async def _fetch_classes_by_ids(db, class_ids):
@@ -65,6 +65,7 @@ def _build_simple_pdf(lines: List[str]) -> bytes:
     pdf.extend(f"trailer << /Size {len(offsets)} /Root 1 0 R >>\nstartxref\n{xref_start}\n%%EOF".encode("latin-1"))
     return bytes(pdf)
 
+@router.get("")
 @router.get("/available-classes")
 async def list_available_classes(
     skip: int = Query(default=0, ge=0),
@@ -99,6 +100,7 @@ async def list_available_classes(
         "limit": limit,
     }
 
+@router.get("")
 @router.get("/my-enrollments")
 async def list_my_enrollments(
     skip: int = Query(default=0, ge=0),
@@ -131,6 +133,7 @@ async def list_my_enrollments(
         "limit": limit,
     }
 
+@router.get("")
 @router.get("/my-assignments")
 async def list_my_assignments(
     skip: int = Query(default=0, ge=0),

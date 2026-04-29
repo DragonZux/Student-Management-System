@@ -12,7 +12,7 @@ from app.db.database import get_database
 from app.schemas.organization import NotificationCreate, NotificationOut
 from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 active_connections: Dict[str, List[WebSocket]] = defaultdict(list)
 
@@ -56,6 +56,7 @@ async def _broadcast_to_user(user_id: str, payload: dict):
     if stale:
         active_connections[user_id] = [ws for ws in active_connections[user_id] if ws not in stale]
 
+@router.get("")
 @router.get("/")
 async def get_my_notifications(
     skip: int = Query(default=0, ge=0),
@@ -156,7 +157,13 @@ async def notifications_ws(websocket: WebSocket):
     # Single-session check: only allow the currently active session
     db = get_database()
     user = await db.users.find_one({"_id": user_id})
-    if not user or str(user.get("active_jti") or "") != str(token_jti):
+    if not user:
+        print(f"[WS] Rejecting: User {user_id} not found")
+        await websocket.close(code=1008)
+        return
+        
+    if str(user.get("active_jti") or "") != str(token_jti):
+        print(f"[WS] Rejecting: JTI mismatch for {user_id}. DB: {user.get('active_jti')}, Token: {token_jti}")
         await websocket.close(code=1008)
         return
 

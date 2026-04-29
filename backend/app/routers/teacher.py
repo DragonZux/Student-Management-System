@@ -10,7 +10,7 @@ from app.schemas.user import UserRole
 from datetime import datetime
 import uuid
 
-router = APIRouter(dependencies=[Depends(check_teacher_role)])
+router = APIRouter(dependencies=[Depends(check_teacher_role)], redirect_slashes=False)
 
 
 @router.get("/dashboard-summary")
@@ -71,6 +71,7 @@ async def get_teacher_dashboard_summary(teacher: dict = Depends(check_teacher_ro
         "today_classes": today_classes,
     }
 
+@router.get("")
 @router.get("/my-classes")
 async def list_my_classes(teacher: dict = Depends(check_teacher_role)):
     db = get_database()
@@ -120,6 +121,7 @@ async def list_class_students(
         "limit": limit,
     }
 
+@router.get("")
 @router.get("/assignments")
 async def list_my_assignments(
     skip: int = Query(default=0, ge=0),

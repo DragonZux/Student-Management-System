@@ -42,7 +42,7 @@ export default function ExamsPage() {
     setCurrentPage,
     setPageSize,
     refresh,
-  } = usePaginatedData("/exams/", { cacheKey: "exams", initialLimit: 6 });
+  } = usePaginatedData("/exams", { cacheKey: "exams", initialLimit: 6 });
 
   const canManage = user?.role === "teacher" || user?.role === "admin";
 
@@ -107,7 +107,7 @@ export default function ExamsPage() {
       return;
     }
     try {
-      await api.post("/exams/", {
+      await api.post("/exams", {
         class_id: createForm.class_id,
         title: createForm.title.trim(),
         description: createForm.description || null,
