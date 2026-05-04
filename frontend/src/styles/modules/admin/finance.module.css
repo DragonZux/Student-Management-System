@@ -7,61 +7,63 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 2.5rem;
+  margin-bottom: 3.5rem;
 }
 
-.headerInfo h1 {
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
   margin-bottom: 0.5rem;
-  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--foreground) 30%, var(--muted-foreground));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.headerInfo p {
+.header p {
   font-size: 1.1rem;
   color: var(--muted-foreground);
-}
-
-.actions {
-  display: flex;
-  gap: 1rem;
+  font-weight: 500;
 }
 
 .exportBtn {
-  padding: 0.75rem 1.25rem;
-  border-radius: 1rem;
-  border: 1px solid var(--border);
-  background: var(--card);
-  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  font-weight: 700;
-  font-size: 0.875rem;
-  transition: all 0.2s;
+  gap: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  font-weight: 800;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.3s var(--ease-out-expo);
 }
 
 .exportBtn:hover {
+  background: var(--card);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
   border-color: var(--primary);
-  color: var(--primary);
-  transform: translateY(-1px);
 }
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
-  margin-bottom: 3rem;
+  margin-bottom: 3.5rem;
 }
 
 .statCard {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  padding: 1rem;
 }
 
 .statLabel {
-  margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 800;
   color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -69,136 +71,124 @@
 }
 
 .statValue {
-  margin: 0;
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 900;
+  color: var(--foreground);
+  letter-spacing: -0.02em;
 }
 
 .statIcon {
-  padding: 0.75rem;
-  border-radius: 1rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .tableSection {
-  margin-bottom: 3rem;
+  margin-bottom: 3.5rem;
   overflow: hidden;
+  border-radius: 2rem;
 }
 
 .tableContainer {
+  width: 100%;
   overflow-x: auto;
 }
 
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .table th {
-  padding: 1.25rem 2rem;
-  font-size: 0.75rem;
-  font-weight: 800;
+  padding: 1.5rem;
+  background: var(--surface-1);
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 900;
   color: var(--muted-foreground);
   text-transform: uppercase;
-  text-align: left;
-  background: rgba(var(--primary-rgb), 0.02);
+  letter-spacing: 0.1em;
   border-bottom: 1px solid var(--border);
-}
-
-.table td {
-  padding: 1.25rem 2rem;
-  border-bottom: 1px solid var(--border);
-}
-
-@keyframes rowAnimate {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
 }
 
 .tableRow {
-  animation: rowAnimate 0.4s var(--ease-out-expo) forwards;
-  opacity: 0;
+  transition: background 0.2s;
+}
+
+.tableRow:hover {
+  background: rgba(var(--primary-rgb), 0.02);
+}
+
+.tableRow td {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
 }
 
 .studentName {
   font-weight: 800;
+  color: var(--foreground);
   font-size: 1rem;
 }
 
 .studentEmail {
-  font-size: 0.8125rem;
+  font-size: 0.85rem;
   color: var(--muted-foreground);
 }
 
 .amount {
-  font-weight: 800;
-  font-size: 1.125rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 900;
+  color: var(--foreground);
+  font-size: 1.1rem;
 }
 
 .pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1.5rem;
   padding: 1.5rem;
-  background: rgba(var(--primary-rgb), 0.01);
-}
-
-.pageBtn {
-  padding: 0.5rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--border);
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pageBtn:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.pageBtn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+  border-top: 1px solid var(--border);
+  background: var(--surface-1);
 }
 
 .formsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  grid-template-columns: 1fr 1.2fr;
   gap: 2rem;
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 
 .formLabel {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--foreground);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.select, .input {
+.input, .select {
   width: 100%;
-  padding: 1rem;
-  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-1);
   border: 1px solid var(--border);
-  background: var(--card);
+  border-radius: 1rem;
   font-size: 1rem;
-  transition: all 0.2s;
+  font-weight: 600;
+  color: var(--foreground);
+  transition: all 0.3s;
 }
 
-.select:focus, .input:focus {
+.input:focus, .select:focus {
   border-color: var(--primary);
+  background: var(--card);
+  outline: none;
   box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
 }
 
@@ -206,32 +196,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(var(--primary-rgb), 0.02);
-  border-radius: 1.25rem;
   padding: 1.25rem;
+  background: var(--surface-1);
   border: 1px solid var(--border);
-  transition: all 0.2s;
+  border-radius: 1.25rem;
+  transition: all 0.3s;
 }
 
 .policyItem:hover {
-  background: var(--card);
-  transform: translateX(4px);
   border-color: var(--primary);
-}
-
-.policyMeta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  transform: translateX(4px);
 }
 
 .policyTitle {
-  font-weight: 800;
-  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--foreground);
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
 }
 
 .policyDetails {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--muted-foreground);
   font-weight: 600;
 }
@@ -244,27 +229,38 @@
 .policyEditBtn {
   padding: 0.5rem 1rem;
   border-radius: 0.75rem;
-  border: none;
+  font-weight: 800;
+  font-size: 0.8rem;
   background: rgba(var(--primary-rgb), 0.1);
   color: var(--primary);
-  font-weight: 700;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .policyDeleteBtn {
   padding: 0.5rem 1rem;
   border-radius: 0.75rem;
-  border: none;
-  background: rgba(225, 29, 72, 0.1);
+  font-weight: 800;
+  font-size: 0.8rem;
+  background: rgba(244, 63, 94, 0.1);
   color: #e11d48;
-  font-weight: 700;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
   .formsGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
   }
 }

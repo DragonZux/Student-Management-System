@@ -24,9 +24,8 @@ function getWebSocketBaseUrl() {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'ws://localhost:8000/api';
     }
-    // Fallback for ngrok or other external access
+    // Fallback for external access
     const wsBase = window.location.origin.replace(/^http/i, 'ws') + '/api';
-    console.log('[WS] Client Base URL:', wsBase);
     return wsBase;
   }
 
@@ -152,12 +151,10 @@ export function NotificationProvider({ children }) {
       if (!nextToken) return;
 
       const fullUrl = `${getWsUrl()}?token=${encodeURIComponent(nextToken)}`;
-      console.log('[WS] Connecting to:', fullUrl);
       const ws = new WebSocket(fullUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('[WS] Connected successfully');
         reconnectAttemptRef.current = 0;
         if (reconnectTimerRef.current) {
           window.clearTimeout(reconnectTimerRef.current);
@@ -200,7 +197,6 @@ export function NotificationProvider({ children }) {
       };
 
       ws.onmessage = (event) => {
-        console.log('[WS] Received message:', event.data);
         try {
           const payload = JSON.parse(event.data);
           if (payload?.type !== "notification" || !payload.data) return;

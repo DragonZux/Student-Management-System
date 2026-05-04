@@ -8,6 +8,9 @@ from app.dependencies import get_current_user
 from app.core.audit import log_audit_event
 from datetime import datetime
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -78,9 +81,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
         return {"access_token": access_token, "token_type": "bearer"}
     except Exception as e:
-        print(f"DEBUG: Login error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Login error")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=str(e))

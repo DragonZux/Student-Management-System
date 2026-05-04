@@ -6,29 +6,43 @@
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
+  align-items: flex-end;
+  margin-bottom: 3rem;
 }
 
 .headerInfo h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
   margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--foreground) 30%, var(--muted-foreground));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .headerInfo p {
   font-size: 1.1rem;
   color: var(--muted-foreground);
+  font-weight: 500;
 }
 
 .filterBar {
-  background: var(--glass-bg);
+  background: var(--surface-1);
   backdrop-filter: var(--glass-blur);
-  padding: 1.25rem;
-  border-radius: 1.25rem;
-  margin-bottom: 2rem;
-  border: 1px solid var(--glass-border);
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  margin-bottom: 2.5rem;
+  border: 1px solid var(--border);
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.filterBar:focus-within {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-glow);
 }
 
 .searchWrapper {
@@ -42,30 +56,30 @@
   left: 1.25rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--muted-foreground);
+  color: var(--primary);
   pointer-events: none;
 }
 
 .searchInput {
   width: 100%;
-  padding: 0.875rem 1rem 0.875rem 3.25rem;
-  border-radius: 1rem;
+  padding: 1rem 1rem 1rem 3.5rem;
+  border-radius: 1.25rem;
   border: 1px solid var(--border);
   background: var(--background);
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s var(--ease-out-expo);
+  outline: none;
 }
 
 .searchInput:focus {
-  border-color: var(--primary);
   background: var(--card);
-  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
 }
 
 .filterWrapper {
   position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .filterIcon {
@@ -73,94 +87,102 @@
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--muted-foreground);
+  color: var(--primary);
   pointer-events: none;
 }
 
 .filterSelect {
   width: 100%;
-  padding: 0.875rem 1rem 0.875rem 2.75rem;
-  border-radius: 1rem;
+  padding: 1rem 1rem 1rem 3rem;
+  border-radius: 1.25rem;
   border: 1px solid var(--border);
   background: var(--background);
   font-size: 0.95rem;
+  font-weight: 700;
   appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s var(--ease-out-expo);
 }
 
-.loadingWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 6rem 0;
-  gap: 1.5rem;
-}
-
-.loadingText {
-  color: var(--muted-foreground);
-  font-weight: 600;
-  font-size: 1.1rem;
+.filterSelect:focus {
+  background: var(--card);
 }
 
 .tableWrapper {
   overflow-x: auto;
   margin: 0 -1.5rem;
+  padding: 0 1.5rem;
 }
 
 .table {
   width: 100%;
-  border-collapse: collapse;
-  min-width: 800px;
+  border-collapse: separate;
+  border-spacing: 0 0.75rem;
+  min-width: 900px;
 }
 
 .table th {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem;
   color: var(--muted-foreground);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   text-align: left;
-  background: rgba(var(--primary-rgb), 0.02);
-  border-bottom: 1px solid var(--border);
-}
-
-.table td {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-}
-
-@keyframes rowAnimate {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
 }
 
 .tableRow {
-  animation: rowAnimate 0.4s var(--ease-out-expo) forwards;
-  opacity: 0;
+  background: var(--card);
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.tableRow td {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.tableRow td:first-child {
+  border-left: 1px solid var(--border);
+  border-top-left-radius: 1.25rem;
+  border-bottom-left-radius: 1.25rem;
+}
+
+.tableRow td:last-child {
+  border-right: 1px solid var(--border);
+  border-top-right-radius: 1.25rem;
+  border-bottom-right-radius: 1.25rem;
+}
+
+.tableRow:hover {
+  transform: translateY(-4px) scale(1.002);
+  box-shadow: var(--shadow);
+  border-color: rgba(var(--primary-rgb), 0.2);
+  background: var(--surface-1);
 }
 
 .studentId {
-  background: var(--muted);
-  padding: 0.35rem 0.65rem;
-  border-radius: 0.6rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  font-family: monospace;
+  background: rgba(var(--primary-rgb), 0.1);
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
   color: var(--primary);
-  border: 1px solid rgba(var(--primary-rgb), 0.1);
 }
 
 .studentName {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 800;
+  font-size: 1.1rem;
   color: var(--foreground);
-  margin-bottom: 0.125rem;
+  margin-bottom: 0.25rem;
 }
 
 .studentEmail {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
+  font-weight: 500;
 }
 
 .actions {
@@ -170,125 +192,101 @@
 }
 
 .actionBtn {
-  padding: 0.5rem 1rem;
-  font-size: 0.8125rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.875rem;
+  border-radius: 0.85rem;
+  font-weight: 700;
+  transition: all 0.2s var(--ease-out-expo);
   cursor: pointer;
+  border: none;
 }
 
 .editBtn {
-  background: transparent;
+  background: rgba(var(--primary-rgb), 0.08);
   color: var(--primary);
-  border: 1px solid rgba(var(--primary-rgb), 0.2);
 }
 
 .editBtn:hover {
-  background: rgba(var(--primary-rgb), 0.05);
-  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-primary);
 }
 
 .deleteBtn {
-  background: rgba(244, 63, 94, 0.05);
-  color: var(--accent);
-  border: 1px solid transparent;
+  background: rgba(244, 63, 94, 0.08);
+  color: #f43f5e;
 }
 
 .deleteBtn:hover {
-  background: var(--accent);
+  background: #f43f5e;
   color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -4px rgba(244, 63, 94, 0.4);
 }
 
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-top: 1px solid var(--border);
-  margin-top: 1rem;
-}
-
-.paginationInfo {
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
-}
-
-.paginationControls {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.pageBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 0.75rem;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--foreground);
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.pageBtn:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.pageBtnActive {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
-}
-
-.pageBtn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-/* Modal specific */
 .formGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  padding: 1rem 0;
 }
 
 .formField label {
   display: block;
-  font-size: 0.875rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin-bottom: 0.625rem;
   color: var(--foreground);
 }
 
-.formField input, .formField select {
-  width: 100%;
-}
-
 .formActions {
-  margin-top: 2.5rem;
+  margin-top: 3rem;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
 }
 
 .emptyState {
-  padding: 5rem 2rem;
-  text-align: center;
+  padding: 6rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
+  color: var(--muted-foreground);
+  text-align: center;
 }
 
 .emptyState p {
-  color: var(--muted-foreground);
   font-size: 1.1rem;
-  max-width: 400px;
+  font-weight: 500;
 }
+
+@media (max-width: 1024px) {
+  .headerInfo h1 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  
+  .filterBar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .searchWrapper, .filterWrapper {
+    width: 100%;
+    flex: none;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+

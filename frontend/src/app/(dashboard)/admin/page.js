@@ -17,20 +17,20 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-2" style={{ gap: '2rem' }}>
         <Card title="Phím tắt Thao tác" className="scale-in" style={{ animationDelay: '0.5s' }}>
-          <div className="grid grid-cols-2" style={{ gap: '1.25rem' }}>
+          <div className="grid grid-cols-2" style={{ gap: '1.5rem', padding: '0.5rem' }}>
             <Link href="/admin/students" className={styles.actionBtn} style={{ textDecoration: 'none' }}>
-              <UserPlus size={28} />
+              <UserPlus size={32} />
               <span>Ghi danh sinh viên</span>
             </Link>
             <Link href="/admin/courses" className={styles.actionBtn} style={{ textDecoration: 'none' }}>
-              <BookPlus size={28} />
+              <BookPlus size={32} />
               <span>Thêm môn học</span>
             </Link>
             <AdminAuditExportButton
               className={styles.actionBtn} 
             />
             <Link href="/admin/teachers" className={styles.actionBtn} style={{ textDecoration: 'none' }}>
-              <Users size={28} />
+              <Users size={32} />
               <span>Quản lý giảng viên</span>
             </Link>
           </div>
@@ -41,27 +41,27 @@ export default function AdminDashboard() {
             <div className={styles.statusItem}>
               <div className={styles.statusLabel}>
                 <div className={styles.statusIndicator} style={{ background: '#22c55e' }} />
-                <span style={{ fontWeight: 600 }}>Cơ sở dữ liệu (MongoDB)</span>
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>Cơ sở dữ liệu (MongoDB)</span>
               </div>
-              <span className="badge badge-success">Ổn định</span>
+              <span className="badge badge-success" style={{ padding: '0.5rem 1rem' }}>Ổn định</span>
             </div>
             <div className={styles.statusItem}>
               <div className={styles.statusLabel}>
                 <div className={styles.statusIndicator} style={{ background: '#22c55e' }} />
-                <span style={{ fontWeight: 600 }}>Cổng API (FastAPI)</span>
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>Cổng API (FastAPI)</span>
               </div>
-              <span className="badge badge-success">Ổn định</span>
+              <span className="badge badge-success" style={{ padding: '0.5rem 1rem' }}>Ổn định</span>
             </div>
             <div className={styles.statusItem}>
               <div className={styles.statusLabel}>
                 <div className={styles.statusIndicator} style={{ background: 'var(--primary)' }} />
-                <span style={{ fontWeight: 600 }}>Bảo mật & Mã hóa</span>
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>Bảo mật & Mã hóa</span>
               </div>
-              <span className="badge badge-primary">An toàn</span>
+              <span className="badge badge-primary" style={{ padding: '0.5rem 1rem' }}>An toàn</span>
             </div>
             
-            <Link href="/admin/audit" className="btn-primary" style={{ justifyContent: 'center', padding: '1rem', marginTop: '0.5rem', fontWeight: 700 }}>
-              Xem nhật ký Audit <ArrowRight size={18} style={{ marginLeft: '0.5rem' }} />
+            <Link href="/admin/audit" className="btn-primary" style={{ justifyContent: 'center', padding: '1.25rem', marginTop: '1rem', fontWeight: 800, borderRadius: '1.25rem' }}>
+              Xem nhật ký Audit <ArrowRight size={20} style={{ marginLeft: '0.75rem' }} />
             </Link>
           </div>
         </Card>

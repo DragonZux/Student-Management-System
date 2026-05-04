@@ -79,16 +79,18 @@ export default function Sidebar({ role = 'admin' }) {
   }, [isCollapsed]);
 
   return (
-    <aside className={sidebarClassName}>
+    <aside className={sidebarClassName} aria-label="Main Navigation">
       <div className={styles.logo}>
         <div className={styles.logoLeft}>
-          <GraduationCap size={32} color="var(--primary)" />
+          <div className={styles.iconWrapper}>
+            <GraduationCap size={28} />
+          </div>
           <span className={styles.logoText}>SMS Việt</span>
         </div>
         <button
           type="button"
           className={styles.collapseBtn}
-          title={isCollapsed ? 'Mở sidebar' : 'Thu gọn sidebar'}
+          aria-label={isCollapsed ? 'Mở sidebar' : 'Thu gọn sidebar'}
           onClick={() => {
             setIsCollapsed((v) => !v);
           }}
@@ -106,29 +108,45 @@ export default function Sidebar({ role = 'admin' }) {
               key={item.path}
               href={item.path}
               className={`${styles.navItem} ${isActive ? styles.active : ''} slide-right`}
-              style={{ animationDelay: `${index * 0.05}s` }}
+              style={{ animationDelay: `${index * 0.03}s` }}
               title={isCollapsed ? item.name : undefined}
+              aria-current={isActive ? 'page' : undefined}
             >
               <Icon size={20} />
               <span className={styles.label}>{item.name}</span>
+              {isActive && <div className={styles.activeIndicator} />}
             </Link>
           );
         })}
       </nav>
 
       <div className={styles.footer}>
-        <Link href="/notifications" className={styles.navItem} title={isCollapsed ? 'Thông báo' : undefined}>
+        <Link 
+          href="/notifications" 
+          className={`${styles.navItem} ${pathname === '/notifications' ? styles.active : ''}`}
+          title={isCollapsed ? 'Thông báo' : undefined}
+          aria-label={`Thông báo ${unreadCount > 0 ? `(${unreadCount} chưa đọc)` : ''}`}
+        >
           <Bell size={20} />
           <span className={styles.label}>Thông báo</span>
           {unreadCount > 0 ? (
             <span className={styles.notifBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
           ) : null}
         </Link>
-        <Link href="/profile" className={styles.navItem} title={isCollapsed ? 'Hồ sơ' : undefined}>
+        <Link 
+          href="/profile" 
+          className={`${styles.navItem} ${pathname === '/profile' ? styles.active : ''}`}
+          title={isCollapsed ? 'Hồ sơ' : undefined}
+          aria-label="Hồ sơ người dùng"
+        >
           <UserCircle size={20} />
           <span className={styles.label}>Hồ sơ</span>
         </Link>
-        <button onClick={logout} className={styles.logoutBtn}>
+        <button 
+          onClick={logout} 
+          className={styles.logoutBtn}
+          aria-label="Đăng xuất"
+        >
           <LogOut size={20} />
           <span className={styles.label}>Đăng xuất</span>
         </button>

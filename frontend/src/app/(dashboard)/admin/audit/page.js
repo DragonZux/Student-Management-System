@@ -39,27 +39,27 @@ export default function AuditLogsPage() {
     <div className={`${styles.container} animate-in`}>
       <header className={`${styles.header} slide-right stagger-1`}>
         <h1>Nhật ký Hệ thống</h1>
-        <p>Giám sát toàn bộ hoạt động quản trị và sự kiện bảo mật thời gian thực.</p>
+        <p>Giám sát toàn bộ hoạt động quản trị, bảo mật và sự kiện hệ thống theo thời gian thực.</p>
       </header>
 
-      {error && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>}
+      {error && <InlineMessage variant="error" style={{ marginBottom: '2.5rem' }}>{error}</InlineMessage>}
 
-      <Card className={`${styles.logsCard} glass slide-right stagger-2`} style={{ padding: 0 }}>
+      <Card className={`${styles.logsCard} slide-right stagger-2`} style={{ padding: 0 }}>
         <div className={styles.tableHeader}>
-          <div className={styles.headerCol}>Sự kiện & Người thực hiện</div>
-          <div className={styles.headerCol}>Thời gian</div>
-          <div className={`${styles.headerCol} ${styles.severityCol}`}>Mức độ</div>
+          <div>Sự kiện & Người thực hiện</div>
+          <div>Dấu mốc Thời gian</div>
+          <div className={styles.severityCol}>Mức độ</div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {loading ? (
-            <div style={{ padding: '1.5rem' }}>
-              <TableSkeleton rows={10} columns={3} />
+            <div style={{ padding: '2rem' }}>
+              <TableSkeleton rows={12} columns={3} />
             </div>
           ) : logs.length === 0 ? (
             <div className={styles.empty}>
-              <Shield size={64} style={{ opacity: 0.1, marginBottom: '1.5rem' }} />
-              <p>Chưa có nhật ký hoạt động nào được ghi lại.</p>
+              <Activity size={64} style={{ opacity: 0.1, marginBottom: '2rem', color: 'var(--primary)' }} />
+              <p>Hệ thống hiện tại chưa ghi nhận hoạt động nào mới.</p>
             </div>
           ) : (
             <>
@@ -69,27 +69,29 @@ export default function AuditLogsPage() {
                   <div 
                     key={`${log._id || index}`} 
                     className={styles.logRow}
-                    style={{ animationDelay: `${index * 0.02}s` }}
+                    style={{ animationDelay: `${index * 0.03}s` }}
                   >
                     <div className={styles.eventInfo}>
                       <div className={styles.iconWrapper} style={{ background: severity.bgColor }}>
-                        <Shield size={20} color={severity.iconColor} />
+                        <Shield size={22} color={severity.iconColor} />
                       </div>
                       <div>
                         <div className={styles.actionTitle}>{log.action}</div>
                         <div className={styles.actorMeta}>
-                          <User size={14} />
-                          <span>{log.actor_id || 'System'}</span>
-                          <span style={{ opacity: 0.3 }}>|</span>
-                          <span className={styles.actorRole}>{log.actor_role || 'Auto'}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <User size={14} />
+                            <span style={{ fontWeight: 800, color: 'var(--foreground)' }}>{log.actor_id || 'Hệ thống'}</span>
+                          </div>
+                          <span style={{ opacity: 0.2 }}>•</span>
+                          <span className={styles.actorRole}>{log.actor_role || 'Tự động'}</span>
                         </div>
                       </div>
                     </div>
                     
                     <div className={styles.timeInfo}>
                       <div className={styles.dateRow}>
-                        <Clock size={14} />
-                        {log.created_at ? new Date(log.created_at).toLocaleDateString('vi-VN') : '--/--/----'}
+                        <Clock size={15} />
+                        {log.created_at ? new Date(log.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--/--/----'}
                       </div>
                       <div className={styles.timeRow}>
                         {log.created_at ? new Date(log.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
@@ -97,15 +99,21 @@ export default function AuditLogsPage() {
                     </div>
 
                     <div className={styles.severityCol}>
-                      <span className={`badge ${severity.class}`} style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}>
-                        {severity.label}
+                      <span className={`badge ${severity.class}`} style={{ 
+                        padding: '0.45rem 1rem', 
+                        fontSize: '0.7rem', 
+                        fontWeight: 900,
+                        letterSpacing: '0.02em',
+                        borderRadius: '0.75rem'
+                      }}>
+                        {severity.label.toUpperCase()}
                       </span>
                     </div>
                   </div>
                 );
               })}
 
-              <div style={{ padding: '0 1.5rem 1.5rem' }}>
+              <div style={{ padding: '1.5rem 2rem 2.5rem' }}>
                 <PaginationControls
                   page={currentPage}
                   totalPages={totalPages}

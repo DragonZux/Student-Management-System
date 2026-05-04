@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { Book, Calendar, Award, Wallet } from 'lucide-react';
+import { Book, Calendar, Award, Wallet, ArrowRight, Zap, Bell } from 'lucide-react';
 import { serverApiFetch } from '@/lib/serverApi';
+import styles from '@/styles/modules/student/dashboard.module.css';
 
 function formatDeadline(value) {
   if (!value) return 'Chưa có dữ liệu';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Chưa có dữ liệu';
-  return date.toLocaleString();
+  return date.toLocaleString('vi-VN');
 }
 
 async function loadStudentSummary() {
@@ -28,139 +29,136 @@ async function loadStudentSummary() {
 export default async function StudentDashboard() {
   const { summary, error } = await loadStudentSummary();
   const loading = !summary;
+  
   const stats = [
     {
       label: 'Lớp học tiếp theo',
       value: summary?.next_class ? `${summary.next_class.course_code || summary.next_class.course_title} @ ${summary.next_class.start || '--:--'}` : 'Chưa có lịch học',
       icon: Calendar,
-      color: '#6366f1',
+      bg: 'rgba(99, 102, 241, 0.1)',
+      color: 'var(--primary)',
     },
     {
       label: 'GPA hiện tại',
       value: loading ? '...' : String(summary?.gpa ?? 0),
       icon: Award,
-      color: '#a855f7',
+      bg: 'rgba(168, 85, 247, 0.1)',
+      color: 'var(--secondary)',
     },
     {
       label: 'Bài tập chưa nộp',
       value: loading ? '...' : String(summary?.pending_assignments ?? 0),
       icon: Book,
+      bg: 'rgba(37, 99, 235, 0.1)',
       color: '#2563eb',
     },
     {
       label: 'Số dư học phí',
       value: loading ? '...' : `$${Number(summary?.outstanding_balance || 0).toFixed(2)}`,
       icon: Wallet,
+      bg: 'rgba(15, 118, 110, 0.1)',
       color: '#0f766e',
     },
   ];
 
   return (
-    <div className="animate-in">
-      <div style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ marginBottom: '0.5rem' }}>Bảng điều khiển sinh viên</h1>
-        <p style={{ fontSize: '1.1rem' }}>Chào mừng bạn trở lại. Chúc bạn có một ngày học tập hiệu quả!</p>
-      </div>
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <h1>Bảng điều khiển sinh viên</h1>
+        <p>Chào mừng bạn trở lại. Chúc bạn có một ngày học tập hiệu quả!</p>
+      </header>
 
-      <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{error}</InlineMessage>
+      {error && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>}
 
-      <div className="grid grid-cols-4" style={{ marginBottom: '2.5rem' }}>
-        {stats.map((item) => {
+      <div className={styles.statsGrid}>
+        {stats.map((item, index) => {
           const Icon = item.icon;
           return (
-            <Card key={item.label} className="glass">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ padding: '0.75rem', background: `rgba(99, 102, 241, 0.1)`, borderRadius: '1rem', width: 'fit-content' }}>
-                  <Icon size={24} color={item.color} />
-                </div>
-                <div>
-                  <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem' }}>{item.label}</p>
-                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>{item.value}</h3>
-                </div>
+            <div key={item.label} className={`${styles.statCard} slide-right`} style={{ animationDelay: `${index * 0.1 + 0.2}s` }}>
+              <div className={styles.iconWrapper} style={{ background: item.bg, color: item.color }}>
+                <Icon size={24} />
               </div>
-            </Card>
+              <div className={styles.statInfo}>
+                <span className={styles.statLabel}>{item.label}</span>
+                <h3 className={styles.statValue}>{item.value}</h3>
+              </div>
+            </div>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-3" style={{ gap: '2rem' }}>
-        <div style={{ gridColumn: 'span 2' }}>
-          <Card title="Hạn nộp bài tập sắp tới" className="glass">
-            {loading ? (
-              <div style={{ padding: '2rem', textAlign: 'center' }}>Đang tải dữ liệu...</div>
-            ) : summary?.upcoming_deadline ? (
-              <div style={{ 
-                padding: '1.5rem', 
-                background: 'rgba(0,0,0,0.02)', 
-                borderRadius: '1rem', 
-                border: '1px solid #e2e8f0',
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                gap: '1.5rem' 
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                    <span className="badge badge-danger">Sắp đến hạn</span>
-                    <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{summary.upcoming_deadline.title || 'Bài tập'}</h3>
-                  </div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#6366f1', marginBottom: '0.5rem' }}>
-                    Môn: {summary.upcoming_deadline.course_code || summary.upcoming_deadline.course_title || 'Không rõ'}
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#64748b' }}>
-                    {summary.upcoming_deadline.description || 'Chưa có mô tả chi tiết cho bài tập này.'}
-                  </p>
+      <div className={styles.mainGrid}>
+        <div className="slide-right stagger-2">
+          <Card title="Hạn nộp bài tập sắp tới">
+            <div style={{ padding: '0.5rem' }}>
+              {loading ? (
+                <div style={{ padding: '4rem', textAlign: 'center' }}>
+                  <div className="spinner" style={{ margin: '0 auto 1.5rem' }} />
+                  <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang tải dữ liệu...</p>
                 </div>
-                <div style={{ textAlign: 'right', minWidth: '160px' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Hạn chót</div>
-                  <div style={{ color: '#991b1b', fontWeight: 800, fontSize: '1rem' }}>
-                    {formatDeadline(summary.upcoming_deadline.deadline)}
+              ) : summary?.upcoming_deadline ? (
+                <div className={styles.deadlineCard}>
+                  <div className={styles.deadlineInfo}>
+                    <div className={styles.courseBadge}>
+                      {summary.upcoming_deadline.course_code || summary.upcoming_deadline.course_title || 'Môn học'}
+                    </div>
+                    <h3 className={styles.deadlineTitle}>{summary.upcoming_deadline.title || 'Bài tập'}</h3>
+                    <p className={styles.deadlineDesc}>
+                      {summary.upcoming_deadline.description || 'Chưa có mô tả chi tiết cho bài tập này.'}
+                    </p>
+                  </div>
+                  <div className={styles.deadlineDate}>
+                    <div className={styles.dateLabel}>Hạn chót</div>
+                    <div className={styles.dateValue}>
+                      {formatDeadline(summary.upcoming_deadline.deadline)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                🎉 Tuyệt vời! Bạn không có bài tập nào sắp đến hạn.
-              </div>
-            )}
+              ) : (
+                <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--muted-foreground)', background: 'var(--surface-1)', borderRadius: '1.5rem' }}>
+                  <Zap size={48} style={{ opacity: 0.1, marginBottom: '1.5rem', color: 'var(--primary)' }} />
+                  <p style={{ fontWeight: 600 }}>🎉 Tuyệt vời! Bạn không có bài tập nào sắp đến hạn.</p>
+                </div>
+              )}
+            </div>
           </Card>
 
-          <Card title="Thao tác nhanh" className="glass" style={{ marginTop: '2rem' }}>
-            <div className="grid grid-cols-3" style={{ gap: '1rem' }}>
-              <Link href="/student/enrollment" className="btn-primary" style={{ background: '#0f172a', justifyContent: 'center' }}>
+          <Card title="Thao tác nhanh" style={{ marginTop: '2.5rem' }}>
+            <div className={styles.actionGrid}>
+              <Link href="/student/enrollment" className={styles.actionLink} style={{ background: 'var(--foreground)', color: 'var(--background)' }}>
                 Đăng ký học
               </Link>
-              <Link href="/student/schedule" className="btn-primary" style={{ background: '#0f172a', justifyContent: 'center' }}>
+              <Link href="/student/schedule" className={styles.actionLink} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', color: 'var(--foreground)' }}>
                 Xem lịch học
               </Link>
-              <Link href="/exams" className="btn-primary" style={{ background: '#6366f1', justifyContent: 'center' }}>
+              <Link href="/exams" className={styles.actionLink} style={{ background: 'var(--primary)', color: 'white' }}>
                 Làm bài thi
               </Link>
             </div>
           </Card>
         </div>
 
-        <div>
-          <Card title="Tổng quan học lực" className="glass">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ padding: '1.25rem', background: 'rgba(34, 197, 94, 0.05)', borderRadius: '1rem', border: '1px solid rgba(34, 197, 94, 0.1)' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Môn học đang tham gia</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#166534' }}>{summary?.active_courses ?? 0}</div>
+        <div className="slide-right stagger-3">
+          <Card title="Tổng quan học lực">
+            <div className={styles.overviewList}>
+              <div className={styles.overviewItem} style={{ background: 'rgba(34, 197, 94, 0.04)', borderColor: 'rgba(34, 197, 94, 0.1)' }}>
+                <span className={styles.overviewLabel} style={{ color: '#166534' }}>Môn học đang tham gia</span>
+                <span className={styles.overviewValue} style={{ color: '#166534' }}>{summary?.active_courses ?? 0}</span>
               </div>
               
-              <div style={{ padding: '1.25rem', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '1rem', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Môn học đã hoàn thành</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#6366f1' }}>{summary?.completed_courses ?? 0}</div>
+              <div className={styles.overviewItem} style={{ background: 'rgba(99, 102, 241, 0.04)', borderColor: 'rgba(99, 102, 241, 0.1)' }}>
+                <span className={styles.overviewLabel} style={{ color: 'var(--primary)' }}>Môn học đã hoàn thành</span>
+                <span className={styles.overviewValue} style={{ color: 'var(--primary)' }}>{summary?.completed_courses ?? 0}</span>
               </div>
 
-              <div style={{ padding: '1.25rem', background: 'rgba(244, 63, 94, 0.05)', borderRadius: '1rem', border: '1px solid rgba(244, 63, 94, 0.1)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase' }}>Thông báo mới</div>
+              <div className={styles.overviewItem} style={{ background: 'rgba(244, 63, 94, 0.04)', borderColor: 'rgba(244, 63, 94, 0.1)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className={styles.overviewLabel} style={{ color: '#f43f5e' }}>Thông báo mới</span>
                   {summary?.unread_notifications > 0 && <span className="badge badge-danger">Mới</span>}
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#991b1b' }}>{summary?.unread_notifications ?? 0}</div>
-                <Link href="/notifications" style={{ fontSize: '0.8125rem', color: '#991b1b', fontWeight: 600, textDecoration: 'underline', marginTop: '0.5rem', display: 'block' }}>
-                  Xem tất cả thông báo
+                <span className={styles.overviewValue} style={{ color: '#f43f5e' }}>{summary?.unread_notifications ?? 0}</span>
+                <Link href="/notifications" style={{ fontSize: '0.85rem', color: '#f43f5e', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  Xem tất cả <ArrowRight size={14} />
                 </Link>
               </div>
             </div>

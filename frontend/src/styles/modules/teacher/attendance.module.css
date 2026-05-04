@@ -1,0 +1,261 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3.5rem;
+}
+
+.headerTitle h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--foreground) 30%, var(--muted-foreground));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.headerTitle p {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.classSelect {
+  padding: 0.625rem 1.25rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  font-weight: 800;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.classSelect:focus {
+  border-color: var(--primary);
+  background: var(--card);
+}
+
+.datePickerCard {
+  padding: 0.75rem 1.5rem;
+  border-radius: 1.25rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.3s;
+}
+
+.datePickerCard:hover {
+  border-color: var(--primary);
+}
+
+.dateInput {
+  border: none;
+  background: transparent;
+  font-weight: 800;
+  color: var(--foreground);
+  font-size: 1rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 3.5rem;
+}
+
+.statCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+}
+
+.statLabel {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.statValue {
+  font-size: 2.25rem;
+  font-weight: 900;
+}
+
+.statIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.studentList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.studentRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.studentRow:hover {
+  transform: translateX(6px);
+  border-color: var(--primary);
+  background: var(--card);
+}
+
+.studentInfo {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 1rem;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+
+.studentDetails h4 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--foreground);
+  margin-bottom: 0.25rem;
+}
+
+.studentDetails span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.statusActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.statusBtn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 1rem;
+  font-weight: 800;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid transparent;
+}
+
+.btnPresent {
+  background: rgba(16, 185, 129, 0.05);
+  color: #059669;
+}
+
+.btnPresentActive {
+  background: #059669;
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btnAbsent {
+  background: rgba(244, 63, 94, 0.05);
+  color: #f43f5e;
+}
+
+.btnAbsentActive {
+  background: #f43f5e;
+  color: white;
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+}
+
+.footerActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.submitBtn {
+  padding: 1.15rem 3rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 1.5rem;
+  font-weight: 900;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: var(--shadow-md);
+}
+
+.submitBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  filter: brightness(1.1);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+  .studentRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .statusActions {
+    width: 100%;
+  }
+  .statusBtn {
+    flex: 1;
+    justify-content: center;
+  }
+}

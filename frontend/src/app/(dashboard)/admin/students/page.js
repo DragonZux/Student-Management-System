@@ -176,16 +176,16 @@ export default function StudentsPage() {
 
   return (
     <div className={`${styles.container} animate-in`}>
-      <div className={`${styles.header} slide-right stagger-1`}>
-        <div className={styles.headerInfo}>
+      <header className={styles.header}>
+        <div className={`${styles.headerInfo} slide-right stagger-1`}>
           <h1>Quản lý Sinh viên</h1>
           <p>Quản lý thông tin cá nhân, hồ sơ học tập và phân quyền sinh viên.</p>
         </div>
-        <button className="btn-primary" onClick={openCreate}>
+        <button className="btn-primary slide-right stagger-2" onClick={openCreate}>
           <UserPlus size={18} />
           Thêm sinh viên
         </button>
-      </div>
+      </header>
 
       <Modal 
         isOpen={showForm} 
@@ -193,65 +193,67 @@ export default function StudentsPage() {
         title={editing ? 'Cập nhật thông tin' : 'Ghi danh sinh viên mới'}
         maxWidth="800px"
       >
-        <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{formError}</InlineMessage>
-        <div className={styles.formGrid}>
-          <div className={styles.formField}>
-            <label>Họ và tên</label>
-            <input 
-              value={form.full_name} 
-              onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} 
-              placeholder="Ví dụ: Nguyễn Văn A" 
-            />
-          </div>
-          <div className={styles.formField}>
-            <label>Địa chỉ Email</label>
-            <input 
-              value={form.email} 
-              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} 
-              placeholder="student@university.edu.vn" 
-            />
-          </div>
-          {!editing && (
+        <div className="modal-inner">
+          <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{formError}</InlineMessage>
+          <div className={styles.formGrid}>
             <div className={styles.formField}>
-              <label>Mật khẩu khởi tạo</label>
+              <label>Họ và tên</label>
               <input 
-                type="password" 
-                value={form.password} 
-                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} 
-                placeholder="Tối thiểu 8 ký tự" 
+                value={form.full_name} 
+                onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} 
+                placeholder="Ví dụ: Nguyễn Văn A" 
               />
             </div>
-          )}
-          <div className={styles.formField}>
-            <label>Khoa / Bộ môn</label>
-            <select 
-              value={form.department} 
-              onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} 
-            >
-              <option value="">-- Lựa chọn Khoa --</option>
-              {(realDepartments || []).map((d) => (
-                <option key={d._id} value={d.name}>{d.name}</option>
-              ))}
-            </select>
+            <div className={styles.formField}>
+              <label>Địa chỉ Email</label>
+              <input 
+                value={form.email} 
+                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} 
+                placeholder="student@university.edu.vn" 
+              />
+            </div>
+            {!editing && (
+              <div className={styles.formField}>
+                <label>Mật khẩu khởi tạo</label>
+                <input 
+                  type="password" 
+                  value={form.password} 
+                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} 
+                  placeholder="Tối thiểu 8 ký tự" 
+                />
+              </div>
+            )}
+            <div className={styles.formField}>
+              <label>Khoa / Bộ môn</label>
+              <select 
+                value={form.department} 
+                onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} 
+              >
+                <option value="">-- Lựa chọn Khoa --</option>
+                {(realDepartments || []).map((d) => (
+                  <option key={d._id} value={d.name}>{d.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
-        <div className={styles.formActions}>
-          <button 
-            onClick={() => setShowForm(false)} 
-            className="btn-primary" 
-            style={{ background: 'transparent', color: 'var(--foreground)', border: '1px solid var(--border)', boxShadow: 'none' }}
-          >
-            Hủy bỏ
-          </button>
-          <button onClick={submit} className="btn-primary">
-            {editing ? 'Lưu thay đổi' : 'Xác nhận tạo'}
-          </button>
+          <div className={styles.formActions}>
+            <button 
+              onClick={() => setShowForm(false)} 
+              className="btn-secondary" 
+              style={{ padding: '0.875rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface-1)', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Hủy bỏ
+            </button>
+            <button onClick={submit} className="btn-primary">
+              {editing ? 'Lưu thay đổi' : 'Xác nhận tạo'}
+            </button>
+          </div>
         </div>
       </Modal>
 
       <div className={`${styles.filterBar} slide-right stagger-2`}>
         <div className={styles.searchWrapper}>
-          <Search size={20} className={styles.searchIcon} />
+          <Search size={22} className={styles.searchIcon} />
           <input 
             className={styles.searchInput}
             type="text" 
@@ -261,7 +263,7 @@ export default function StudentsPage() {
           />
         </div>
         <div className={styles.filterWrapper}>
-          <Filter size={18} className={styles.filterIcon} />
+          <Filter size={20} className={styles.filterIcon} />
           <select
             className={styles.filterSelect}
             value={departmentFilter}
@@ -276,26 +278,26 @@ export default function StudentsPage() {
       </div>
 
       {studentsLoading ? (
-        <Card title="Đang tải danh sách sinh viên...">
-          <TableSkeleton rows={10} columns={5} />
-        </Card>
-      ) : studentsError ? (
-        <Card className="glass" style={{ border: '1px solid #fecaca', background: 'rgba(244, 63, 94, 0.02)' }}>
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{studentsError}</InlineMessage>
-            <button onClick={refresh} className="btn-primary" style={{ margin: '0 auto' }}>Thử lại</button>
+        <Card>
+          <div style={{ padding: '1rem' }}>
+            <TableSkeleton rows={10} columns={5} />
           </div>
         </Card>
+      ) : studentsError ? (
+        <div className="error-state glass" style={{ textAlign: 'center', padding: '4rem', borderRadius: '2rem' }}>
+          <InlineMessage variant="error">{studentsError}</InlineMessage>
+          <button onClick={refresh} className="btn-primary" style={{ marginTop: '2rem', margin: '2rem auto 0' }}>Thử lại</button>
+        </div>
       ) : (
-        <Card title={`Danh sách Sinh viên (${total})`}>
+        <Card noPadding className="slide-right stagger-3">
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th style={{ width: '120px' }}>Mã số</th>
+                  <th style={{ width: '140px' }}>Mã số</th>
                   <th>Sinh viên</th>
                   <th>Khoa trực thuộc</th>
-                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
                   <th style={{ textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
@@ -304,16 +306,15 @@ export default function StudentsPage() {
                   <tr>
                     <td colSpan={5}>
                       <div className={styles.emptyState}>
-                        <Search size={48} style={{ opacity: 0.2 }} />
-                        <p>Không tìm thấy sinh viên nào phù hợp với yêu cầu tìm kiếm của bạn.</p>
+                        <Search size={64} style={{ opacity: 0.2, color: 'var(--primary)' }} />
+                        <p>Không tìm thấy sinh viên nào phù hợp.</p>
                       </div>
                     </td>
                   </tr>
                 ) : displayStudents.map((student, index) => (
                   <tr 
                     key={student._id} 
-                    className={`${styles.tableRow} table-row-hover`}
-                    style={{ animationDelay: `${index * 0.04}s` }}
+                    className={styles.tableRow}
                   >
                     <td>
                       <code className={styles.studentId}>
@@ -321,12 +322,13 @@ export default function StudentsPage() {
                       </code>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ 
-                          width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(var(--primary-rgb), 0.1)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)'
+                          width: '42px', height: '42px', borderRadius: '1rem', background: 'rgba(var(--primary-rgb), 0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)',
+                          boxShadow: 'inset 0 0 10px rgba(var(--primary-rgb), 0.05)'
                         }}>
-                          <User size={18} />
+                          <User size={20} />
                         </div>
                         <div>
                           <div className={styles.studentName}>{student.full_name || 'N/A'}</div>
@@ -335,11 +337,11 @@ export default function StudentsPage() {
                       </div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 500 }}>{student.department || 'Chưa phân khoa'}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{student.department || 'Chưa phân khoa'}</span>
                     </td>
                     <td>
-                      <span className="badge badge-primary" style={{ textTransform: 'capitalize' }}>
-                        {student.role}
+                      <span className="badge badge-primary">
+                        Hoạt động
                       </span>
                     </td>
                     <td>
@@ -354,17 +356,18 @@ export default function StudentsPage() {
             </table>
           </div>
 
-          <PaginationControls
-            page={currentPage}
-            totalPages={totalPages}
-            total={total}
-            currentCount={students.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-            showPageSize
-            className={styles.pagination}
-          />
+          <div style={{ padding: '1.5rem 2.5rem' }}>
+            <PaginationControls
+              page={currentPage}
+              totalPages={totalPages}
+              total={total}
+              currentCount={students.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              showPageSize
+            />
+          </div>
         </Card>
       )}
 
@@ -376,7 +379,6 @@ export default function StudentsPage() {
         message={`Bạn có chắc chắn muốn xóa sinh viên ${confirmModal.student?.full_name || confirmModal.student?.email}? Mọi dữ liệu liên quan sẽ bị gỡ bỏ vĩnh viễn.`}
         confirmText="Xác nhận xóa"
       />
-
     </div>
   );
 }

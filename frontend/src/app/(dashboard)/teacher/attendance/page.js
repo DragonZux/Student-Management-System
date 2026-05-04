@@ -1,4 +1,4 @@
- "use client";
+"use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { Calendar, CheckCircle, XCircle, Users } from 'lucide-react';
@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { popupValidationError } from '@/lib/validation';
 import PaginationControls from '@/components/ui/PaginationControls';
+import styles from '@/styles/modules/teacher/attendance.module.css';
+
 
 export default function TeacherAttendancePage() {
   const [classes, setClasses] = useState([]);
@@ -137,148 +139,134 @@ export default function TeacherAttendancePage() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1>Theo dõi điểm danh</h1>
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <div className={styles.headerTitle}>
+          <h1>Điểm danh Lớp học</h1>
           <p>
-            Class:{' '}
-            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            Đang xem lớp: 
+            <select 
+              value={selectedClass} 
+              onChange={(e) => setSelectedClass(e.target.value)} 
+              className={styles.classSelect}
+            >
               {classes.map((c) => (
                 <option key={c._id} value={c._id}>{c.course_code || 'Môn học'} - {c.course_title || c.course_id}</option>
               ))}
             </select>
           </p>
         </div>
-        <Card className="glass" style={{ padding: '0.5rem 1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-            <Calendar size={18} color="var(--primary)" />
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ border: 'none', background: 'transparent', fontWeight: 700 }} />
+        <div className={styles.datePickerCard}>
+          <Calendar size={20} color="var(--primary)" />
+          <input 
+            type="date" 
+            value={date} 
+            onChange={(e) => setDate(e.target.value)} 
+            className={styles.dateInput} 
+          />
+        </div>
+      </header>
+
+      <div className={`${styles.statsRow} slide-right stagger-2`}>
+        <Card>
+          <div className={styles.statCard}>
+            <div>
+              <p className={styles.statLabel}>Sinh viên có mặt</p>
+              <h2 className={styles.statValue} style={{ color: '#059669' }}>{stats.present}</h2>
+            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.08)' }}>
+              <CheckCircle color="#059669" size={32} />
+            </div>
+          </div>
+        </Card>
+        <Card>
+          <div className={styles.statCard}>
+            <div>
+              <p className={styles.statLabel}>Sinh viên vắng mặt</p>
+              <h2 className={styles.statValue} style={{ color: '#f43f5e' }}>{stats.absent}</h2>
+            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(244, 63, 94, 0.08)' }}>
+              <XCircle color="#f43f5e" size={32} />
+            </div>
           </div>
         </Card>
       </div>
 
-      {loading ? <Card className="glass">Đang tải...</Card> : null}
-      <InlineMessage variant="error">{error}</InlineMessage>
-      <InlineMessage variant="success">{submitMessage}</InlineMessage>
-      <InlineMessage variant="error">{submitError}</InlineMessage>
+      {error && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>}
+      {submitMessage && <InlineMessage variant="success" style={{ marginBottom: '2rem' }}>{submitMessage}</InlineMessage>}
+      {submitError && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{submitError}</InlineMessage>}
 
-      <div className="grid grid-cols-2" style={{ marginBottom: '2rem' }}>
-        <Card className="glass">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>Sinh viên có mặt</p>
-              <h2 style={{ margin: 0, color: '#166534' }}>{stats.present}</h2>
-            </div>
-            <Users color="#166534" size={32} opacity={0.2} />
+      <div className="slide-right stagger-3">
+        <Card 
+          title={<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 900 }}><Users size={20} /> Danh sách Sinh viên</div>}
+        >
+          <div className={styles.studentList}>
+            {loading ? (
+              <div style={{ padding: '4rem', textAlign: 'center' }}>
+                <div className="spinner" style={{ margin: '0 auto 1.5rem' }} />
+                <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Đang tải danh sách sinh viên...</p>
+              </div>
+            ) : students.length === 0 ? (
+              <div style={{ padding: '6rem', textAlign: 'center', color: 'var(--muted-foreground)', fontWeight: 600 }}>
+                Không tìm thấy sinh viên nào trong lớp này.
+              </div>
+            ) : students.map((student, index) => (
+              <div 
+                key={student.enrollment?._id} 
+                className={styles.studentRow}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <div className={styles.studentInfo}>
+                  <div className={styles.avatar}>
+                    {(student.student?.full_name || '??').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className={styles.studentDetails}>
+                    <h4>{student.student?.full_name || 'N/A'}</h4>
+                    <span>ID: {(student.student?._id || student.enrollment.student_id || '').slice(-8).toUpperCase()}</span>
+                  </div>
+                </div>
+                <div className={styles.statusActions}>
+                  <button 
+                    className={`${styles.statusBtn} ${student.status === 'present' ? styles.btnPresentActive : styles.btnPresent}`}
+                    onClick={() => toggle(student.enrollment._id, 'present')}
+                  >
+                    <CheckCircle size={18} /> Có mặt
+                  </button>
+                  <button 
+                    className={`${styles.statusBtn} ${student.status === 'absent' ? styles.btnAbsentActive : styles.btnAbsent}`}
+                    onClick={() => toggle(student.enrollment._id, 'absent')}
+                  >
+                    <XCircle size={18} /> Vắng mặt
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        </Card>
-        <Card className="glass">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>Sinh viên vắng mặt</p>
-              <h2 style={{ margin: 0, color: '#991b1b' }}>{stats.absent}</h2>
-            </div>
-            <XCircle color="#991b1b" size={32} opacity={0.2} />
+
+          <div className={styles.footerActions}>
+            <button 
+              className={styles.submitBtn}
+              onClick={submitAttendanceFixed}
+              disabled={loading || submitting || !selectedClass || students.length === 0}
+            >
+              {submitting ? 'Đang gửi dữ liệu...' : 'Xác nhận Điểm danh'}
+            </button>
+          </div>
+
+          <div style={{ marginTop: '2rem' }}>
+            <PaginationControls
+              page={page}
+              totalPages={Math.max(1, Math.ceil(totalStudents / pageSize))}
+              total={totalStudents}
+              currentCount={students.length}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              showPageSize
+            />
           </div>
         </Card>
       </div>
-
-      <Card title="Điểm danh sinh viên">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {students.map((student) => (
-            <div key={student.enrollment?._id} style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '1rem',
-              borderRadius: 'var(--radius)',
-              background: 'var(--card)',
-              border: '1px solid var(--border)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  borderRadius: '50%', 
-                  background: 'var(--muted)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  fontSize: '0.875rem'
-                }}>
-                  {(student.student?.full_name || student.enrollment.student_id || '?').split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{student.student?.full_name || 'N/A'}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Mã: {(student.student?._id || student.enrollment.student_id || '').slice(0, 8)}</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button style={{ 
-                  padding: '0.5rem 1rem', 
-                  borderRadius: 'var(--radius)', 
-                  border: '1px solid #dcfce7', 
-                  background: student.status === 'present' ? '#dcfce7' : 'white',
-                  color: '#166534',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  fontWeight: 600
-                }}
-                onClick={() => toggle(student.enrollment._id, 'present')}
-                >
-                  <CheckCircle size={16} /> Có mặt
-                </button>
-                <button style={{ 
-                  padding: '0.5rem 1rem', 
-                  borderRadius: 'var(--radius)', 
-                  border: '1px solid #fee2e2', 
-                  background: student.status === 'absent' ? '#fee2e2' : 'white',
-                  color: '#991b1b',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  fontWeight: 600
-                }}
-                onClick={() => toggle(student.enrollment._id, 'absent')}
-                >
-                  <XCircle size={16} /> Vắng mặt
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-          <button style={{ 
-            padding: '0.75rem 2rem', 
-            borderRadius: 'var(--radius)', 
-            background: 'var(--primary)', 
-            color: 'white',
-            border: 'none',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-          onClick={submitAttendanceFixed}
-          disabled={loading || submitting || !selectedClass}
-          >
-            {submitting ? 'Đang gửi...' : 'Gửi điểm danh'}
-          </button>
-        </div>
-        <PaginationControls
-          page={page}
-          totalPages={Math.max(1, Math.ceil(totalStudents / pageSize))}
-          total={totalStudents}
-          currentCount={students.length}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
-          showPageSize
-        />
-      </Card>
     </div>
   );
 }

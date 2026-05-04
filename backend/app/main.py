@@ -4,6 +4,11 @@ from contextlib import asynccontextmanager
 from app.db.database import connect_to_mongo, close_mongo_connection
 from app.core.config import settings
 from app.routers.main_router import api_router
+import logging
+import time
+from fastapi.middleware.gzip import GZipMiddleware
+
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,17 +26,10 @@ app = FastAPI(
     redirect_slashes=True
 )
 
-import time
-from fastapi.middleware.gzip import GZipMiddleware
-
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://smile-carpentry-depose.ngrok-free.dev",
-    ],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,36 +54,38 @@ async def log_requests(request, call_next):
         internal_hosts = ("backend", "localhost", "127.0.0.1", "backend:8000", "0.0.0.0", "host.docker.internal")
         
         if any(h in location for h in internal_hosts) or location.startswith("/"):
-            # Force relative path for redirect
+            # Force relative path for redirect if it points to internal hosts
             from urllib.parse import urlparse
             parsed = urlparse(location)
-            relative_location = parsed.path
-            if parsed.query:
-                relative_location += f"?{parsed.query}"
             
-            # Ensure the /api prefix is preserved if the original request had it
+            # If it's an absolute URL pointing to internal host, make it relative
+            if any(h in location for h in internal_hosts):
+                relative_location = parsed.path
+                if parsed.query:
+                    relative_location += f"?{parsed.query}"
+            else:
+                relative_location = location
+            
+            # Ensure the /api prefix is preserved if needed
             if request.url.path.startswith("/api") and not relative_location.startswith("/api"):
+                # Handle leading slash
                 relative_location = f"/api{relative_location if relative_location.startswith('/') else '/' + relative_location}"
             
-            # Normalize trailing slashes for comparison to prevent loops like /api/exams/ -> /api/exams/
-            current_full_path = request.url.path
-            if request.url.query:
-                current_full_path += f"?{request.url.query}"
-            
-            # Strict loop detection: if we are redirecting to the exact same URL we just received
-            if relative_location == current_full_path:
-                if settings.DEBUG:
-                    print(f"DEBUG: Redirect loop detected! {request.method} {current_full_path} -> 3xx to {relative_location}. Breaking loop.")
-                # We stop the redirect by removing the Location header and using a 200 status.
-                del response.headers["location"]
-                response.status_code = 200
+            # Prevent trivial loops
+            if relative_location == request.url.path + (f"?{request.url.query}" if request.url.query else ""):
                 return response
 
             response.headers["location"] = relative_location
 
     if settings.DEBUG:
         process_time = (time.perf_counter() - start_time) * 1000
-        print(f"DEBUG: {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.2f}ms")
+        logger.debug(
+            "%s %s - Status: %s - Time: %.2fms",
+            request.method,
+            request.url.path,
+            response.status_code,
+            process_time,
+        )
         
     return response
 
