@@ -1,4 +1,6 @@
 /** @type {import('next').Next.Config} */
+const internalApiBaseUrl = (process.env.INTERNAL_API_BASE_URL || 'http://localhost:8000/api').replace(/\/$/, '');
+
 const nextConfig = {
   reactStrictMode: true,
   compress: true, // Enable gzip compression
@@ -18,7 +20,7 @@ const nextConfig = {
       },
       {
         source: '/api/:path*',
-        destination: 'http://backend:8000/api/:path*',
+        destination: `${internalApiBaseUrl}/:path*`,
       },
     ];
   },

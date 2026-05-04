@@ -1,14 +1,13 @@
 "use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { Book } from 'lucide-react';
 import { useState } from 'react';
 import api from '@/lib/api';
 import usePaginatedData from '@/hooks/usePaginatedData';
 import PaginationControls from '@/components/ui/PaginationControls';
 
 import styles from '@/styles/modules/student/enrollment.module.css';
-import { Book, User, Clock, CheckCircle } from 'lucide-react';
+import { Book, User, Clock } from 'lucide-react';
 
 export default function StudentEnrollmentPage() {
   const [success, setSuccess] = useState('');

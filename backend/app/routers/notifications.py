@@ -11,8 +11,10 @@ from app.core.config import settings
 from app.db.database import get_database
 from app.schemas.organization import NotificationCreate, NotificationOut
 from datetime import datetime
+import logging
 
 router = APIRouter(redirect_slashes=False)
+logger = logging.getLogger(__name__)
 
 active_connections: Dict[str, List[WebSocket]] = defaultdict(list)
 
@@ -29,7 +31,7 @@ async def create_notification(user_id: str, title: str, message: str) -> dict:
         "created_at": datetime.utcnow()
     })
     await db.notifications.insert_one(notification)
-    print(f"[notifications] inserted notification {notification['_id']} for user {user_id}")
+    logger.debug("Inserted notification %s for user %s", notification["_id"], user_id)
     await _broadcast_to_user(user_id, {
         "type": "notification",
         "data": {
@@ -45,13 +47,13 @@ async def create_notification(user_id: str, title: str, message: str) -> dict:
 async def _broadcast_to_user(user_id: str, payload: dict):
     stale = []
     conns = active_connections.get(user_id, [])
-    print(f"[notifications] broadcasting to {user_id}, connections={len(conns)}")
+    logger.debug("Broadcasting notification to %s, connections=%s", user_id, len(conns))
     for ws in conns:
         try:
             await ws.send_json(payload)
-            print(f"[notifications] sent payload to websocket for user {user_id}")
+            logger.debug("Sent notification websocket payload to user %s", user_id)
         except Exception as e:
-            print(f"[notifications] failed sending to websocket for {user_id}: {e}")
+            logger.debug("Failed sending notification websocket payload to %s: %s", user_id, e)
             stale.append(ws)
     if stale:
         active_connections[user_id] = [ws for ws in active_connections[user_id] if ws not in stale]
@@ -69,9 +71,11 @@ async def get_my_notifications(
     notifications = await db.notifications.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     normalized = []
     for item in notifications:
+        notification_id = str(item.get("_id", ""))
         normalized.append(
             {
-                "_id": str(item.get("_id", "")),
+                "_id": notification_id,
+                "id": notification_id,
                 "user_id": str(item.get("user_id", user["_id"])),
                 "title": item.get("title") or "Thông báo hệ thống",
                 "message": item.get("message") or "",
@@ -158,12 +162,12 @@ async def notifications_ws(websocket: WebSocket):
     db = get_database()
     user = await db.users.find_one({"_id": user_id})
     if not user:
-        print(f"[WS] Rejecting: User {user_id} not found")
+        logger.debug("Rejecting websocket connection: user %s not found", user_id)
         await websocket.close(code=1008)
         return
         
     if str(user.get("active_jti") or "") != str(token_jti):
-        print(f"[WS] Rejecting: JTI mismatch for {user_id}. DB: {user.get('active_jti')}, Token: {token_jti}")
+        logger.debug("Rejecting websocket connection: jti mismatch for user %s", user_id)
         await websocket.close(code=1008)
         return
 

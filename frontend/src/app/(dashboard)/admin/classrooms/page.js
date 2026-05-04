@@ -1,3 +1,7 @@
+"use client";
+import Card from '@/components/ui/Card';
+import InlineMessage from '@/components/ui/InlineMessage';
+import Modal from '@/components/ui/Modal';
 import { MapPin, Users, Monitor, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';

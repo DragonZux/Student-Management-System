@@ -1,5 +1,10 @@
+"use client";
+import { useEffect, useState } from 'react';
 import styles from '@/styles/modules/profile.module.css';
-import { User, ShieldCheck } from 'lucide-react';
+import { Lock, Shield, ShieldCheck, User } from 'lucide-react';
+import InlineMessage from '@/components/ui/InlineMessage';
+import api from '@/lib/api';
+import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null);

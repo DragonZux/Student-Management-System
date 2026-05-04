@@ -124,7 +124,6 @@ export default function usePaginatedData(url, optionsOrCacheKey = {}, legacyLimi
     if (!url.includes('notifications')) return undefined;
 
     const handleNotification = () => {
-      console.log('[usePaginatedData] Notification received, refreshing...', url);
       fetchData(skip, limit, debouncedSearch, true);
     };
 

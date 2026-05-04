@@ -6,6 +6,7 @@ services:
     environment:
       - MONGO_URI=mongodb://mongodb:27017/sms_db
       - DEBUG=true
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     volumes:
       - ./backend:/app
     depends_on:

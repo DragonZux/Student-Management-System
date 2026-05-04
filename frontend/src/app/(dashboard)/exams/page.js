@@ -1,6 +1,15 @@
+"use client";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Calendar, Clock, Award, Trash2, Plus, Edit3, CheckCircle, AlertCircle, FileText, Send } from "lucide-react";
 import styles from "@/styles/modules/exams.module.css";
+import Card from "@/components/ui/Card";
+import InlineMessage from "@/components/ui/InlineMessage";
 import Modal from "@/components/ui/Modal";
+import PaginationControls from "@/components/ui/PaginationControls";
+import { useAuth } from "@/components/providers/AuthProvider";
+import api from "@/lib/api";
+import usePaginatedData from "@/hooks/usePaginatedData";
+import { isInRange, popupValidationError, toNumber } from "@/lib/validation";
 
 export default function ExamsPage() {
   const { user } = useAuth();

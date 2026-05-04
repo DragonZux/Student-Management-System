@@ -1,133 +1,13 @@
- "use client";
+"use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { CheckCircle, Clock, AlertCircle, MessageSquare } from 'lucide-react';
+import { CheckCircle, Clock, MessageSquare } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isInRange, popupValidationError, toNumber } from '@/lib/validation';
 import PaginationControls from '@/components/ui/PaginationControls';
-
-export default function TeacherGradingPage() {
-  const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState('');
-  const [items, setItems] = useState([]); // { enrollment, student }
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [grading, setGrading] = useState(null); // enrollment item
-  const [grade, setGrade] = useState('');
-  const [comments, setComments] = useState('');
-  const [formError, setFormError] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-
-  const loadStudents = async (classId) => {
-    const res = await api.get(`/teacher/classes/${classId}/students`, {
-      params: { skip: (page - 1) * pageSize, limit: pageSize },
-    });
-    setItems(res.data?.data || res.data || []);
-    setTotalItems(res.data?.total || 0);
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const init = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/teacher/my-classes');
-        if (!cancelled) {
-          setClasses(res.data || []);
-        }
-      } catch (e) {
-        console.error('Failed to load classes', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách lớp');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!selectedClass && classes.length > 0) setSelectedClass(classes[0]._id);
-  }, [classes, selectedClass]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [selectedClass]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      if (!selectedClass) return;
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get(`/teacher/classes/${selectedClass}/students`, {
-          params: { skip: (page - 1) * pageSize, limit: pageSize },
-        });
-        if (!cancelled) {
-          setItems(res.data?.data || res.data || []);
-          setTotalItems(res.data?.total || 0);
-        }
-      } catch (e) {
-        console.error('Failed to load students', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách sinh viên');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedClass, page, pageSize]);
-
-  const openGrade = (it) => {
-    setGrading(it);
-    setFormError('');
-    setGrade(it?.enrollment?.grade ?? '');
-    setComments(it?.enrollment?.teacher_comments ?? '');
-  };
-
-  const submit = async () => {
-    if (!grading?.enrollment?._id) return;
-    setFormError('');
-    const g = toNumber(grade);
-    if (g === null) {
-      popupValidationError(setFormError, 'Điểm không hợp lệ.');
-      return;
-    }
-    if (!isInRange(g, 0, 100)) {
-      popupValidationError(setFormError, 'Điểm phải trong khoảng 0 đến 100.');
-      return;
-    }
-    try {
-      await api.post(`/teacher/grade/${grading.enrollment._id}`, null, {
-        params: { grade: g, comments: comments || '' },
-      });
-      setGrading(null);
-      await loadStudents(selectedClass);
-    } catch (e) {
-      console.error('Failed to grade', e);
-      setFormError(e.response?.data?.detail || 'Chấm điểm thất bại');
-    }
-  };
-
-  const classLabel = useMemo(() => {
-    const c = classes.find((x) => x._id === selectedClass);
-    return c ? `${c.course_code || 'Course'} - ${c.course_title || c.course_id}` : '';
-  }, [classes, selectedClass]);
-
 import styles from '@/styles/modules/teacher/grading.module.css';
+
 
 export default function TeacherGradingPage() {
   const [classes, setClasses] = useState([]);
@@ -390,5 +270,4 @@ export default function TeacherGradingPage() {
       </div>
     </div>
   );
-}
 }

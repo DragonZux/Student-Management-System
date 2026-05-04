@@ -39,10 +39,6 @@ const apiBaseUrl = normalizeBaseUrl(
     : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://backend:8000/api/')
 );
 
-if (typeof window !== 'undefined') {
-  console.log('[API] Client Base URL:', apiBaseUrl);
-}
-
 const api = axios.create({
   baseURL: apiBaseUrl,
   timeout: 30000,

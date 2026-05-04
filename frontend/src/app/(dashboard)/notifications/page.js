@@ -9,6 +9,18 @@ import PaginationControls from '@/components/ui/PaginationControls';
 
 import styles from '@/styles/modules/notifications.module.css';
 
+function normalizeNotification(raw) {
+  if (!raw) return null;
+  const id = raw._id || raw.id || raw.notification_id;
+  if (!id) return null;
+
+  return {
+    ...raw,
+    _id: id,
+    id,
+  };
+}
+
 export default function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false);
   const {
@@ -21,7 +33,19 @@ export default function NotificationsPage() {
     setCurrentPage,
     setPageSize,
     refresh,
-  } = usePaginatedData('/notifications/', { cacheKey: 'notifications_page', initialLimit: 10 });
+  } = usePaginatedData('/notifications/', {
+    cacheKey: 'notifications_page',
+    initialLimit: 10,
+    responseAdapter: (result, { skip }) => {
+      const list = Array.isArray(result) ? result : (result?.data || []);
+      const data = list.map(normalizeNotification).filter(Boolean);
+      return {
+        data,
+        total: Number(result?.total ?? data.length),
+        skip: Number(result?.skip ?? skip ?? 0),
+      };
+    },
+  });
 
   const formatTimeAgo = (iso) => {
     const ts = iso ? new Date(iso).getTime() : 0;
@@ -64,6 +88,7 @@ export default function NotificationsPage() {
   };
 
   const markRead = async (id) => {
+    if (!id) return;
     try {
       await api.post(`/notifications/${id}/read`);
       refresh();
@@ -137,7 +162,7 @@ export default function NotificationsPage() {
                   layout
                 >
                   <div 
-                    onClick={() => !n.read && markRead(n._id || n.id)}
+                    onClick={() => !n.read && markRead(n.id)}
                     className={`${styles.card} ${!n.read ? styles.unread : styles.read}`}
                   >
                     {!n.read && <div className={styles.unreadDot} />}

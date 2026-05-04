@@ -4,6 +4,11 @@ from contextlib import asynccontextmanager
 from app.db.database import connect_to_mongo, close_mongo_connection
 from app.core.config import settings
 from app.routers.main_router import api_router
+import logging
+import time
+from fastapi.middleware.gzip import GZipMiddleware
+
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,17 +26,10 @@ app = FastAPI(
     redirect_slashes=True
 )
 
-import time
-from fastapi.middleware.gzip import GZipMiddleware
-
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://smile-carpentry-depose.ngrok-free.dev",
-    ],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,7 +79,13 @@ async def log_requests(request, call_next):
 
     if settings.DEBUG:
         process_time = (time.perf_counter() - start_time) * 1000
-        print(f"DEBUG: {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.2f}ms")
+        logger.debug(
+            "%s %s - Status: %s - Time: %.2fms",
+            request.method,
+            request.url.path,
+            response.status_code,
+            process_time,
+        )
         
     return response
 

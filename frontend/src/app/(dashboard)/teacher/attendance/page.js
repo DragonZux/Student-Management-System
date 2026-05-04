@@ -1,4 +1,4 @@
- "use client";
+"use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { Calendar, CheckCircle, XCircle, Users } from 'lucide-react';
@@ -6,139 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { popupValidationError } from '@/lib/validation';
 import PaginationControls from '@/components/ui/PaginationControls';
-
-export default function TeacherAttendancePage() {
-  const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState('');
-  const [students, setStudents] = useState([]); // { enrollment, student, status }
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [submitMessage, setSubmitMessage] = useState('');
-  const [submitError, setSubmitError] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
-  const [submitting, setSubmitting] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalStudents, setTotalStudents] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const init = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/teacher/my-classes');
-        if (!cancelled) {
-          setClasses(res.data || []);
-        }
-      } catch (e) {
-        console.error('Failed to load teacher classes', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách lớp');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!selectedClass && classes.length > 0) setSelectedClass(classes[0]._id);
-  }, [classes, selectedClass]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [selectedClass]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      if (!selectedClass) return;
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get(`/teacher/classes/${selectedClass}/students`, {
-          params: { skip: (page - 1) * pageSize, limit: pageSize },
-        });
-        if (!cancelled) {
-          const payload = res.data?.data || res.data || [];
-          const items = payload.map((x) => ({
-            enrollment: x.enrollment,
-            student: x.student,
-            status: 'present',
-          }));
-          setStudents(items);
-          setTotalStudents(res.data?.total || payload.length);
-        }
-      } catch (e) {
-        console.error('Failed to load students', e);
-        if (!cancelled) setError(e.response?.data?.detail || 'Không tải được danh sách sinh viên');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedClass, page, pageSize]);
-
-  const stats = useMemo(() => {
-    const present = students.filter((s) => s.status === 'present').length;
-    const absent = students.filter((s) => s.status === 'absent').length;
-    return { present, absent, total: students.length };
-  }, [students]);
-
-  const toggle = (enrollmentId, status) => {
-    setStudents((prev) =>
-      (prev || []).map((s) =>
-        (s.enrollment?._id === enrollmentId)
-          ? { ...s, status }
-          : s
-      )
-    );
-  };
-
-  const submitAttendanceFixed = async () => {
-    if (!selectedClass) return;
-    const selectedDate = new Date(`${date}T00:00:00`);
-    if (!date || Number.isNaN(selectedDate.getTime())) {
-      popupValidationError(setSubmitError, 'Ngày điểm danh không hợp lệ.');
-      setSubmitMessage('');
-      return;
-    }
-    if (!students.length) {
-      popupValidationError(setSubmitError, 'Không có sinh viên để điểm danh.');
-      setSubmitMessage('');
-      return;
-    }
-    const records = students.map((s) => ({
-      student_id: s.enrollment.student_id,
-      status: s.status.toUpperCase(),
-    }));
-    try {
-      setSubmitting(true);
-      setSubmitMessage('');
-      setSubmitError('');
-      await api.post(`/teacher/attendance/${selectedClass}`, records, { params: { date } });
-      setSubmitMessage('Đã ghi nhận điểm danh thành công.');
-    } catch (e) {
-      console.error('Failed to submit attendance', e);
-      setSubmitError(e.response?.data?.detail || 'Gửi điểm danh thất bại');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div>
 import styles from '@/styles/modules/teacher/attendance.module.css';
+
 
 export default function TeacherAttendancePage() {
   const [classes, setClasses] = useState([]);
@@ -398,9 +267,6 @@ export default function TeacherAttendancePage() {
           </div>
         </Card>
       </div>
-    </div>
-  );
-}
     </div>
   );
 }
