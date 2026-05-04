@@ -2,7 +2,7 @@
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { Download, TrendingUp, Search, DollarSign, PieChart, History, Settings } from 'lucide-react';
+import { Download, TrendingUp, DollarSign, PieChart, History, Settings, RefreshCw, Wallet, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isPositiveInteger, popupValidationError } from '@/lib/validation';
@@ -41,6 +41,8 @@ export default function AdminFinancePage() {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, policyId: null });
 
   const [txSearch, setTxSearch] = useState('');
+
+  const currencyFormatter = useMemo(() => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +96,15 @@ export default function AdminFinancePage() {
       };
     });
   }, [payments, studentById]);
+
+  const filteredTransactions = useMemo(() => {
+    const normalized = txSearch.trim().toLowerCase();
+    if (!normalized) return paginatedTransactions;
+    return paginatedTransactions.filter((transaction) => {
+      return [transaction.student, transaction.email, transaction.date, transaction.status]
+        .some((field) => String(field || '').toLowerCase().includes(normalized));
+    });
+  }, [paginatedTransactions, txSearch]);
 
   const refreshAll = async () => {
     try {
@@ -189,12 +200,16 @@ export default function AdminFinancePage() {
     <div className={`${styles.container} animate-in`}>
       <header className={`${styles.header} slide-right stagger-1`}>
         <div>
+          <div className={styles.kicker}>Finance Center</div>
           <h1>Quản lý Tài chính</h1>
           <p>Giám sát nguồn thu, công nợ và thiết lập chính sách học phí.</p>
         </div>
         <div className={styles.actions}>
+          <button onClick={refreshAll} className={styles.secondaryBtn}>
+            <RefreshCw size={18} /> Làm mới
+          </button>
           <button onClick={exportTransactions} className={styles.exportBtn}>
-            <Download size={18} /> Xuất Giao dịch (CSV)
+            <Download size={18} /> Xuất CSV
           </button>
         </div>
       </header>
@@ -204,10 +219,10 @@ export default function AdminFinancePage() {
           <div className={styles.statCard}>
             <div>
               <p className={styles.statLabel}>Tổng doanh thu</p>
-              <h2 className={styles.statValue}>{(depsLoading || paymentsLoading) ? '...' : `$${stats.totalRevenue.toLocaleString()}`}</h2>
+              <h2 className={styles.statValue}>{(depsLoading || paymentsLoading) ? '...' : currencyFormatter.format(stats.totalRevenue)}</h2>
             </div>
             <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.08)' }}>
-              <TrendingUp color="#059669" size={28} />
+              <Wallet color="#059669" size={28} />
             </div>
           </div>
         </Card>
@@ -215,7 +230,7 @@ export default function AdminFinancePage() {
           <div className={styles.statCard}>
             <div>
               <p className={styles.statLabel}>Công nợ chưa thu</p>
-              <h2 className={styles.statValue} style={{ color: '#f43f5e' }}>{(depsLoading || paymentsLoading) ? '...' : `$${stats.outstanding.toLocaleString()}`}</h2>
+              <h2 className={styles.statValue} style={{ color: '#f43f5e' }}>{(depsLoading || paymentsLoading) ? '...' : currencyFormatter.format(stats.outstanding)}</h2>
             </div>
             <div className={styles.statIcon} style={{ background: 'rgba(244, 63, 94, 0.08)' }}>
               <DollarSign color="#f43f5e" size={28} />
@@ -244,6 +259,19 @@ export default function AdminFinancePage() {
           className={styles.tableSection}
           style={{ padding: 0 }}
         >
+          <div className={styles.tableToolbar}>
+            <div className={styles.searchWrap}>
+              <Search size={18} className={styles.searchIcon} />
+              <input
+                value={txSearch}
+                onChange={(e) => setTxSearch(e.target.value)}
+                className={styles.searchInput}
+                placeholder="Tìm theo sinh viên, email, ngày thanh toán..."
+              />
+            </div>
+            <div className={styles.toolbarMeta}>{filteredTransactions.length} kết quả</div>
+          </div>
+
           <div className={styles.tableContainer}>
             {paymentsLoading ? (
               <div style={{ padding: '2rem' }}><TableSkeleton rows={8} columns={4} /></div>
@@ -259,15 +287,15 @@ export default function AdminFinancePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedTransactions.length === 0 ? (
+                  {filteredTransactions.length === 0 ? (
                     <tr><td colSpan={5} style={{ padding: '6rem', textAlign: 'center', color: 'var(--muted-foreground)', fontWeight: 600 }}>Không có dữ liệu giao dịch trong hệ thống.</td></tr>
-                  ) : paginatedTransactions.map((tx, index) => (
+                  ) : filteredTransactions.map((tx, index) => (
                     <tr key={tx.id} className={styles.tableRow}>
                       <td>
                         <div className={styles.studentName}>{tx.student}</div>
                         <div className={styles.studentEmail}>{tx.email}</div>
                       </td>
-                      <td><span className={styles.amount}>${tx.amount.toLocaleString()}</span></td>
+                      <td><span className={styles.amount}>{currencyFormatter.format(tx.amount)}</span></td>
                       <td>
                         <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{tx.date}</div>
                       </td>
@@ -321,7 +349,7 @@ export default function AdminFinancePage() {
                 type="number" min="1" value={paymentForm.amount} 
                 onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))} 
                 placeholder="0.00"
-                style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'JetBrains Mono, monospace' }}
+                style={{ fontSize: '1.35rem', fontWeight: 900, fontFamily: 'inherit' }}
               />
             </div>
             <button onClick={submitPayment} className="btn-primary" style={{ padding: '1.15rem', width: '100%', justifyContent: 'center', fontSize: '1.1rem', borderRadius: '1.25rem' }} disabled={depsLoading}>
@@ -364,7 +392,7 @@ export default function AdminFinancePage() {
                   <div className={styles.policyMeta}>
                     <div className={styles.policyTitle}>{policy.semester}</div>
                     <div className={styles.policyDetails}>
-                      <span style={{ fontWeight: 900, color: 'var(--foreground)' }}>${Number(policy.cost_per_credit).toLocaleString()}</span> / tín chỉ • 
+                      <span style={{ fontWeight: 900, color: 'var(--foreground)' }}>{currencyFormatter.format(Number(policy.cost_per_credit))}</span> / tín chỉ • 
                       <span style={{ color: policy.is_active ? '#059669' : '#f43f5e', marginLeft: '0.5rem', fontWeight: 800 }}>
                         {policy.is_active ? 'Đang hiệu lực' : 'Đã ngưng'}
                       </span>

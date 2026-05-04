@@ -3,6 +3,15 @@
   margin: 0 auto;
 }
 
+.kicker {
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -35,9 +44,32 @@
   border: 1px solid var(--border);
   border-radius: 1.25rem;
   font-weight: 800;
+  font-family: inherit;
   color: var(--foreground);
   cursor: pointer;
   transition: all 0.3s var(--ease-out-expo);
+}
+
+.secondaryBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.875rem 1.25rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  font-weight: 800;
+  font-family: inherit;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.secondaryBtn:hover {
+  background: var(--card);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--primary);
 }
 
 .exportBtn:hover {
@@ -58,7 +90,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 .statLabel {
@@ -84,6 +117,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .tableSection {
@@ -141,10 +175,60 @@
 }
 
 .amount {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: inherit;
   font-weight: 900;
   color: var(--foreground);
   font-size: 1.1rem;
+}
+
+.tableToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.searchWrap {
+  flex: 1;
+  min-width: min(100%, 420px);
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.95rem 1rem 0.95rem 2.7rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--input);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.08);
+}
+
+.toolbarMeta {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .pagination {
@@ -181,6 +265,7 @@
   border-radius: 1rem;
   font-size: 1rem;
   font-weight: 600;
+  font-family: inherit;
   color: var(--foreground);
   transition: all 0.3s;
 }
@@ -262,5 +347,13 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 1.5rem;
+  }
+
+  .tableToolbar {
+    padding: 1rem;
+  }
+
+  .toolbarMeta {
+    width: 100%;
   }
 }

@@ -1,0 +1,54 @@
+/* Login page styles - uses global CSS variables for color consistency */
+.loginContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.backdropBubble {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.cardWrap { max-width: 480px; width: 100%; }
+
+.hero { text-align: center; margin-bottom: 0.75rem; }
+.heroLogo {
+  width: 76px; height: 76px; margin: 0 auto;
+  border-radius: 14px; display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  box-shadow: var(--shadow-primary);
+  transform: rotate(-7deg);
+}
+.title { margin-top: 12px; font-size: 1.6rem; font-weight: 800; color: var(--foreground); }
+.title span { color: var(--primary); }
+.subtitle { color: var(--muted-foreground); font-weight: 600; font-size: 0.95rem; }
+
+.form { padding-top: 6px; }
+.field { margin-bottom: 14px; }
+.label { display:block; font-size: 12px; font-weight:800; color:var(--muted-foreground); margin-bottom:6px; letter-spacing:0.06em; }
+.inputWrap { position: relative; }
+.inputIcon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted-foreground); opacity:0.75; }
+.input { width:100%; padding:12px 44px 12px 44px; border-radius:12px; border:1px solid var(--border); background:var(--input); color:var(--foreground); font-size:15px; }
+.inputToggle { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted-foreground); cursor:pointer; padding:6px; border-radius:6px; }
+.input:focus { box-shadow: 0 0 0 6px rgba(var(--primary-rgb),0.06); border-color:var(--primary); }
+
+.optionsRow { display:flex; justify-content:space-between; align-items:center; margin:12px 0 18px; }
+.remember { display:flex; align-items:center; gap:8px; color:var(--muted-foreground); font-weight:700; }
+.forgot { background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; }
+
+.submit { width:100%; padding:12px; border-radius:12px; border:none; color:white; font-weight:800; background:linear-gradient(135deg,var(--primary) 0%,var(--primary-hover) 100%); display:flex; justify-content:center; gap:8px; align-items:center; }
+.submit[disabled] { opacity:0.6; filter:grayscale(0.25); cursor:not-allowed; }
+
+.badges { display:flex; justify-content:center; gap:18px; margin-top:18px; opacity:0.35; font-weight:800; text-transform:uppercase; font-size:12px; }
+.footer { text-align:center; margin-top:16px; color:var(--muted-foreground); opacity:0.8; font-size:0.9rem; }
+
+@media (max-width: 520px) {
+  .cardWrap { padding: 1rem; }
+  .title { font-size: 1.35rem; }
+}

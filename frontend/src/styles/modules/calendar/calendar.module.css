@@ -1,0 +1,332 @@
+.page {
+  min-height: 100vh;
+  background: var(--background);
+  padding: 2rem 1rem 3rem;
+}
+
+.shell {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.kicker {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 950;
+  color: var(--foreground);
+  letter-spacing: -0.05em;
+}
+
+.pageSubtitle {
+  margin-top: 0.5rem;
+  color: var(--muted-foreground);
+  max-width: 48rem;
+  line-height: 1.6;
+}
+
+.headerActions,
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.secondaryButton,
+.backLink,
+.modeButton,
+.iconButton {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 1rem;
+  padding: 0.8rem 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.25s var(--spring), box-shadow 0.25s var(--spring), border-color 0.25s var(--spring);
+}
+
+.backLink {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.secondaryButton:hover,
+.backLink:hover,
+.modeButton:hover,
+.iconButton:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(var(--primary-rgb), 0.3);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  border-radius: 1.3rem;
+}
+
+.modeButtonActive {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.toolbarTitle {
+  font-weight: 900;
+  color: var(--foreground);
+  min-width: 12rem;
+  text-align: center;
+}
+
+.gridLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 1.25rem;
+}
+
+.mainColumn,
+.sideColumn {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.calendarGrid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.weekdayCell {
+  padding: 0.7rem 0.6rem;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.dayCell {
+  min-height: 124px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 1.1rem;
+  padding: 0.8rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition: transform 0.25s var(--spring), box-shadow 0.25s var(--spring), border-color 0.25s var(--spring), background 0.25s var(--spring);
+  overflow: hidden;
+}
+
+.dayCell:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(var(--primary-rgb), 0.35);
+}
+
+.dayCellMuted {
+  opacity: 0.45;
+}
+
+.dayCellToday {
+  border-color: rgba(var(--primary-rgb), 0.35);
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.08);
+}
+
+.dayCellSelected {
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.02));
+  border-color: rgba(var(--primary-rgb), 0.5);
+}
+
+.dayNumber {
+  font-weight: 950;
+  font-size: 1rem;
+  color: var(--foreground);
+}
+
+.dayEvents {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.eventDot,
+.moreEvents {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.moreEvents {
+  color: var(--primary);
+}
+
+.daySummary {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.summaryBadge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.09);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summaryTitle {
+  font-size: 1.35rem;
+  font-weight: 950;
+  color: var(--foreground);
+  letter-spacing: -0.03em;
+}
+
+.summaryMeta {
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.eventList {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.eventCard {
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.eventTitle {
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.eventInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.eventStatus {
+  width: fit-content;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.emptyState {
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 1rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.overviewItem {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.overviewLabel {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.overviewValue {
+  margin-top: 0.35rem;
+  color: var(--foreground);
+  font-size: 1.35rem;
+  font-weight: 950;
+}
+
+@media (max-width: 1080px) {
+  .gridLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 1.25rem 0.75rem 2rem;
+  }
+
+  .toolbar {
+    padding: 0.9rem;
+  }
+
+  .toolbarTitle {
+    min-width: 100%;
+    order: 3;
+  }
+
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dayCell {
+    min-height: 106px;
+  }
+}
