@@ -1,9 +1,12 @@
 "use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
+import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { CheckCircle, XCircle, Clock, User, BookOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import { popupValidationError } from '@/lib/validation';
 
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { TableSkeleton } from '@/components/ui/Skeleton';
@@ -24,20 +27,29 @@ export default function AdminWithdrawalsPage() {
   } = usePaginatedData('/admin/withdrawal-requests', { cacheKey: 'withdrawals' });
 
   const [actionLoading, setActionLoading] = useState(null);
+  const [actionError, setActionError] = useState('');
+  const [approveModal, setApproveModal] = useState({ isOpen: false, id: null });
+  const [rejectModal, setRejectModal] = useState({ isOpen: false, id: null, reason: '' });
 
   const handleAction = async (id, action) => {
+    setActionError('');
     try {
       setActionLoading(id);
       if (action === 'approve') {
         await api.post(`/admin/withdrawal-requests/${id}/approve`);
       } else {
-        const reason = prompt('Nhập lý do từ chối:');
-        if (reason === null) return;
+        const reason = rejectModal.reason.trim();
+        if (reason.length < 5) {
+          popupValidationError(setActionError, 'Vui lòng nhập lý do từ chối rõ ràng.');
+          return;
+        }
         await api.post(`/admin/withdrawal-requests/${id}/reject`, { reason });
       }
+      setApproveModal({ isOpen: false, id: null });
+      setRejectModal({ isOpen: false, id: null, reason: '' });
       refresh();
     } catch (e) {
-      alert(e.response?.data?.detail || 'Thao tác thất bại');
+      setActionError(e.response?.data?.detail || 'Thao tác thất bại');
     } finally {
       setActionLoading(null);
     }
@@ -51,6 +63,7 @@ export default function AdminWithdrawalsPage() {
       </div>
 
       {error && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{error}</InlineMessage>}
+      {actionError && <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{actionError}</InlineMessage>}
 
       {loading ? (
         <Card title="Đang tải danh sách yêu cầu...">
@@ -101,7 +114,7 @@ export default function AdminWithdrawalsPage() {
 
                 <div style={{ display: 'flex', gap: '1rem', marginLeft: '2rem' }}>
                   <button 
-                    onClick={() => handleAction(req.enrollment_id, 'reject')}
+                    onClick={() => setRejectModal({ isOpen: true, id: req.enrollment_id, reason: '' })}
                     disabled={actionLoading === req.enrollment_id}
                     className="input-hover"
                     style={{ 
@@ -113,7 +126,7 @@ export default function AdminWithdrawalsPage() {
                     <XCircle size={20} /> Từ chối
                   </button>
                   <button 
-                    onClick={() => handleAction(req.enrollment_id, 'approve')}
+                    onClick={() => setApproveModal({ isOpen: true, id: req.enrollment_id })}
                     disabled={actionLoading === req.enrollment_id}
                     className="btn-primary"
                     style={{ 
@@ -151,6 +164,53 @@ export default function AdminWithdrawalsPage() {
           )}
         </div>
       )}
+      <ConfirmModal
+        isOpen={approveModal.isOpen}
+        onClose={() => setApproveModal({ isOpen: false, id: null })}
+        onConfirm={() => handleAction(approveModal.id, 'approve')}
+        title="Xác nhận phê duyệt"
+        message="Bạn có chắc chắn muốn phê duyệt yêu cầu rút học phần này?"
+        confirmText="Phê duyệt"
+        variant="primary"
+      />
+      <Modal
+        isOpen={rejectModal.isOpen}
+        onClose={() => setRejectModal({ isOpen: false, id: null, reason: '' })}
+        title="Từ chối yêu cầu rút học phần"
+        maxWidth="560px"
+      >
+        <div className="modal-inner">
+          <InlineMessage variant="error" style={{ marginBottom: '1.5rem' }}>{actionError}</InlineMessage>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <label style={{ fontWeight: 800 }}>Lý do từ chối</label>
+            <textarea
+              value={rejectModal.reason}
+              onChange={(e) => setRejectModal((prev) => ({ ...prev, reason: e.target.value }))}
+              placeholder="Nhập lý do để sinh viên biết cần điều chỉnh gì..."
+              style={{ minHeight: 120, resize: 'vertical' }}
+            />
+          </div>
+          <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <button
+              type="button"
+              onClick={() => setRejectModal({ isOpen: false, id: null, reason: '' })}
+              className="btn-secondary"
+              style={{ padding: '0.875rem 1.5rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface-1)', fontWeight: 700 }}
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAction(rejectModal.id, 'reject')}
+              className="btn-primary"
+              style={{ padding: '0.875rem 1.5rem', borderRadius: '1rem', background: '#e11d48' }}
+              disabled={actionLoading === rejectModal.id}
+            >
+              Xác nhận từ chối
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

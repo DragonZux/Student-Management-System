@@ -5,11 +5,13 @@ import styles from "@/styles/modules/exams.module.css";
 import Card from "@/components/ui/Card";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import PaginationControls from "@/components/ui/PaginationControls";
 import { useAuth } from "@/components/providers/AuthProvider";
 import api from "@/lib/api";
 import usePaginatedData from "@/hooks/usePaginatedData";
 import { isInRange, popupValidationError, toNumber } from "@/lib/validation";
+import { showPopup } from "@/lib/popup";
 
 export default function ExamsPage() {
   const { user } = useAuth();
@@ -33,6 +35,7 @@ export default function ExamsPage() {
   const [takeExam, setTakeExam] = useState(null);
   const [takeForm, setTakeForm] = useState({ content: "" });
   const [takeError, setTakeError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, exam: null });
 
   const {
     data: exams,
@@ -138,10 +141,16 @@ export default function ExamsPage() {
   };
 
   const deleteExam = async (exam) => {
-    if (!confirm(`Xóa kỳ thi "${exam.title}"?`)) return;
+    setConfirmDelete({ isOpen: true, exam });
+  };
+
+  const confirmDeleteExam = async () => {
+    const exam = confirmDelete.exam;
+    if (!exam) return;
     setActionError("");
     try {
       await api.delete(`/exams/${exam._id}`);
+      setConfirmDelete({ isOpen: false, exam: null });
       refresh();
     } catch (e) {
       console.error("Delete exam failed", e);
@@ -210,7 +219,7 @@ export default function ExamsPage() {
       setTakeForm({ content: "" });
       setTakeError("");
       refresh();
-      alert("Nộp bài thi thành công!");
+      showPopup("Nộp bài thi thành công!", { type: "success" });
     } catch (e) {
       console.error("Submit exam failed", e);
       setTakeError(e.response?.data?.detail || "Nộp bài thi thất bại");
@@ -423,6 +432,13 @@ export default function ExamsPage() {
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, exam: null })}
+        onConfirm={confirmDeleteExam}
+        title="Xác nhận xóa kỳ thi"
+        message={`Bạn có chắc chắn muốn xóa kỳ thi "${confirmDelete.exam?.title || ''}"?`}
+      />
 
       {error || actionError ? <InlineMessage variant="error" style={{ marginBottom: "2rem" }}>{error || actionError}</InlineMessage> : null}
 

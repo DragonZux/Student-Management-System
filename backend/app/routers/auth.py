@@ -80,10 +80,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             target_id=user["_id"],
         )
         return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Login error")
-        if isinstance(e, HTTPException):
-            raise e
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/refresh-token")

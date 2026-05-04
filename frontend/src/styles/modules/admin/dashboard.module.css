@@ -1,6 +1,58 @@
 .container {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
+  padding-bottom: 5rem;
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  padding: 4rem 3.5rem;
+  border-radius: 2.5rem;
+  margin-bottom: 3.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: float 10s infinite alternate ease-in-out;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 10;
+}
+
+.heroContent h1 {
+  font-size: 3.5rem;
+  font-weight: 950;
+  margin-bottom: 1rem;
+  letter-spacing: -0.06em;
+  color: white;
+}
+
+.heroContent p {
+  font-size: 1.25rem;
+  opacity: 0.9;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+@keyframes float {
+  from { transform: translate(0, 0); }
+  to { transform: translate(-30px, 40px); }
 }
 
 .header {
@@ -61,63 +113,111 @@
   transform: scale(1.2) rotate(8deg);
 }
 
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 3.5rem;
+}
+
+.statCardContent {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.statIconWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  margin-bottom: 0.25rem;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.auditSection {
+  margin-top: 2rem;
+}
+
+.auditHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.auditList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auditItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  background: var(--surface-1);
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.auditItem:hover {
+  background: var(--card);
+  border-color: var(--primary);
+  transform: translateX(4px);
+}
+
+.auditAction {
+  font-weight: 700;
+  color: var(--foreground);
+  font-size: 0.95rem;
+}
+
+.auditMeta {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+  display: flex;
+  gap: 1rem;
+}
+
 .statusCard {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.statusItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  background: var(--surface-1);
-  border-radius: 1.25rem;
-  border: 1px solid var(--border);
-  transition: all 0.3s var(--ease-out-expo);
+@media (max-width: 1400px) {
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.statusItem:hover {
-  background: var(--card);
-  border-color: rgba(var(--primary-rgb), 0.2);
-  transform: scale(1.02);
-  box-shadow: var(--shadow-sm);
-}
-
-.statusLabel {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.statusIndicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  position: relative;
-}
-
-.statusIndicator::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: inherit;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(3); opacity: 0; }
+@media (max-width: 1100px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
   .header h1 {
     font-size: 2rem;
   }
 }
-

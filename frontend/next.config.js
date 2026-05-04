@@ -4,7 +4,6 @@ const internalApiBaseUrl = (process.env.INTERNAL_API_BASE_URL || 'http://localho
 const nextConfig = {
   reactStrictMode: true,
   compress: true, // Enable gzip compression
-  swcMinify: true, // Use SWC minifier for faster builds and better performance
   // Prevent Next.js from auto-redirecting /api/* slash variants.
   // Backend may normalize differently, which can otherwise create redirect loops.
   trailingSlash: false,
