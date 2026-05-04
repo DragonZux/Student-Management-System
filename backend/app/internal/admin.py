@@ -104,6 +104,16 @@ async def get_dashboard_stats(response: Response):
     stats["courses"] = await db.courses.count_documents({})
     stats["departments"] = await db.departments.count_documents({})
     
+    # Calculate total revenue from payments
+    revenue_cursor = db.payments.aggregate([
+        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+    ])
+    revenue_data = await revenue_cursor.to_list(1)
+    stats["total_revenue"] = revenue_data[0]["total"] if revenue_data else 0
+    
+    # Count pending withdrawals
+    stats["pending_withdrawals"] = await db.enrollments.count_documents({"status": "withdrawal_pending"})
+    
     response.headers["Cache-Control"] = "no-cache, must-revalidate"
     return stats
 
@@ -596,6 +606,56 @@ async def list_audit_logs(
     }
 
 # --- Feedback/Survey (admin visibility) ---
+
+@router.get("/feedback")
+async def list_all_feedback(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=2000),
+):
+    db = get_database()
+    total = await db.feedback.count_documents({})
+    feedback_list = await db.feedback.find().sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Enrich with student and class info
+    student_ids = list({f["student_id"] for f in feedback_list if f.get("student_id")})
+    class_ids = list({f["class_id"] for f in feedback_list if f.get("class_id")})
+    
+    students = await db.users.find({"_id": {"$in": student_ids}}, {"hashed_password": 0, "active_jti": 0}).to_list(len(student_ids))
+    classes = await db.classes.find({"_id": {"$in": class_ids}}).to_list(len(class_ids))
+    
+    student_map = {s["_id"]: s for s in students}
+    class_map = {c["_id"]: c for c in classes}
+    
+    # Get courses for classes
+    course_ids = list({c.get("course_id") for c in classes if c.get("course_id")})
+    courses = await db.courses.find({"_id": {"$in": course_ids}}).to_list(len(course_ids))
+    course_map = {crs["_id"]: crs for crs in courses}
+
+    enriched = []
+    for f in feedback_list:
+        student = student_map.get(f.get("student_id"))
+        cls = class_map.get(f.get("class_id"))
+        course = course_map.get(cls.get("course_id")) if cls else None
+        
+        enriched.append({
+            "feedback": f,
+            "student": {
+                "full_name": student.get("full_name") if student else "Unknown",
+                "email": student.get("email") if student else "Unknown"
+            },
+            "class": {
+                "course_code": course.get("code") if course else "N/A",
+                "course_title": course.get("title") if course else "N/A",
+                "room": cls.get("room") if cls else "N/A"
+            }
+        })
+        
+    return {
+        "data": enriched,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 # --- Withdrawal Requests Management ---
 

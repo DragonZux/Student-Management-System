@@ -2,6 +2,7 @@
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { MapPin, Users, Monitor, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
@@ -30,6 +31,7 @@ export default function ClassroomsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ code: '', building: '', capacity: 0, facilities: '' });
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, room: null });
 
   const openCreate = () => {
     setEditing(null);
@@ -70,12 +72,18 @@ export default function ClassroomsPage() {
     }
   };
   const remove = async (room) => {
-    if (!confirm(`Xóa phòng học ${room.code}?`)) return;
+    setConfirmModal({ isOpen: true, room });
+  };
+
+  const confirmRemove = async () => {
+    const room = confirmModal.room;
+    if (!room) return;
     try {
       await api.delete(`/admin/classrooms/${room._id}`);
+      setConfirmModal({ isOpen: false, room: null });
       refresh();
     } catch (e) {
-      alert(e.response?.data?.detail || 'Xóa phòng học thất bại');
+      setFormError(e.response?.data?.detail || 'Xóa phòng học thất bại');
     }
   };
 
@@ -188,6 +196,13 @@ export default function ClassroomsPage() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, room: null })}
+        onConfirm={confirmRemove}
+        title="Xác nhận xóa phòng học"
+        message={`Bạn có chắc chắn muốn xóa phòng học ${confirmModal.room?.code || ''}?`}
+      />
     </div>
   );
 }

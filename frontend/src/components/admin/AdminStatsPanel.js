@@ -1,29 +1,45 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import api from '@/lib/api';
-import { Users, GraduationCap, Building2, Loader2 } from 'lucide-react';
+import { Users, GraduationCap, Building2, Wallet, LogOut, Loader2, TrendingUp, BookOpen } from 'lucide-react';
 import styles from '@/styles/modules/admin/dashboard.module.css';
 
-function StatCard({ label, value, loading, icon: Icon, color, bg, className }) {
+function StatCard({ label, value, loading, icon: Icon, color, bg, className, isCurrency, delay }) {
   return (
-    <Card className={className}>
-      <div className={styles.statCardContent}>
-        <div className={styles.statIconWrapper} style={{ background: bg }}>
-          <Icon size={32} color={color} />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      whileHover={{ y: -8, scale: 1.02 }}
+      className="h-full"
+    >
+      <Card className={`${className} h-full`} style={{ padding: '2.5rem' }}>
+        <div className={styles.statCardContent}>
+          <div className={styles.statIconWrapper} style={{ background: bg }}>
+            <Icon size={36} color={color} />
+          </div>
+          <div className="flex-1">
+            <div className="flex justify-between items-start mb-2">
+              <p className={styles.statLabel} style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>{label}</p>
+              {!loading && <TrendingUp size={20} className="text-accent opacity-40" />}
+            </div>
+            {loading ? (
+              <Loader2 className="animate-spin mt-2" size={32} color={color} />
+            ) : (
+              <h2 className={styles.statValue} style={{ fontSize: '2.75rem', fontWeight: 950, letterSpacing: '-0.06em' }}>
+                {isCurrency 
+                  ? (value || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
+                  : (value || 0)}
+              </h2>
+            )}
+          </div>
         </div>
-        <div>
-          <p className={styles.statLabel}>{label}</p>
-          {loading ? (
-            <Loader2 className="animate-spin" size={24} color={color} />
-          ) : (
-            <h2 className={styles.statValue}>{value || 0}</h2>
-          )}
-        </div>
-      </div>
-    </Card>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -64,9 +80,11 @@ export default function AdminStatsPanel() {
 
   return (
     <>
-      <InlineMessage variant="warning" style={{ marginBottom: '1.5rem' }}>
-        {error}
-      </InlineMessage>
+      {error && (
+        <InlineMessage variant="warning" style={{ marginBottom: '1.5rem' }}>
+          {error}
+        </InlineMessage>
+      )}
 
       <div className={styles.statsGrid}>
         <StatCard
@@ -75,8 +93,9 @@ export default function AdminStatsPanel() {
           loading={loading}
           icon={Users}
           color="var(--primary)"
-          bg="rgba(99, 102, 241, 0.1)"
-          className="glass slide-right stagger-2"
+          bg="rgba(99, 102, 241, 0.12)"
+          className="glass"
+          delay={0.1}
         />
         <StatCard
           label="Giảng viên"
@@ -84,17 +103,40 @@ export default function AdminStatsPanel() {
           loading={loading}
           icon={GraduationCap}
           color="var(--secondary)"
-          bg="rgba(168, 85, 247, 0.1)"
-          className="glass slide-right stagger-3"
+          bg="rgba(168, 85, 247, 0.12)"
+          className="glass"
+          delay={0.2}
         />
         <StatCard
           label="Môn học"
           value={stats?.courses}
           loading={loading}
-          icon={Building2}
+          icon={BookOpen}
+          color="#f59e0b"
+          bg="rgba(245, 158, 11, 0.12)"
+          className="glass"
+          delay={0.3}
+        />
+        <StatCard
+          label="Tổng doanh thu"
+          value={stats?.total_revenue}
+          loading={loading}
+          icon={Wallet}
           color="var(--accent)"
-          bg="rgba(244, 63, 94, 0.1)"
-          className="glass slide-right stagger-4"
+          bg="rgba(16, 185, 129, 0.12)"
+          className="glass"
+          isCurrency={true}
+          delay={0.4}
+        />
+        <StatCard
+          label="Yêu cầu rút môn"
+          value={stats?.pending_withdrawals}
+          loading={loading}
+          icon={LogOut}
+          color="#f43f5e"
+          bg="rgba(244, 63, 94, 0.12)"
+          className="glass"
+          delay={0.5}
         />
       </div>
     </>

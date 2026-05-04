@@ -2,6 +2,7 @@
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { Building2, User, Clock, MapPin, Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
@@ -35,6 +36,7 @@ export default function ClassesPage() {
   const [formError, setFormError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, classItem: null });
   const [form, setForm] = useState({
     course_id: '',
     teacher_id: '',
@@ -151,12 +153,18 @@ export default function ClassesPage() {
   };
 
   const remove = async (cls) => {
-    if (!confirm(`Xóa lớp này?`)) return;
+    setConfirmModal({ isOpen: true, classItem: cls });
+  };
+
+  const confirmRemove = async () => {
+    const cls = confirmModal.classItem;
+    if (!cls) return;
     try {
       await api.delete(`/admin/classes/${cls._id}`);
+      setConfirmModal({ isOpen: false, classItem: null });
       refresh();
     } catch (e) {
-      alert(e.response?.data?.detail || 'Xóa lớp thất bại');
+      setFormError(e.response?.data?.detail || 'Xóa lớp thất bại');
     }
   };
 
@@ -331,6 +339,13 @@ export default function ClassesPage() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, classItem: null })}
+        onConfirm={confirmRemove}
+        title="Xác nhận xóa lớp học"
+        message="Bạn có chắc chắn muốn xóa lớp học này? Hành động này không thể hoàn tác."
+      />
     </div>
   );
 }

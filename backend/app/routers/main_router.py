@@ -1,8 +1,16 @@
 from fastapi import APIRouter
 from app.routers import auth, student, teacher, finance, notifications, reports, exams
 from app.internal import admin
+from app.core.config import settings
+from app.db.database import get_database
 
 api_router = APIRouter(redirect_slashes=False)
+
+@api_router.get("/health", tags=["Health"])
+async def api_health():
+    db = get_database()
+    await db.command("ping")
+    return {"status": "ok", "database": "ok", "version": settings.VERSION}
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin Management"])

@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useNotifications } from '@/components/providers/NotificationProvider';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, GraduationCap, BookOpen, Calendar, 
   ClipboardList, LogOut, LayoutDashboard,
-  Building2, Wallet, Bell, FileText, UserCircle, MessageSquare, ClipboardCheck, Menu, PanelLeftClose, PanelLeftOpen
+  Building2, Wallet, Bell, FileText, UserCircle, MessageSquare, ClipboardCheck, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import styles from '@/styles/modules/layout/sidebar.module.css';
 
@@ -21,6 +22,7 @@ const navItems = {
     { name: 'Khoa/Bộ môn', path: '/admin/departments', icon: ClipboardList },
     { name: 'Phòng học', path: '/admin/classrooms', icon: Calendar },
     { name: 'Kỳ thi', path: '/exams', icon: ClipboardCheck },
+    { name: 'Phản hồi sinh viên', path: '/admin/feedback', icon: MessageSquare },
     { name: 'Duyệt rút học phần', path: '/admin/withdrawals', icon: LogOut },
     { name: 'Tài chính', path: '/admin/finance', icon: Wallet },
     { name: 'Nhật ký hệ thống', path: '/admin/audit', icon: FileText },
@@ -55,45 +57,50 @@ export default function Sidebar({ role = 'admin' }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   useEffect(() => {
-    // restore preference
     try {
       const collapsed = localStorage.getItem('sms:sidebar:collapsed');
       if (collapsed !== null) setIsCollapsed(collapsed === '1');
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, []);
 
   useEffect(() => {
     try {
       localStorage.setItem('sms:sidebar:collapsed', isCollapsed ? '1' : '0');
-    } catch {
-      // ignore
-    }
-  }, [isCollapsed]);
-
-  const sidebarClassName = useMemo(() => {
-    const base = [styles.sidebar];
-    if (isCollapsed) base.push(styles.collapsed);
-    return base.join(' ');
+    } catch {}
   }, [isCollapsed]);
 
   return (
-    <aside className={sidebarClassName} aria-label="Main Navigation">
+    <motion.aside 
+      className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}
+      animate={{ width: isCollapsed ? 100 : 280 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    >
       <div className={styles.logo}>
         <div className={styles.logoLeft}>
-          <div className={styles.iconWrapper}>
+          <motion.div 
+            className={styles.iconWrapper}
+            whileHover={{ rotate: 0, scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
             <GraduationCap size={28} />
-          </div>
-          <span className={styles.logoText}>SMS Việt</span>
+          </motion.div>
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.span 
+                className={styles.logoText}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+              >
+                SMS Việt
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
         <button
           type="button"
           className={styles.collapseBtn}
-          aria-label={isCollapsed ? 'Mở sidebar' : 'Thu gọn sidebar'}
-          onClick={() => {
-            setIsCollapsed((v) => !v);
-          }}
+          onClick={() => setIsCollapsed(!isCollapsed)}
         >
           {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
@@ -104,53 +111,73 @@ export default function Sidebar({ role = 'admin' }) {
           const Icon = item.icon;
           const isActive = pathname === item.path;
           return (
-            <Link
-              key={item.path}
-              href={item.path}
-              className={`${styles.navItem} ${isActive ? styles.active : ''} slide-right`}
-              style={{ animationDelay: `${index * 0.03}s` }}
-              title={isCollapsed ? item.name : undefined}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <Icon size={20} />
-              <span className={styles.label}>{item.name}</span>
-              {isActive && <div className={styles.activeIndicator} />}
+            <Link key={item.path} href={item.path} style={{ textDecoration: 'none' }}>
+              <motion.div
+                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                whileHover={{ x: 5 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.02 }}
+              >
+                <Icon size={22} />
+                <AnimatePresence mode="wait">
+                  {!isCollapsed && (
+                    <motion.span 
+                      className={styles.label}
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                    >
+                      {item.name}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeIndicator"
+                    className={styles.activeIndicator}
+                  />
+                )}
+              </motion.div>
             </Link>
           );
         })}
       </nav>
 
       <div className={styles.footer}>
-        <Link 
-          href="/notifications" 
-          className={`${styles.navItem} ${pathname === '/notifications' ? styles.active : ''}`}
-          title={isCollapsed ? 'Thông báo' : undefined}
-          aria-label={`Thông báo ${unreadCount > 0 ? `(${unreadCount} chưa đọc)` : ''}`}
-        >
-          <Bell size={20} />
-          <span className={styles.label}>Thông báo</span>
-          {unreadCount > 0 ? (
-            <span className={styles.notifBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
-          ) : null}
+        <Link href="/notifications" style={{ textDecoration: 'none' }}>
+          <motion.div className={`${styles.navItem} ${pathname === '/notifications' ? styles.active : ''}`}>
+            <Bell size={22} />
+            {!isCollapsed && <span className={styles.label}>Thông báo</span>}
+            {unreadCount > 0 && (
+              <motion.span 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className={styles.notifBadge}
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </motion.span>
+            )}
+          </motion.div>
         </Link>
-        <Link 
-          href="/profile" 
-          className={`${styles.navItem} ${pathname === '/profile' ? styles.active : ''}`}
-          title={isCollapsed ? 'Hồ sơ' : undefined}
-          aria-label="Hồ sơ người dùng"
-        >
-          <UserCircle size={20} />
-          <span className={styles.label}>Hồ sơ</span>
+        
+        <Link href="/profile" style={{ textDecoration: 'none' }}>
+          <motion.div className={`${styles.navItem} ${pathname === '/profile' ? styles.active : ''}`}>
+            <UserCircle size={22} />
+            {!isCollapsed && <span className={styles.label}>Hồ sơ</span>}
+          </motion.div>
         </Link>
-        <button 
+
+        <motion.button 
+          whileHover={{ backgroundColor: '#f43f5e', color: '#fff' }}
           onClick={logout} 
           className={styles.logoutBtn}
-          aria-label="Đăng xuất"
         >
-          <LogOut size={20} />
-          <span className={styles.label}>Đăng xuất</span>
-        </button>
+          <LogOut size={22} />
+          {!isCollapsed && <span className={styles.label}>Đăng xuất</span>}
+        </motion.button>
       </div>
-    </aside>
+    </motion.aside>
   );
 }

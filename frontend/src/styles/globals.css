@@ -1,64 +1,65 @@
 :root {
   /* Core Palette - Ultra Premium & Sophisticated */
-  --primary: #4f46e5;
-  --primary-rgb: 79, 70, 229;
-  --primary-hover: #4338ca;
-  --secondary: #7c3aed;
+  --primary: #6366f1;
+  --primary-rgb: 99, 102, 241;
+  --primary-hover: #4f46e5;
+  --secondary: #8b5cf6;
   --accent: #10b981;
   
-  --background: #fdfdfd;
+  --background: #f8fafc;
   --foreground: #0f172a;
   
   --card: #ffffff;
   --card-foreground: #1e293b;
   
-  --muted: #f8fafc;
-  --muted-foreground: #475569; /* Improved contrast for A11y */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
   
   --border: #e2e8f0;
-  --input: #f8fafc;
-  --radius: 1.25rem;
+  --input: #ffffff;
+  --radius: 1.5rem;
   
   /* Surface System (Z-Axis Depth) */
-  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(255, 255, 255, 0.5);
-  --glass-blur: blur(12px);
+  --glass-blur: blur(16px);
   
-  --surface-1: rgba(255, 255, 255, 0.8);
-  --surface-2: rgba(255, 255, 255, 0.6);
+  --surface-1: rgba(255, 255, 255, 0.9);
+  --surface-2: rgba(255, 255, 255, 0.7);
   
   /* Shadows - Layered & Natural */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
-  --shadow-primary: 0 10px 15px -3px rgba(79, 70, 229, 0.25);
-  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.15);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-primary: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
 
   /* Animation Easing */
-  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
-  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .dark {
-  --background: #0b0f1a;
-  --foreground: #f1f5f9;
+  --background: #020617;
+  --foreground: #f8fafc;
   
-  --card: rgba(15, 23, 42, 0.6);
-  --card-foreground: #f1f5f9;
+  --card: rgba(15, 23, 42, 0.8);
+  --card-foreground: #f8fafc;
   
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
   
-  --border: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.1);
   --input: #0f172a;
   
-  --glass-bg: rgba(15, 23, 42, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.04);
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
   
-  --surface-1: rgba(30, 41, 59, 0.8);
-  --surface-2: rgba(15, 23, 42, 0.6);
+  --surface-1: rgba(30, 41, 59, 0.9);
+  --surface-2: rgba(15, 23, 42, 0.7);
 }
 
 * {

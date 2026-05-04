@@ -2,6 +2,7 @@
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { UserPlus, Search, Mail, Phone, BookOpen, Trash2, Edit3, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
@@ -51,8 +52,9 @@ export default function TeachersPage() {
   const [query, setLocalQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ full_name: '', email: '', password: 'teacher123', department: '' });
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', department: '' });
   const [formError, setFormError] = useState('');
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, teacher: null });
 
   const notifyFormError = (message) => {
     popupValidationError(setFormError, message);
@@ -99,7 +101,7 @@ export default function TeachersPage() {
     setForm({ 
       full_name: '', 
       email: '', 
-      password: 'teacher123', 
+      password: '', 
       department: departments?.[0]?.name || '' 
     });
     setFormError('');
@@ -148,12 +150,19 @@ export default function TeachersPage() {
   };
 
   const remove = async (t) => {
-    if (!confirm(`Xóa giảng viên ${t.full_name || t.email}?`)) return;
+    setConfirmModal({ isOpen: true, teacher: t });
+  };
+
+  const confirmRemove = async () => {
+    const teacher = confirmModal.teacher;
+    if (!teacher) return;
     try {
-      await api.delete(`/admin/users/${t._id}`);
+      await api.delete(`/admin/users/${teacher._id}`);
+      setConfirmModal({ isOpen: false, teacher: null });
       refresh();
     } catch (e) {
       console.error('Failed to delete teacher', e);
+      notifyFormError(getErrorMessage(e, 'Xóa giảng viên thất bại'));
     }
   };
 
@@ -292,6 +301,13 @@ export default function TeachersPage() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, teacher: null })}
+        onConfirm={confirmRemove}
+        title="Xác nhận xóa giảng viên"
+        message={`Bạn có chắc chắn muốn xóa giảng viên ${confirmModal.teacher?.full_name || confirmModal.teacher?.email || ''}?`}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.db.database import connect_to_mongo, close_mongo_connection
+from app.db.database import get_database
 from app.core.config import settings
 from app.routers.main_router import api_router
 import logging
@@ -9,6 +10,11 @@ import time
 from fastapi.middleware.gzip import GZipMiddleware
 
 logger = logging.getLogger(__name__)
+
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -100,3 +106,9 @@ async def root():
         "docs": "/docs",
         "version": settings.VERSION
     }
+
+@app.get("/health")
+async def health():
+    db = get_database()
+    await db.command("ping")
+    return {"status": "ok", "database": "ok", "version": settings.VERSION}

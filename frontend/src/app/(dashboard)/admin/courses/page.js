@@ -106,7 +106,7 @@ export default function CoursesPage() {
       setConfirmModal({ isOpen: false, course: null });
       refresh();
     } catch (e) {
-      alert(e.response?.data?.detail || 'Xóa môn học thất bại');
+      setFormError(e.response?.data?.detail || 'Xóa môn học thất bại');
     }
   };
 
