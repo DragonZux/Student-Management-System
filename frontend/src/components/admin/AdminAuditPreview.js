@@ -42,7 +42,7 @@ export default function AdminAuditPreview() {
           </div>
           Hoạt động hệ thống
         </h3>
-        <Link href="/admin/audit" className="btn-text flex items-center gap-2 text-sm font-bold hover-lift">
+        <Link href="/admin/audit" prefetch={false} className="btn-text flex items-center gap-2 text-sm font-bold hover-lift">
           Toàn bộ nhật ký <ArrowRight size={14} />
         </Link>
       </div>

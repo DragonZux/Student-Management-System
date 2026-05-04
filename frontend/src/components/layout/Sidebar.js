@@ -111,7 +111,7 @@ export default function Sidebar({ role = 'admin' }) {
           const Icon = item.icon;
           const isActive = pathname === item.path;
           return (
-            <Link key={item.path} href={item.path} style={{ textDecoration: 'none' }}>
+            <Link key={item.path} href={item.path} prefetch={false} style={{ textDecoration: 'none' }}>
               <motion.div
                 className={`${styles.navItem} ${isActive ? styles.active : ''}`}
                 whileHover={{ x: 5 }}
@@ -146,7 +146,7 @@ export default function Sidebar({ role = 'admin' }) {
       </nav>
 
       <div className={styles.footer}>
-        <Link href="/notifications" style={{ textDecoration: 'none' }}>
+        <Link href="/notifications" prefetch={false} style={{ textDecoration: 'none' }}>
           <motion.div className={`${styles.navItem} ${pathname === '/notifications' ? styles.active : ''}`}>
             <Bell size={22} />
             {!isCollapsed && <span className={styles.label}>Thông báo</span>}
@@ -162,7 +162,7 @@ export default function Sidebar({ role = 'admin' }) {
           </motion.div>
         </Link>
         
-        <Link href="/profile" style={{ textDecoration: 'none' }}>
+        <Link href="/profile" prefetch={false} style={{ textDecoration: 'none' }}>
           <motion.div className={`${styles.navItem} ${pathname === '/profile' ? styles.active : ''}`}>
             <UserCircle size={22} />
             {!isCollapsed && <span className={styles.label}>Hồ sơ</span>}

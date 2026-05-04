@@ -50,6 +50,44 @@
   line-height: 1.6;
 }
 
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 2rem;
+}
+
+.heroAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: none;
+  border-radius: 1.1rem;
+  padding: 0.95rem 1.2rem;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.3s var(--spring), box-shadow 0.3s var(--spring), border-color 0.3s var(--spring), background 0.3s var(--spring);
+}
+
+.heroActionPrimary {
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.15);
+}
+
+.heroActionSecondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.heroAction:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.2);
+}
+
 @keyframes float {
   from { transform: translate(0, 0); }
   to { transform: translate(-30px, 40px); }
@@ -77,20 +115,19 @@
 
 .actionBtn {
   width: 100%;
-  padding: 2.5rem 1.5rem;
-  border-radius: 1.5rem;
+  padding: 1.4rem 1.2rem;
+  border-radius: 1.35rem;
   border: 1px solid var(--border);
   background: var(--surface-1);
   color: var(--foreground);
   font-weight: 800;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
+  justify-content: space-between;
+  gap: 1rem;
   cursor: pointer;
   transition: all 0.4s var(--ease-out-expo);
-  font-size: 1.05rem;
+  font-size: 1rem;
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
@@ -99,9 +136,57 @@
 .actionBtn:hover {
   border-color: var(--primary);
   color: var(--primary);
-  transform: translateY(-8px);
+  transform: translateY(-6px);
   box-shadow: var(--shadow-lg);
   background: var(--card);
+}
+
+.actionMeta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.actionIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 1rem;
+  display: grid;
+  place-items: center;
+  background: var(--muted);
+  flex: 0 0 auto;
+}
+
+.actionText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.actionLabel {
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.actionSub {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  color: var(--muted-foreground);
+}
+
+.actionArrow {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+  transition: transform 0.4s var(--ease-out-expo), opacity 0.4s var(--ease-out-expo);
+}
+
+.actionBtn:hover .actionArrow {
+  transform: translateX(4px);
+  opacity: 1;
 }
 
 .actionBtn svg {
@@ -201,6 +286,83 @@
   gap: 1.5rem;
 }
 
+.statusItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1.15rem;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.statusItem:hover {
+  transform: translateX(4px);
+  border-color: rgba(var(--primary-rgb), 0.22);
+  background: var(--card);
+}
+
+.statusLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.statusIndicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.05);
+}
+
+.promoCard {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 48%, #312e81 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.45);
+  overflow: hidden;
+  position: relative;
+}
+
+.promoCard::before {
+  content: "";
+  position: absolute;
+  inset: auto -8rem -8rem auto;
+  width: 16rem;
+  height: 16rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.16) 0%, transparent 72%);
+  filter: blur(10px);
+}
+
+.promoBadge {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 0.95rem;
+  background: rgba(255,255,255,0.09);
+}
+
+.promoButton {
+  width: 100%;
+  border: none;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: white;
+  padding: 0.95rem 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.25s var(--spring), box-shadow 0.25s var(--spring);
+  box-shadow: var(--shadow-primary);
+}
+
+.promoButton:hover {
+  transform: translateY(-2px);
+}
+
 @media (max-width: 1400px) {
   .statsGrid {
     grid-template-columns: repeat(3, 1fr);
@@ -219,5 +381,14 @@
   }
   .header h1 {
     font-size: 2rem;
+  }
+
+  .hero {
+    padding: 2.5rem 1.5rem;
+    border-radius: 1.75rem;
+  }
+
+  .heroContent h1 {
+    font-size: 2.4rem;
   }
 }
