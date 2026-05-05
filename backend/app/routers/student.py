@@ -9,7 +9,7 @@ from app.db.database import get_database
 from app.schemas.academic import AttendanceOut, EnrollmentOut, SubmissionCreate
 from app.schemas.organization import FeedbackCreate, FeedbackOut
 from app.schemas.user import UserRole
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 router = APIRouter(dependencies=[Depends(check_student_role)], redirect_slashes=False)
@@ -121,8 +121,14 @@ async def list_my_enrollments(
     for e in enrollments:
         cls = class_by_id.get(e["class_id"])
         crs = course_by_id.get(cls.get("course_id")) if cls else None
+        
+        enrolled_at = e.get("enrolled_at")
+        if enrolled_at and isinstance(enrolled_at, datetime) and enrolled_at.tzinfo is None:
+            enrolled_at = enrolled_at.replace(tzinfo=timezone.utc)
+
         items.append({
             **e,
+            "enrolled_at": enrolled_at,
             "class": cls,
             "course": crs,
         })
@@ -162,6 +168,11 @@ async def list_my_submissions(
     query = {"student_id": student["_id"]}
     total = await db.submissions.count_documents(query)
     submissions = await db.submissions.find(query).sort("submitted_at", -1).skip(skip).limit(limit).to_list(limit)
+    for s in submissions:
+        submitted_at = s.get("submitted_at")
+        if submitted_at and isinstance(submitted_at, datetime) and submitted_at.tzinfo is None:
+            s["submitted_at"] = submitted_at.replace(tzinfo=timezone.utc)
+
     return {
         "data": submissions,
         "total": total,
@@ -213,7 +224,7 @@ async def enroll_in_class(
             "student_id": student["_id"],
             "class_id": {"$in": [cls["_id"] for cls in prereq_classes]},
             "status": "completed",
-            "grade": {"$gte": 2.0},
+            "is_passed": True,
         }).to_list(5000)
         completed_class_ids = {item["class_id"] for item in completed_enrollments}
 
@@ -229,7 +240,7 @@ async def enroll_in_class(
         "student_id": student["_id"],
         "class_id": class_id,
         "status": "enrolled",
-        "enrolled_at": datetime.utcnow()
+        "enrolled_at": datetime.now(timezone.utc)
     }
     
     await db.enrollments.insert_one(enrollment)
@@ -275,7 +286,7 @@ async def submit_assignment(
     ).model_dump()
     submission.update({
         "_id": str(uuid.uuid4()),
-        "submitted_at": datetime.utcnow(),
+        "submitted_at": datetime.now(timezone.utc),
         "status": "submitted",
     })
     
@@ -384,6 +395,12 @@ async def get_my_grades(
             "course_title": course.get("title"),
             "status": enrollment.get("status"),
             "grade": grade,
+            "score_10": enrollment.get("score_10"),
+            "score_attendance": enrollment.get("score_attendance"),
+            "score_midterm": enrollment.get("score_midterm"),
+            "score_final": enrollment.get("score_final"),
+            "letter_grade": enrollment.get("letter_grade"),
+            "is_passed": enrollment.get("is_passed", False),
             "credits": credits,
             "teacher_comments": enrollment.get("teacher_comments"),
         })
@@ -421,7 +438,7 @@ async def withdraw_course(enrollment_id: str, payload: dict, student: dict = Dep
         {"_id": enrollment_id},
         {"$set": {
             "status": "withdrawal_pending", 
-            "withdrawal_requested_at": datetime.utcnow(), 
+            "withdrawal_requested_at": datetime.now(timezone.utc), 
             "withdrawal_reason": reason
         }},
     )
@@ -485,7 +502,7 @@ async def submit_feedback(payload: FeedbackCreate, student: dict = Depends(check
     feedback.update({
         "student_id": student["_id"],
         "_id": str(uuid.uuid4()),
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     })
     await db.feedback.insert_one(feedback)
     await log_audit_event(

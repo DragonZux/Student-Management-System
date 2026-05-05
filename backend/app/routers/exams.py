@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.dependencies import check_admin_role, get_current_user, check_teacher_or_admin
+from app.dependencies import check_admin_role, get_current_user, check_teacher_role
 from app.routers.notifications import create_notification
 from app.core.audit import log_audit_event
 from app.db.database import get_database
 from app.schemas.academic import ExamCreate, ExamOut, ExamUpdate, ExamGrade
 from app.schemas.user import UserRole
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 router = APIRouter()
@@ -24,6 +24,9 @@ async def list_exams(
     elif current_user["role"] == UserRole.STUDENT:
         enrolled_classes = await db.enrollments.find({"student_id": current_user["_id"], "status": {"$in": ["enrolled", "completed"]}}).to_list(1000)
         query["class_id"] = {"$in": [enrollment["class_id"] for enrollment in enrolled_classes]}
+    else:
+        # Admins or others get nothing
+        return {"data": [], "total": 0, "skip": skip, "limit": limit}
     
     total = await db.exams.count_documents(query)
     exams = await db.exams.find(query).sort("scheduled_at", -1).skip(skip).limit(limit).to_list(limit)
@@ -52,6 +55,15 @@ async def list_exams(
                 else:
                     e["class_name"] = "Unknown"
 
+    for e in exams:
+        scheduled_at = e.get("scheduled_at")
+        if scheduled_at and isinstance(scheduled_at, datetime) and scheduled_at.tzinfo is None:
+            e["scheduled_at"] = scheduled_at.replace(tzinfo=timezone.utc)
+            
+        created_at = e.get("created_at")
+        if created_at and isinstance(created_at, datetime) and created_at.tzinfo is None:
+            e["created_at"] = created_at.replace(tzinfo=timezone.utc)
+
     return {
         "data": exams,
         "total": total,
@@ -60,10 +72,16 @@ async def list_exams(
     }
 
 @router.post("", response_model=ExamOut)
-async def create_exam(payload: ExamCreate, current_user: dict = Depends(check_teacher_or_admin)):
+async def create_exam(payload: ExamCreate, current_user: dict = Depends(check_teacher_role)):
     db = get_database()
+    
+    # Validation: Only one exam of each type per class
+    existing = await db.exams.find_one({"class_id": payload.class_id, "title": payload.title})
+    if (existing):
+        raise HTTPException(status_code=400, detail=f"Kỳ thi '{payload.title}' đã tồn tại cho lớp học này.")
+
     exam = payload.model_dump()
-    exam.update({"_id": str(uuid.uuid4()), "created_at": datetime.utcnow()})
+    exam.update({"_id": str(uuid.uuid4()), "created_at": datetime.now(timezone.utc)})
     await db.exams.insert_one(exam)
     
     # Notify enrolled students
@@ -86,7 +104,7 @@ async def create_exam(payload: ExamCreate, current_user: dict = Depends(check_te
     return exam
 
 @router.put("/{exam_id}", response_model=ExamOut)
-async def update_exam(exam_id: str, payload: ExamUpdate, current_user: dict = Depends(check_teacher_or_admin)):
+async def update_exam(exam_id: str, payload: ExamUpdate, current_user: dict = Depends(check_teacher_role)):
     db = get_database()
     update_data = payload.model_dump(exclude_none=True)
     if not update_data:
@@ -107,7 +125,7 @@ async def update_exam(exam_id: str, payload: ExamUpdate, current_user: dict = De
     return updated
 
 @router.delete("/{exam_id}")
-async def delete_exam(exam_id: str, current_user: dict = Depends(check_teacher_or_admin)):
+async def delete_exam(exam_id: str, current_user: dict = Depends(check_teacher_role)):
     db = get_database()
     result = await db.exams.delete_one({"_id": exam_id})
     if result.deleted_count == 0:
@@ -123,7 +141,7 @@ async def delete_exam(exam_id: str, current_user: dict = Depends(check_teacher_o
     return {"message": "Exam deleted successfully"}
 
 @router.post("/{exam_id}/grades")
-async def record_exam_grade(exam_id: str, payload: ExamGrade, current_user: dict = Depends(check_teacher_or_admin)):
+async def record_exam_grade(exam_id: str, payload: ExamGrade, current_user: dict = Depends(check_teacher_role)):
     db = get_database()
     exam = await db.exams.find_one({"_id": exam_id})
     if not exam:
@@ -134,7 +152,7 @@ async def record_exam_grade(exam_id: str, payload: ExamGrade, current_user: dict
     grades = [grade for grade in grades if grade.get("student_id") != payload.student_id]
     
     new_grade = payload.model_dump()
-    new_grade["graded_at"] = datetime.utcnow()
+    new_grade["graded_at"] = datetime.now(timezone.utc)
     new_grade["teacher_id"] = current_user["_id"]
     grades.append(new_grade)
     
@@ -170,7 +188,7 @@ async def record_exam_submission(exam_id: str, payload: dict, student: dict = De
     submission = {
         "student_id": student["_id"],
         "content": payload.get("content"),
-        "submitted_at": datetime.utcnow()
+        "submitted_at": datetime.now(timezone.utc)
     }
     
     if existing:

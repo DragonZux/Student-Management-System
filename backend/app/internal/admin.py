@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -27,7 +27,7 @@ async def create_user(user_in: UserCreate):
     user_dict = user_in.model_dump()
     user_dict["hashed_password"] = get_password_hash(user_dict.pop("password"))
     user_dict["_id"] = str(uuid.uuid4())
-    user_dict["created_at"] = datetime.utcnow()
+    user_dict["created_at"] = datetime.now(timezone.utc)
 
     await db.users.insert_one(user_dict)
     await log_audit_event(
@@ -601,6 +601,11 @@ async def list_audit_logs(
     total = await db.audit_logs.count_documents(query)
     logs = await db.audit_logs.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     
+    for log in logs:
+        dt = log.get("created_at")
+        if dt and isinstance(dt, datetime) and dt.tzinfo is None:
+            log["created_at"] = dt.replace(tzinfo=timezone.utc)
+
     return {
         "data": logs,
         "total": total,
@@ -690,6 +695,10 @@ async def list_withdrawal_requests(
         cls = class_by_id.get(req["class_id"])
         course = course_by_id.get(cls.get("course_id")) if cls else None
         
+        requested_at = req.get("withdrawal_requested_at")
+        if requested_at and isinstance(requested_at, datetime) and requested_at.tzinfo is None:
+            requested_at = requested_at.replace(tzinfo=timezone.utc)
+
         enriched.append({
             "enrollment_id": req["_id"],
             "student_name": student.get("full_name") if student else "Unknown",
@@ -697,7 +706,7 @@ async def list_withdrawal_requests(
             "course_code": course.get("code") if course else "Unknown",
             "course_title": course.get("title") if course else "Unknown",
             "reason": req.get("withdrawal_reason"),
-            "requested_at": req.get("withdrawal_requested_at"),
+            "requested_at": requested_at,
             "class_id": req["class_id"]
         })
     return {
@@ -718,7 +727,7 @@ async def approve_withdrawal(enrollment_id: str):
     # 1. Update enrollment status to withdrawn
     await db.enrollments.update_one(
         {"_id": enrollment_id},
-        {"$set": {"status": "withdrawn", "withdrawn_at": datetime.utcnow()}}
+        {"$set": {"status": "withdrawn", "withdrawn_at": datetime.now(timezone.utc)}}
     )
     
     # 2. Decrement class current_enrollment

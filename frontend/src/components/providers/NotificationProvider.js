@@ -54,6 +54,7 @@ export function NotificationProvider({ children }) {
   const pingTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const idleReloadRef = useRef(null);
+  const processedIdsRef = useRef(new Set());
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -79,6 +80,7 @@ export function NotificationProvider({ children }) {
       const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       const normalized = list.map(normalizeNotification).filter(Boolean);
       setNotifications(normalized);
+      normalized.forEach(n => processedIdsRef.current.add(n.id));
       await fetchUnreadCount();
     } catch {
       setNotifications([]);
@@ -163,6 +165,10 @@ export function NotificationProvider({ children }) {
       const nextToken = localStorage.getItem("token");
       if (!nextToken) return;
 
+      if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+
       const fullUrl = `${getWsUrl()}?token=${encodeURIComponent(nextToken)}`;
       const ws = new WebSocket(fullUrl);
       wsRef.current = ws;
@@ -217,11 +223,14 @@ export function NotificationProvider({ children }) {
           });
           if (!incoming) return;
 
+          if (processedIdsRef.current.has(incoming.id)) return;
+          processedIdsRef.current.add(incoming.id);
+
           setNotifications((prev) => {
             if (prev.some((n) => n.id === incoming.id)) return prev;
-            setUnreadCount(c => c + 1);
             return [incoming, ...prev];
           });
+          setUnreadCount(c => c + 1);
 
           playNotifySound();
           const popupText = incoming.message ? `${incoming.title}: ${incoming.message}` : incoming.title;

@@ -12,73 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const refreshIntervalRef = useRef(null);
-  const wsRef = useRef(null);
 
-  // WebSocket Connection for Real-time Notifications
-  const connectNotifications = useCallback((token) => {
-    if (!token) return;
-    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
-      return;
-    }
-    
-    if (wsRef.current) wsRef.current.close();
-    
-    // Use env var or construct from current location/localhost
-    const envWsUrl = process.env.NEXT_PUBLIC_WS_BASE_URL;
-    let wsUrl;
-    
-    if (envWsUrl) {
-      wsUrl = `${envWsUrl.replace(/\/$/, '').replace('localhost', '127.0.0.1')}/notifications/ws?token=${token}`;
-    } else {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      // Fallback to 127.0.0.1 instead of localhost to avoid IPv6 issues on some systems
-      const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-        ? '127.0.0.1:8000' 
-        : `${window.location.hostname}:8000`;
-      wsUrl = `${protocol}//${host}/api/notifications/ws?token=${token}`;
-    }
-    
-    try {
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        console.log('🔔 Notification WebSocket connected');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'notification' && payload.data) {
-            const { title, message } = payload.data;
-            showPopup(`${title}: ${message}`, { type: 'success', durationMs: 5000 });
-            // Dispatch a global event so other components can react
-            window.dispatchEvent(new CustomEvent('notification-received', { detail: payload.data }));
-          }
-        } catch (err) {
-          console.error('Failed to parse WS message', err);
-        }
-      };
-
-      ws.onclose = (event) => {
-        if (event.code !== 1000 && event.code !== 1001) {
-          console.warn(`WebSocket closed (code: ${event.code}). Reconnecting in 5s...`);
-          setTimeout(() => {
-            const currentToken = localStorage.getItem('token');
-            if (currentToken && (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED)) {
-              connectNotifications(currentToken);
-            }
-          }, 5000);
-        }
-      };
-
-      ws.onerror = (err) => {
-        console.error('WebSocket Error. URL:', wsUrl);
-      };
-    } catch (e) {
-      console.error('Failed to create WebSocket instance', e);
-    }
-  }, []);
 
   // Function to refresh token silently
   const refreshToken = useCallback(async () => {
@@ -114,7 +48,6 @@ export const AuthProvider = ({ children }) => {
       setUser(storedUser);
       syncAuthCookies(token, storedUser?.role);
       setupRefreshInterval();
-      connectNotifications(token);
     } else if (token) {
       api.get('/auth/me')
         .then((response) => {
@@ -123,7 +56,6 @@ export const AuthProvider = ({ children }) => {
           setUser(nextUser);
           syncAuthCookies(token, nextUser?.role);
           setupRefreshInterval();
-          connectNotifications(token);
         })
         .catch(() => {
           localStorage.removeItem('user');
@@ -139,9 +71,8 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
-      if (wsRef.current) wsRef.current.close();
     };
-  }, [setupRefreshInterval, connectNotifications]);
+  }, [setupRefreshInterval]);
 
   const login = useCallback(async (email, password) => {
     try {
@@ -166,7 +97,6 @@ export const AuthProvider = ({ children }) => {
       syncAuthCookies(access_token, userData.role);
 
       setupRefreshInterval();
-      connectNotifications(access_token);
 
       if (userData.role === 'admin') router.push('/admin');
       else if (userData.role === 'teacher') router.push('/teacher');
@@ -177,11 +107,10 @@ export const AuthProvider = ({ children }) => {
       console.error('Login failed:', error);
       return { success: false, error: error.response?.data?.detail || 'Login failed' };
     }
-  }, [router, setupRefreshInterval, connectNotifications]);
+  }, [router, setupRefreshInterval]);
 
   const logout = useCallback(() => {
     if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
-    if (wsRef.current) wsRef.current.close();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     clearAuthCookies();

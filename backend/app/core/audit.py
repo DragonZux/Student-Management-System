@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 import uuid
 
@@ -22,6 +22,6 @@ async def log_audit_event(
         "target_type": target_type,
         "target_id": target_id,
         "metadata": metadata or {},
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     await db.audit_logs.insert_one(event)

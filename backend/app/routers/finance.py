@@ -7,7 +7,7 @@ from app.db.database import get_database
 from app.schemas.finance import InvoiceOut, PaymentCreate, PaymentOut, TuitionSummary
 from app.schemas.user import UserRole
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(redirect_slashes=False)
 
@@ -56,10 +56,10 @@ async def get_my_tuition(student: dict = Depends(get_current_user)):
         "total_amount": total_amount,
         "paid_amount": invoice.get("paid_amount", 0) if invoice else 0,
         "status": status_text,
-        "updated_at": datetime.utcnow(),
+        "updated_at": datetime.now(timezone.utc),
     }
     if not invoice:
-        invoice_payload.update({"_id": str(uuid.uuid4()), "created_at": datetime.utcnow()})
+        invoice_payload.update({"_id": str(uuid.uuid4()), "created_at": datetime.now(timezone.utc)})
         await db.invoices.insert_one(invoice_payload)
     else:
         await db.invoices.update_one({"student_id": student["_id"]}, {"$set": invoice_payload})
@@ -80,6 +80,11 @@ async def get_my_payments(
     query = {"student_id": student["_id"]}
     total = await db.payments.count_documents(query)
     payments = await db.payments.find(query).sort("paid_at", -1).skip(skip).limit(limit).to_list(limit)
+    for p in payments:
+        dt = p.get("paid_at")
+        if dt and isinstance(dt, datetime) and dt.tzinfo is None:
+            p["paid_at"] = dt.replace(tzinfo=timezone.utc)
+            
     return {
         "data": payments,
         "total": total,
@@ -96,7 +101,7 @@ async def update_payment(student_id: str, amount: float):
     if not existing:
         raise HTTPException(status_code=404, detail="Finance record not found")
 
-    await db.invoices.update_one({"student_id": student_id}, {"$inc": {"paid_amount": amount}, "$set": {"updated_at": datetime.utcnow()}})
+    await db.invoices.update_one({"student_id": student_id}, {"$inc": {"paid_amount": amount}, "$set": {"updated_at": datetime.now(timezone.utc)}})
     await db.payments.insert_one({
         "_id": str(uuid.uuid4()),
         "student_id": student_id,
@@ -104,7 +109,7 @@ async def update_payment(student_id: str, amount: float):
         "amount": amount,
         "method": "admin_adjustment",
         "status": "recorded",
-        "paid_at": datetime.utcnow(),
+        "paid_at": datetime.now(timezone.utc),
     })
     
     # Update status if fully paid
@@ -148,6 +153,12 @@ async def list_invoices(
     db = get_database()
     total = await db.invoices.count_documents({})
     invoices = await db.invoices.find().sort("updated_at", -1).skip(skip).limit(limit).to_list(limit)
+    for inv in invoices:
+        for field in ["updated_at", "created_at"]:
+            dt = inv.get(field)
+            if dt and isinstance(dt, datetime) and dt.tzinfo is None:
+                inv[field] = dt.replace(tzinfo=timezone.utc)
+
     return {
         "data": invoices,
         "total": total,
@@ -165,6 +176,11 @@ async def list_payments(
     db = get_database()
     total = await db.payments.count_documents({})
     payments = await db.payments.find().sort("paid_at", -1).skip(skip).limit(limit).to_list(limit)
+    for p in payments:
+        dt = p.get("paid_at")
+        if dt and isinstance(dt, datetime) and dt.tzinfo is None:
+            p["paid_at"] = dt.replace(tzinfo=timezone.utc)
+
     return {
         "data": payments,
         "total": total,
@@ -185,7 +201,7 @@ async def pay_my_tuition(payload: dict, student: dict = Depends(get_current_user
     if not invoice:
         raise HTTPException(status_code=404, detail="Tuition record not found, call /my-tuition first")
 
-    await db.invoices.update_one({"student_id": student["_id"]}, {"$inc": {"paid_amount": float(amount)}, "$set": {"updated_at": datetime.utcnow()}})
+    await db.invoices.update_one({"student_id": student["_id"]}, {"$inc": {"paid_amount": float(amount)}, "$set": {"updated_at": datetime.now(timezone.utc)}})
     await db.payments.insert_one({
         "_id": str(uuid.uuid4()),
         "student_id": student["_id"],
@@ -194,7 +210,7 @@ async def pay_my_tuition(payload: dict, student: dict = Depends(get_current_user
         "method": payload.get("method") or "online",
         "reference": payload.get("reference"),
         "status": "recorded",
-        "paid_at": datetime.utcnow(),
+        "paid_at": datetime.now(timezone.utc),
     })
     updated = await db.invoices.find_one({"student_id": student["_id"]})
     status_text = "paid" if updated["paid_amount"] >= updated["total_amount"] else "partially_paid"
@@ -252,7 +268,7 @@ async def create_fee_policy(payload: dict):
         "semester": semester,
         "cost_per_credit": float(cost_per_credit),
         "is_active": bool(payload.get("is_active", True)),
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
     await db.fee_policies.insert_one(policy)
     await log_audit_event(

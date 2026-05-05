@@ -10,7 +10,7 @@ from app.core.audit import log_audit_event
 from app.core.config import settings
 from app.db.database import get_database
 from app.schemas.organization import NotificationCreate, NotificationOut
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 router = APIRouter(redirect_slashes=False)
@@ -28,7 +28,7 @@ async def create_notification(user_id: str, title: str, message: str) -> dict:
     notification.update({
         "_id": str(uuid.uuid4()),
         "read": False,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc)
     })
     await db.notifications.insert_one(notification)
     logger.debug("Inserted notification %s for user %s", notification["_id"], user_id)
@@ -78,6 +78,12 @@ async def get_my_notifications(
     normalized = []
     for item in notifications:
         notification_id = str(item.get("_id", ""))
+        created_at = item.get("created_at")
+        if created_at and created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        elif not created_at:
+            created_at = datetime.now(timezone.utc)
+            
         normalized.append(
             {
                 "_id": notification_id,
@@ -86,7 +92,7 @@ async def get_my_notifications(
                 "title": item.get("title") or "Thông báo hệ thống",
                 "message": item.get("message") or "",
                 "read": bool(item.get("read", False)),
-                "created_at": item.get("created_at") or datetime.utcnow(),
+                "created_at": created_at,
             }
         )
     return {

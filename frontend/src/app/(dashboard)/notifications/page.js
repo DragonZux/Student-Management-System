@@ -82,7 +82,7 @@ export default function NotificationsPage() {
   const handleMarkAll = async () => {
     setMarkingAll(true);
     try {
-      await api.post('/notifications/mark-all-read');
+      await globalMarkAllRead();
       refresh();
     } finally {
       setMarkingAll(false);
@@ -92,7 +92,7 @@ export default function NotificationsPage() {
   const markRead = async (id) => {
     if (!id) return;
     try {
-      await api.post(`/notifications/${id}/read`);
+      await globalMarkRead(id);
       refresh();
     } catch (e) {
       console.error("Failed to mark read", e);
@@ -208,4 +208,3 @@ export default function NotificationsPage() {
     </div>
   );
 }
-

@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
-import { NotificationProvider } from '@/components/providers/NotificationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import styles from '@/styles/modules/layout/shell.module.css';
 
@@ -22,8 +21,7 @@ export default function DashboardShell({ children }) {
   const firstName = user?.full_name?.split(' ').pop() || 'Thành viên';
 
   return (
-    <NotificationProvider>
-      <div className={styles.shell}>
+    <div className={styles.shell}>
         <Sidebar role={role} />
         <main className={styles.main}>
           <header className={`${styles.header} animate-in`}>
@@ -58,6 +56,5 @@ export default function DashboardShell({ children }) {
           </div>
         </main>
       </div>
-    </NotificationProvider>
   );
 }
