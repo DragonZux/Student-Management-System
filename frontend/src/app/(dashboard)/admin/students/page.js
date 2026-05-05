@@ -340,11 +340,14 @@ export default function StudentsPage() {
                       </div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{student.department || 'Chưa phân khoa'}</span>
+                      <div className={styles.deptBadge}>
+                        {student.department || 'Chưa phân khoa'}
+                      </div>
                     </td>
                     <td>
-                      <span className="badge badge-primary">
-                        Hoạt động
+                      <span className="badge badge-success">
+                        <span className={styles.statusDot}></span>
+                        Đang học
                       </span>
                     </td>
                     <td>

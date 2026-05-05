@@ -34,9 +34,9 @@ function showErrorPopup(message) {
 // Use an explicit browser-facing base URL so local dev and Docker do not depend on rewrites.
 // The backend container hostname is not resolvable from the browser, so keep a public URL here.
 const apiBaseUrl = normalizeBaseUrl(
-  typeof window !== 'undefined'
-    ? '/api/'
-    : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://backend:8000/api/')
+  (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL)
+    ? process.env.NEXT_PUBLIC_API_BASE_URL
+    : (typeof window !== 'undefined' ? 'http://127.0.0.1:8000/api' : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api'))
 );
 
 const api = axios.create({
@@ -88,12 +88,18 @@ api.defaults.retryDelay = 1000;
 // Add a request interceptor to handle auth token and path normalization
 api.interceptors.request.use(
   (config) => {
+    // Dynamic Base URL Resolution to bypass HMR caching issues
+    const currentBase = (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL)
+      ? process.env.NEXT_PUBLIC_API_BASE_URL
+      : (typeof window !== 'undefined' ? 'http://127.0.0.1:8000/api' : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api'));
+
+    const normalizedBase = currentBase.replace(/\/$/, '');
+
     // Normalize relative paths so callers can pass `/foo`, `foo`, or `/foo/`
-    // without triggering slash-based routing mismatches on the backend.
     if (config.url && !/^https?:\/\//i.test(config.url)) {
       const [pathPart, suffix = ''] = String(config.url).split(/([?#].*)/, 2);
       const normalizedPath = pathPart.replace(/^\/+/, '').replace(/\/+$/, '');
-      config.url = `${normalizedPath}${suffix}`;
+      config.url = `${normalizedBase}/${normalizedPath}${suffix}`;
     }
 
     const token = typeof window !== 'undefined' ? getAuthTokenFromBrowser() : null;

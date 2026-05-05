@@ -505,77 +505,77 @@ async def get_dashboard_summary(response: Response, student: dict = Depends(chec
     try:
         db = get_database()
         enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(1000)
-    active_enrollments = [e for e in enrollments if e.get("status") == "enrolled"]
-    completed_enrollments = [e for e in enrollments if e.get("status") == "completed" and e.get("grade") is not None]
+        active_enrollments = [e for e in enrollments if e.get("status") == "enrolled"]
+        completed_enrollments = [e for e in enrollments if e.get("status") == "completed" and e.get("grade") is not None]
 
-    class_ids = [e["class_id"] for e in enrollments]
-    class_by_id = await _fetch_classes_by_ids(db, class_ids)
-    course_by_id = await _fetch_courses_by_ids(db, [item.get("course_id") for item in class_by_id.values()])
+        class_ids = [e["class_id"] for e in enrollments]
+        class_by_id = await _fetch_classes_by_ids(db, class_ids)
+        course_by_id = await _fetch_courses_by_ids(db, [item.get("course_id") for item in class_by_id.values()])
 
-    total_points = 0.0
-    total_credits = 0
-    for enrollment in completed_enrollments:
-        cls = class_by_id.get(enrollment["class_id"])
-        course = course_by_id.get(cls.get("course_id")) if cls else None
-        credits = int(course.get("credits", 0)) if course else 0
-        total_points += float(enrollment["grade"]) * credits
-        total_credits += credits
-    gpa = round(total_points / total_credits, 2) if total_credits > 0 else 0.0
-
-    next_class = None
-    active_classes = [class_by_id[e["class_id"]] for e in active_enrollments if e["class_id"] in class_by_id]
-    ordered_days = {"Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6, "Sunday": 7}
-    next_slots = []
-    for cls in active_classes:
-        course = course_by_id.get(cls.get("course_id"))
-        for slot in cls.get("schedule", []):
-            next_slots.append(
-                {
-                    "course_code": course.get("code") if course else None,
-                    "course_title": course.get("title") if course else None,
-                    "room": cls.get("room"),
-                    "day": slot.get("day"),
-                    "start": slot.get("start"),
-                    "end": slot.get("end"),
-                    "sort_day": ordered_days.get(slot.get("day"), 99),
-                }
-            )
-    if next_slots:
-        next_slots.sort(key=lambda item: (item["sort_day"], str(item.get("start") or "")))
-        next_class = next_slots[0]
-        next_class.pop("sort_day", None)
-
-    assignments = await db.assignments.find({"class_id": {"$in": [c["_id"] for c in active_classes]}}).sort("deadline", 1).to_list(1000) if active_classes else []
-    submissions = await db.submissions.find({"student_id": student["_id"]}).to_list(1000)
-    submitted_assignment_ids = {item["assignment_id"] for item in submissions}
-    pending_assignments = [item for item in assignments if item["_id"] not in submitted_assignment_ids]
-
-    invoice = await db.invoices.find_one({"student_id": student["_id"]})
-    if not invoice:
-        total_registered_credits = 0
-        for enrollment in enrollments:
+        total_points = 0.0
+        total_credits = 0
+        for enrollment in completed_enrollments:
             cls = class_by_id.get(enrollment["class_id"])
             course = course_by_id.get(cls.get("course_id")) if cls else None
-            if course:
-                total_registered_credits += int(course.get("credits", 0))
-        balance = float(total_registered_credits) * 500.0
-    else:
-        balance = max(0.0, float(invoice.get("total_amount", 0)) - float(invoice.get("paid_amount", 0)))
+            credits = int(course.get("credits", 0)) if course else 0
+            total_points += float(enrollment["grade"]) * credits
+            total_credits += credits
+        gpa = round(total_points / total_credits, 2) if total_credits > 0 else 0.0
 
-    unread_notifications = await db.notifications.count_documents({"user_id": student["_id"], "read": False})
+        next_class = None
+        active_classes = [class_by_id[e["class_id"]] for e in active_enrollments if e["class_id"] in class_by_id]
+        ordered_days = {"Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6, "Sunday": 7}
+        next_slots = []
+        for cls in active_classes:
+            course = course_by_id.get(cls.get("course_id"))
+            for slot in cls.get("schedule", []):
+                next_slots.append(
+                    {
+                        "course_code": course.get("code") if course else None,
+                        "course_title": course.get("title") if course else None,
+                        "room": cls.get("room"),
+                        "day": slot.get("day"),
+                        "start": slot.get("start"),
+                        "end": slot.get("end"),
+                        "sort_day": ordered_days.get(slot.get("day"), 99),
+                    }
+                )
+        if next_slots:
+            next_slots.sort(key=lambda item: (item["sort_day"], str(item.get("start") or "")))
+            next_class = next_slots[0]
+            next_class.pop("sort_day", None)
 
-    upcoming_deadline = None
-    if pending_assignments:
-        nearest = pending_assignments[0]
-        cls = class_by_id.get(nearest.get("class_id"))
-        course = course_by_id.get(cls.get("course_id")) if cls else None
-        upcoming_deadline = {
-            "title": nearest.get("title"),
-            "description": nearest.get("description"),
-            "deadline": nearest.get("deadline"),
-            "course_code": course.get("code") if course else None,
-            "course_title": course.get("title") if course else None,
-        }
+        assignments = await db.assignments.find({"class_id": {"$in": [c["_id"] for c in active_classes]}}).sort("deadline", 1).to_list(1000) if active_classes else []
+        submissions = await db.submissions.find({"student_id": student["_id"]}).to_list(1000)
+        submitted_assignment_ids = {item["assignment_id"] for item in submissions}
+        pending_assignments = [item for item in assignments if item["_id"] not in submitted_assignment_ids]
+
+        invoice = await db.invoices.find_one({"student_id": student["_id"]})
+        if not invoice:
+            total_registered_credits = 0
+            for enrollment in enrollments:
+                cls = class_by_id.get(enrollment["class_id"])
+                course = course_by_id.get(cls.get("course_id")) if cls else None
+                if course:
+                    total_registered_credits += int(course.get("credits", 0))
+            balance = float(total_registered_credits) * 500.0
+        else:
+            balance = max(0.0, float(invoice.get("total_amount", 0)) - float(invoice.get("paid_amount", 0)))
+
+        unread_notifications = await db.notifications.count_documents({"user_id": student["_id"], "read": False})
+
+        upcoming_deadline = None
+        if pending_assignments:
+            nearest = pending_assignments[0]
+            cls = class_by_id.get(nearest.get("class_id"))
+            course = course_by_id.get(cls.get("course_id")) if cls else None
+            upcoming_deadline = {
+                "title": nearest.get("title"),
+                "description": nearest.get("description"),
+                "deadline": nearest.get("deadline"),
+                "course_code": course.get("code") if course else None,
+                "course_title": course.get("title") if course else None,
+            }
 
         return {
             "gpa": gpa,

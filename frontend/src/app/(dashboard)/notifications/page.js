@@ -8,6 +8,7 @@ import usePaginatedData from '@/hooks/usePaginatedData';
 import PaginationControls from '@/components/ui/PaginationControls';
 
 import styles from '@/styles/modules/notifications.module.css';
+import { useNotifications } from '@/components/providers/NotificationProvider';
 
 function normalizeNotification(raw) {
   if (!raw) return null;
@@ -22,6 +23,7 @@ function normalizeNotification(raw) {
 }
 
 export default function NotificationsPage() {
+  const { markRead: globalMarkRead, markAllRead: globalMarkAllRead } = useNotifications();
   const [markingAll, setMarkingAll] = useState(false);
   const {
     data: notifications,

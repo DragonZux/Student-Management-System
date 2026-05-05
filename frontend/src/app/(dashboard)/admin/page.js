@@ -69,12 +69,22 @@ export default function AdminDashboard() {
       initial="hidden"
       animate="visible"
     >
+      {/* Decorative Background */}
+      <div className={styles.bgDecor}>
+        <div className={`${styles.blob} ${styles.blob1}`} />
+        <div className={`${styles.blob} ${styles.blob2}`} />
+      </div>
+      <div className={styles.mesh} />
+
       {/* Hero */}
       <motion.section className={styles.hero} variants={itemVariants}>
         <div className={styles.heroContent}>
           <div className="badge badge-primary bg-white/20 text-white border-white/30 px-5 py-2 mb-4">Hệ thống đang trực tuyến</div>
           <motion.h1 initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }}>Chào buổi sáng, Quản trị viên</motion.h1>
-          <motion.p initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3 }}>Hệ thống SMS Việt hoạt động ổn định. Bạn có <strong>{stats?.unread_notifications || 0}</strong> thông báo và <strong>{stats?.pending_withdrawals || 0}</strong> yêu cầu chờ xử lý.</motion.p>
+          <motion.p initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
+            Hệ thống SMS Việt hoạt động ổn định. 
+            Bạn có <strong>{loading ? '...' : (stats?.unread_notifications || 0)}</strong> thông báo và <strong>{loading ? '...' : (stats?.pending_withdrawals || 0)}</strong> yêu cầu chờ xử lý.
+          </motion.p>
 
           <div className={styles.heroActions}>
             <Link href="/admin/audit" prefetch={false} className={`${styles.heroAction} ${styles.heroActionPrimary}`} style={{ textDecoration: 'none' }}>
@@ -89,17 +99,17 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="hidden xl:block" aria-hidden>
+        <div className={`hidden xl:block ${styles.heroIconFloating}`} aria-hidden>
           <GraduationCap size={220} strokeWidth={0.6} style={{ opacity: 0.18 }} />
         </div>
       </motion.section>
 
-      <AdminStatsPanel />
+      <AdminStatsPanel initialStats={stats} initialLoading={loading} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-10">
         <motion.div className="lg:col-span-8 space-y-8" variants={itemVariants}>
           <Card title={<div className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-xl text-primary"><LayoutGrid size={20} /></div><span className="text-xl font-black">Phím tắt</span></div>}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className={styles.shortcutsGrid}>
               {[
                 { href: '/admin/students', icon: UserPlus, label: 'Ghi danh', sub: 'Sinh viên mới' },
                 { href: '/admin/teachers', icon: Users, label: 'Giảng viên', sub: 'Hồ sơ' },

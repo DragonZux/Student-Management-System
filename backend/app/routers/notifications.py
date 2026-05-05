@@ -58,6 +58,12 @@ async def _broadcast_to_user(user_id: str, payload: dict):
     if stale:
         active_connections[user_id] = [ws for ws in active_connections[user_id] if ws not in stale]
 
+@router.get("/unread-count")
+async def get_unread_count(user: dict = Depends(get_current_user)):
+    db = get_database()
+    count = await db.notifications.count_documents({"user_id": user["_id"], "read": False})
+    return {"count": count}
+
 @router.get("")
 @router.get("/")
 async def get_my_notifications(

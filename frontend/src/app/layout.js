@@ -2,10 +2,10 @@ import '../styles/globals.css';
 import { Be_Vietnam_Pro } from 'next/font/google';
 
 export const metadata = {
-  title: 'Hệ thống Quản lý Sinh viên',
-  description: 'Quản lý học tập, điểm số và tài chính theo cách rõ ràng, gọn gàng.',
+  title: 'SMS Việt | Hệ thống Quản lý Đào tạo Thông minh',
+  description: 'Nền tảng quản lý học tập, điểm số và tài chính sinh viên chuyên nghiệp, hiện đại.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/favicon.svg',
   },
 }
 
