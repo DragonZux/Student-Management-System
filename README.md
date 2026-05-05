@@ -1,346 +1,115 @@
-# Student Management System
+# 🎓 Smart Student Management System (SMS Việt)
 
-Hệ thống quản lý sinh viên full-stack dùng cho môi trường đào tạo, gồm backend FastAPI, frontend Next.js và MongoDB. Dự án hỗ trợ 3 vai trò chính: `admin`, `teacher`, `student`.
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2015-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB-47A248?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
+[![Docker](https://img.shields.io/badge/Infrastructure-Docker-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
 
-## Tính Năng Chính
+Hệ thống quản lý sinh viên hiện đại, tích hợp công nghệ **FastAPI**, **Next.js** và **MongoDB**. Được thiết kế với giao diện **Glassmorphism** cao cấp, mang lại trải nghiệm người dùng mượt mà và chuyên nghiệp cho môi trường giáo dục.
 
-- Đăng nhập bằng JWT, refresh token, kiểm soát phiên đăng nhập theo `jti`.
-- Phân quyền theo vai trò: admin, giảng viên, sinh viên.
-- Quản lý người dùng, khoa/bộ môn, phòng học, môn học, lớp học phần.
-- Sinh viên đăng ký học phần, xem lịch học, xem điểm, bảng điểm, học phí, gửi yêu cầu rút học phần.
-- Giảng viên quản lý lớp phụ trách, điểm danh, bài tập, chấm điểm, phản hồi lớp học.
-- Admin xử lý tài chính, hóa đơn, thanh toán, duyệt rút học phần, xem audit log.
-- Quản lý kỳ thi, nộp bài thi, ghi điểm thi.
-- Trung tâm thông báo và WebSocket notification realtime.
-- Báo cáo thống kê và xuất một số dữ liệu phục vụ vận hành.
+---
 
-## Công Nghệ
+## ✨ Tính Năng Nổi Bật
 
-### Backend
+### 🛡️ Hệ Thống & Bảo Mật
+- **Xác thực JWT:** Bảo mật đa lớp với Access & Refresh Token, kiểm soát phiên đăng nhập Real-time.
+- **Phân quyền Role-based (RBAC):** 3 vai trò chuyên biệt: `Admin`, `Teacher`, `Student`.
+- **Audit Logging:** Theo dõi mọi hoạt động hệ thống quan trọng để đảm bảo tính minh bạch.
+- **Real-time Notifications:** Thông báo tức thời qua WebSocket.
 
-- Python 3.11
-- FastAPI
-- MongoDB
-- Motor / PyMongo
-- Pydantic v2
-- JWT qua `python-jose` / `PyJWT`
-- bcrypt cho hash mật khẩu
-- WebSocket cho thông báo realtime
+### 👨‍🎓 Cổng Sinh Viên
+- **Đăng ký học phần:** Giao diện trực quan, kiểm tra trùng lịch thông minh.
+- **Theo dõi học tập:** Xem bảng điểm, lịch học và tiến độ bài tập Dashboard.
+- **Tài chính:** Quản lý học phí, hóa đơn và lịch sử thanh toán.
+- **Kỳ thi:** Làm bài thi trực tuyến và xem kết quả tức thì.
 
-### Frontend
+### 👨‍🏫 Cổng Giảng Viên
+- **Quản lý lớp học:** Điểm danh, giao bài tập và phản hồi trực tiếp cho sinh viên.
+- **Chấm điểm:** Hệ thống chấm điểm linh hoạt, tự động cập nhật bảng điểm.
+- **Báo cáo:** Thống kê kết quả học tập của các lớp phụ trách.
 
-- Next.js 16 App Router
-- React 18
-- Axios
-- Lucide React
-- Framer Motion
-- CSS Modules
+### 🏗️ Quản Trị Viên
+- **Vận hành hệ thống:** Quản lý User, Khoa, Phòng học, Môn học và Lớp học.
+- **Duyệt yêu cầu:** Xử lý các yêu cầu rút học phần và hỗ trợ sinh viên.
+- **Quản lý tài chính:** Thiết lập chính sách học phí và duyệt thanh toán.
 
-### Hạ Tầng Local
+---
 
-- Docker / Docker Compose
-- MongoDB container
+## 🛠️ Công Nghệ Sử Dụng
 
-## Kiến Trúc Tổng Quan
+| Thành phần | Công nghệ |
+| :--- | :--- |
+| **Backend** | Python 3.11, FastAPI, Pydantic v2, Motor (Async MongoDB) |
+| **Frontend** | Next.js 15 (App Router), React 18, Framer Motion, CSS Modules |
+| **Cơ sở dữ liệu** | MongoDB (NoSQL) |
+| **Giao diện** | Vanilla CSS (Premium Glassmorphism), Lucide Icons |
+| **Hạ tầng** | Docker, Docker Compose, Nginx (optional) |
 
-```text
-Browser
-  |
-  | http://localhost:3000
-  v
-Frontend - Next.js
-  |
-  | /api/* rewrite hoặc NEXT_PUBLIC_API_BASE_URL
-  v
-Backend - FastAPI
-  |
-  v
-MongoDB
+---
+
+## 🚀 Khởi Chạy Nhanh (Docker)
+
+Cách nhanh nhất để chạy toàn bộ hệ thống là sử dụng **Docker Compose**:
+
+```bash
+# 1. Clone dự án
+git clone https://github.com/DragonZux/Student-Management-System.git
+cd Student-Management-System
+
+# 2. Tạo file môi trường
+cp .env.example .env
+
+# 3. Khởi chạy Docker
+docker-compose up -d --build
 ```
 
-Port mặc định:
+- **Frontend:** [http://localhost:3000](http://localhost:3000)
+- **Backend API:** [http://localhost:8000](http://localhost:8000)
+- **API Documentation:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-- Frontend: `3000`
-- Backend: `8000`
-- MongoDB: `27017`
+---
 
-## Cấu Trúc Thư Mục
+## 📝 Tài Khoản Demo
+
+| Vai trò | Email | Mật khẩu |
+| :--- | :--- | :--- |
+| **Quản trị viên** | `admin@sms.com` | `admin123` |
+| **Giảng viên** | `teacher@sms.com` | `teacher123` |
+| **Sinh viên** | `student@sms.com` | `student123` |
+
+---
+
+## 📂 Cấu Trúc Thư Mục
 
 ```text
 .
-├── backend/
-│   ├── app/
-│   │   ├── core/          # config, security, audit, schedule helpers
-│   │   ├── db/            # MongoDB connection
-│   │   ├── internal/      # admin router
-│   │   ├── routers/       # auth, student, teacher, finance, exams, reports, notifications
-│   │   └── schemas/       # Pydantic schemas
-│   ├── tests/             # backend unit tests
-│   ├── seed_full_system.py
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── app/           # routes: login, admin, teacher, student, notifications, exams
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   └── styles/
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── next.config.js
-│   └── Dockerfile
-├── docker-compose.yml
-├── docker-compose.prod.yml
-├── pyproject.toml
-├── .env.example
-└── README.md
+├── backend/            # FastAPI Source Code
+│   ├── app/            # Logic chính (Routers, Schemas, Models)
+│   ├── tests/          # Unit tests backend
+│   └── Dockerfile      # Backend environment
+├── frontend/           # Next.js Source Code
+│   ├── src/app/        # App Router & Pages
+│   ├── components/     # UI Components
+│   └── Dockerfile      # Frontend environment
+└── docker-compose.yml  # Orchestration
 ```
 
-## API Chính
+---
 
-Backend mount toàn bộ API tại prefix `/api`.
+## 💎 Thiết Kế Đặc Trưng
 
-- `/api/auth`: đăng ký, đăng nhập, refresh token, profile, đổi mật khẩu.
-- `/api/admin`: quản trị user, khoa, phòng học, môn học, lớp học, audit, rút học phần.
-- `/api/student`: đăng ký học phần, lịch học, bài tập, điểm, bảng điểm, phản hồi, rút học phần.
-- `/api/teacher`: lớp phụ trách, sinh viên trong lớp, điểm danh, bài tập, chấm điểm, phản hồi.
-- `/api/finance`: học phí, hóa đơn, thanh toán, chính sách học phí.
-- `/api/exams`: kỳ thi, nộp bài, ghi điểm thi.
-- `/api/reports`: thống kê, bảng điểm, export.
-- `/api/notifications`: danh sách thông báo, đánh dấu đã đọc, WebSocket.
+Hệ thống sử dụng ngôn ngữ thiết kế **Glassmorphism** với:
+- **Hiệu ứng Blur & Transparency:** Tạo chiều sâu và sự hiện đại.
+- **Animation mượt mà:** Sử dụng Framer Motion cho các chuyển động UI.
+- **Phông chữ Be Vietnam Pro:** Tối ưu hóa cho hiển thị tiếng Việt chuyên nghiệp.
+- **Dark/Light Mode:** Hỗ trợ linh hoạt theo sở thích người dùng.
 
-Swagger UI khi backend chạy:
+---
 
-```text
-http://localhost:8000/docs
-```
+## 📞 Liên Hệ
 
-## Biến Môi Trường
+Dự án được phát triển bởi **DragonZux**. Mọi đóng góp hoặc báo lỗi xin vui lòng tạo Issue trên Github.
 
-Tạo file `.env` ở thư mục gốc từ `.env.example`.
+---
 
-```env
-SECRET_KEY=change-me-super-secret-at-least-32-characters
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-DEBUG=false
-LOG_LEVEL=INFO
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-
-MONGO_URI=mongodb://localhost:27017
-DATABASE_NAME=sms_db
-
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
-NEXT_PUBLIC_WS_BASE_URL=ws://localhost:8000/api
-```
-
-Lưu ý:
-
-- Đổi `SECRET_KEY` trước khi dùng ngoài local.
-- `CORS_ORIGINS` là danh sách origin cách nhau bằng dấu phẩy.
-- Khi chạy Docker Compose, backend dùng `mongodb://mongodb:27017/sms_db`.
-- Frontend trong Docker dùng `INTERNAL_API_BASE_URL=http://backend:8000/api`.
-
-## Chạy Bằng Docker
-
-Yêu cầu:
-
-- Docker Desktop
-- Docker Compose
-
-Chạy toàn bộ hệ thống:
-
-```bash
-docker compose up --build
-```
-
-Truy cập:
-
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:8000`
-- Swagger: `http://localhost:8000/docs`
-
-Dừng hệ thống:
-
-```bash
-docker compose down
-```
-
-Xóa cả volume MongoDB local:
-
-```bash
-docker compose down -v
-```
-
-Chạy cấu hình production local:
-
-```bash
-docker compose -f docker-compose.prod.yml up --build
-```
-
-File production không mount source code vào container, tắt `DEBUG`, dùng healthcheck và yêu cầu các biến môi trường quan trọng phải tồn tại.
-
-## Chạy Thủ Công
-
-Yêu cầu:
-
-- Python 3.11+
-- Node.js 20+
-- MongoDB đang chạy local tại `mongodb://localhost:27017`
-
-### Backend
-
-```bash
-cd backend
-python -m venv .venv
-```
-
-Windows PowerShell:
-
-```powershell
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend chạy tại:
-
-```text
-http://localhost:3000
-```
-
-## Seed Dữ Liệu Demo
-
-Sau khi MongoDB và backend dependencies sẵn sàng:
-
-```bash
-cd backend
-python seed_full_system.py
-```
-
-Script seed tạo dữ liệu mẫu:
-
-- Khoa/bộ môn
-- Phòng học
-- Môn học
-- Lớp học phần
-- Admin, teacher, student
-- Enrollment
-- Attendance
-- Assignment/submission
-- Finance: invoice, payment, fee policy
-- Audit logs
-
-Tài khoản demo:
-
-| Vai trò | Email | Mật khẩu |
-| --- | --- | --- |
-| Admin | `admin@sms.com` | `admin123` |
-| Teacher | `teacher@sms.com` | `teacher123` |
-| Student | `student@sms.com` | `student123` |
-
-## Kiểm Tra Dự Án
-
-### Backend Tests
-
-```bash
-python -m unittest discover -s backend\tests
-```
-
-Các test hiện có kiểm tra:
-
-- Hash và verify mật khẩu.
-- JWT chứa `sub`, `jti`, `exp`.
-- Logic phát hiện trùng lịch học.
-- Login thành công/thất bại.
-- Role guard.
-- Đăng ký học phần.
-- Gửi yêu cầu rút học phần.
-- Ghi nhận thanh toán.
-- Đánh dấu thông báo đã đọc.
-
-### Frontend Lint Và Build
-
-```bash
-cd frontend
-npm install
-npm run check
-```
-
-`npm run check` chạy:
-
-```bash
-next lint && next build
-```
-
-## Quy Trình Sử Dụng Cơ Bản
-
-1. Chạy MongoDB, backend, frontend.
-2. Seed dữ liệu demo.
-3. Đăng nhập admin để kiểm tra dữ liệu hệ thống.
-4. Tạo hoặc chỉnh khoa, phòng học, môn học, lớp học.
-5. Đăng nhập student để đăng ký học phần.
-6. Đăng nhập teacher để điểm danh, giao bài, chấm điểm.
-7. Kiểm tra finance, notifications, reports.
-
-## Phân Quyền
-
-- `admin`: quản trị dữ liệu hệ thống, user, học vụ, tài chính, audit, rút học phần.
-- `teacher`: quản lý lớp phụ trách, điểm danh, bài tập, chấm điểm, phản hồi.
-- `student`: đăng ký học phần, xem lịch, nộp bài, xem điểm, học phí, phản hồi, yêu cầu rút học phần.
-
-Middleware frontend kiểm tra cookie `sms_token` và `sms_role` để điều hướng theo vai trò. Backend vẫn là nơi quyết định quyền truy cập thật bằng JWT và dependency role check.
-
-## Ghi Chú Bảo Mật
-
-- Không commit file `.env`.
-- Không dùng `SECRET_KEY` mặc định ở môi trường thật.
-- Tắt `DEBUG` khi deploy.
-- Cấu hình `CORS_ORIGINS` đúng domain frontend.
-- Nên dùng HTTPS và reverse proxy khi triển khai production.
-- Nên cấu hình backup định kỳ cho MongoDB.
-
-## Ghi Chú Vận Hành
-
-- `node_modules`, `.next`, `.venv`, `__pycache__`, `.idea`, `.agent` là file/thư mục local hoặc cache, không cần đưa vào source bàn giao.
-- Nếu đã dọn `frontend/node_modules`, chạy lại `npm install` trước khi dev/build.
-- Nếu đã dọn virtualenv backend, tạo lại `.venv` và chạy `pip install -r backend/requirements.txt`.
-- Docker Compose tự build dependency trong container, không phụ thuộc `node_modules` local.
-- Healthcheck có tại `/health` và `/api/health`.
-- Kiểm tra production dependencies frontend bằng `npm audit --omit=dev`.
-
-## Lệnh Hữu Ích
-
-```bash
-# Chạy Docker
-docker compose up --build
-
-# Chạy backend dev
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Chạy frontend dev
-cd frontend
-npm run dev
-
-# Build frontend
-cd frontend
-npm run build
-
-# Kiểm tra frontend
-cd frontend
-npm run check
-
-# Test backend
-python -m unittest discover -s backend\tests
-```
+<p align="center">Made with ❤️ for Modern Education</p>
