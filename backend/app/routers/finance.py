@@ -139,7 +139,12 @@ async def update_payment(student_id: str, amount: float):
             msg = f"Học phí của bạn đã được cập nhật. Đã thanh toán: {paid}/{total}."
         else:
             msg = f"Học phí của bạn đã được cập nhật. Số tiền đã ghi nhận: {paid}/{total}."
-        await create_notification(user_id=student_id, title="Cập nhật học phí", message=msg)
+        await create_notification(
+            user_id=student_id, 
+            title="CẬP NHẬT HỌC PHÍ", 
+            message=msg,
+            link="/student/finance"
+        )
          
     return {"message": "Payment recorded successfully"}
 
@@ -235,15 +240,21 @@ async def pay_my_tuition(payload: dict, student: dict = Depends(get_current_user
             msg = f"Bạn đã thanh toán đủ học phí ({paid}/{total})."
         else:
             msg = f"Bạn đã thanh toán thành công. Đã thanh toán: {paid}/{total}."
-        await create_notification(user_id=student["_id"], title=title_text, message=msg)
+        await create_notification(
+            user_id=student["_id"], 
+            title=title_text, 
+            message=msg,
+            link="/student/finance"
+        )
 
         # Notify all admins about the payment
         admin_users = await db.users.find({"role": UserRole.ADMIN}).to_list(100)
         for admin in admin_users:
             await create_notification(
                 user_id=admin["_id"],
-                title="Thông báo thanh toán học phí",
-                message=f"Sinh viên {student.get('full_name', student['_id'])} đã thanh toán {float(amount):,.0f} VNĐ học phí."
+                title="THÔNG BÁO THANH TOÁN HỌC PHÍ",
+                message=f"Sinh viên {student.get('full_name', student['_id'])} đã thanh toán {float(amount):,.0f} VNĐ học phí.",
+                link="/admin/finance"
             )
     if updated and "_id" in updated:
         updated["_id"] = str(updated["_id"])

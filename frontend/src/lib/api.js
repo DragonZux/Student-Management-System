@@ -36,7 +36,7 @@ function showErrorPopup(message) {
 const apiBaseUrl = normalizeBaseUrl(
   (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL)
     ? process.env.NEXT_PUBLIC_API_BASE_URL
-    : (typeof window !== 'undefined' ? 'http://127.0.0.1:8000/api' : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api'))
+    : (typeof window !== 'undefined' ? 'http://localhost:8000/api' : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'))
 );
 
 const api = axios.create({
@@ -91,7 +91,7 @@ api.interceptors.request.use(
     // Dynamic Base URL Resolution to bypass HMR caching issues
     const currentBase = (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL)
       ? process.env.NEXT_PUBLIC_API_BASE_URL
-      : (typeof window !== 'undefined' ? 'http://127.0.0.1:8000/api' : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api'));
+      : (typeof window !== 'undefined' ? 'http://localhost:8000/api' : (process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'));
 
     const normalizedBase = currentBase.replace(/\/$/, '');
 

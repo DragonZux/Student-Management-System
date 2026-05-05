@@ -41,6 +41,7 @@ export default function ExamsPage() {
   const [gradeExam, setGradeExam] = useState(null);
   const [gradeForm, setGradeForm] = useState({ student_id: "", score: "", comments: "" });
   const [takeExam, setTakeExam] = useState(null);
+  const [viewSubmission, setViewSubmission] = useState(null);
   const [takeForm, setTakeForm] = useState({ content: "" });
   const [takeError, setTakeError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, exam: null });
@@ -432,6 +433,28 @@ export default function ExamsPage() {
           </div>
         </div>
       </Modal>
+
+      <Modal
+        isOpen={!!viewSubmission}
+        onClose={() => setViewSubmission(null)}
+        title={`Bài làm của bạn: ${viewSubmission?.exam_title}`}
+        maxWidth="800px"
+      >
+        <div style={{ padding: '1rem' }}>
+          <div style={{ padding: '1.5rem', background: 'var(--surface-1)', borderRadius: '1rem', border: '1px solid var(--border)', marginBottom: '2rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '1rem' }}>Nội dung bài làm</label>
+            <div style={{ fontSize: '1.1rem', lineHeight: '1.8', whiteSpace: 'pre-wrap', color: 'var(--foreground)' }}>
+              {viewSubmission?.content}
+            </div>
+          </div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+            <Clock size={16} /> Nộp lúc: {viewSubmission?.submitted_at ? new Date(viewSubmission.submitted_at).toLocaleString('vi-VN') : '—'}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
+            <button className="btn-secondary" onClick={() => setViewSubmission(null)} style={{ padding: '0.75rem 2rem', borderRadius: '1rem', fontWeight: 700 }}>Đóng</button>
+          </div>
+        </div>
+      </Modal>
       <ConfirmModal
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false, exam: null })}
@@ -453,9 +476,9 @@ export default function ExamsPage() {
         ) : (
           <>
             {sorted.map((e, idx) => {
-              const isGraded = e.grades?.some(g => g.student_id === user?.id);
-              const isSubmitted = e.submissions?.some(s => s.student_id === user?.id);
-              const studentGrade = e.grades?.find(g => g.student_id === user?.id);
+              const isGraded = e.grades?.some(g => g.student_id === user?._id);
+              const isSubmitted = e.submissions?.some(s => s.student_id === user?._id);
+              const studentGrade = e.grades?.find(g => g.student_id === user?._id);
               
               return (
                 <div key={e._id || e.id} className={`${styles.examCard} slide-right`} style={{ animationDelay: `${idx * 0.1 + 0.3}s` }}>
@@ -475,7 +498,7 @@ export default function ExamsPage() {
                         <div className={styles.gradeBox}>
                           <div className={styles.gradeTitle}>
                             <Award size={20} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
-                            Kết quả: {studentGrade.score} / {e.max_score}
+                            Kết quả: {studentGrade.score} / 10
                           </div>
                           {studentGrade.comments && (
                             <div className={styles.gradeComments}>
@@ -529,6 +552,22 @@ export default function ExamsPage() {
                       <div style={{ width: '100%', padding: '0.75rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
                         Chế độ xem (Dành cho Sinh viên)
                       </div>
+                    )}
+                    {user?.role === "student" && isSubmitted && !isGraded && (
+                      <button 
+                        onClick={() => {
+                          const sub = e.submissions.find(s => s.student_id === user?._id);
+                          setViewSubmission({
+                            exam_title: e.title,
+                            content: sub.content,
+                            submitted_at: sub.submitted_at
+                          });
+                        }}
+                        className="text-btn"
+                        style={{ marginTop: '1rem', width: '100%', textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', border: 'none', background: 'none', cursor: 'pointer' }}
+                      >
+                        Xem lại bài đã nộp →
+                      </button>
                     )}
                   </div>
                 </div>

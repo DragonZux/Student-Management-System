@@ -2,6 +2,7 @@
 import Card from '@/components/ui/Card';
 import { Bell, Clock, Info, CheckCircle, Trash2, CheckCheck, Loader2, BookOpen, CreditCard, ShieldCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import usePaginatedData from '@/hooks/usePaginatedData';
@@ -25,6 +26,7 @@ function normalizeNotification(raw) {
 export default function NotificationsPage() {
   const { markRead: globalMarkRead, markAllRead: globalMarkAllRead } = useNotifications();
   const [markingAll, setMarkingAll] = useState(false);
+  const router = useRouter();
   const {
     data: notifications,
     loading,
@@ -164,8 +166,12 @@ export default function NotificationsPage() {
                   layout
                 >
                   <div 
-                    onClick={() => !n.read && markRead(n.id)}
-                    className={`${styles.card} ${!n.read ? styles.unread : styles.read}`}
+                    onClick={async () => {
+                      if (!n.read) await markRead(n.id);
+                      if (n.link) router.push(n.link);
+                    }}
+                    className={`${styles.card} ${!n.read ? styles.unread : styles.read} ${n.link ? styles.clickable : ''}`}
+                    style={{ cursor: n.link ? 'pointer' : 'default' }}
                   >
                     {!n.read && <div className={styles.unreadDot} />}
 

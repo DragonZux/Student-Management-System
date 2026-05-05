@@ -195,7 +195,7 @@ class ExamBase(BaseModel):
     description: Optional[str] = None
     scheduled_at: datetime
     duration_minutes: int
-    max_score: float = 100.0
+    max_score: float = 10.0
     grades: List[ExamGrade] = Field(default_factory=list)
     submissions: List[ExamSubmission] = Field(default_factory=list)
 

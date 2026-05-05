@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { BookOpen, ClipboardList, MessageSquare, Clock, Calendar, Zap, FileText } from 'lucide-react';
@@ -10,6 +11,7 @@ export default function TeacherDashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -88,22 +90,38 @@ export default function TeacherDashboard() {
                 <span className={styles.statLabel}>Bài tập</span>
                 <span className={styles.statValue}>{summary?.total_assignments ?? 0}</span>
               </div>
-              <div className={styles.statItem} style={{ background: 'rgba(244, 63, 94, 0.04)', borderColor: 'rgba(244, 63, 94, 0.1)' }}>
+              <div 
+                className={styles.statItem} 
+                style={{ background: 'rgba(244, 63, 94, 0.04)', borderColor: 'rgba(244, 63, 94, 0.1)', cursor: 'pointer' }}
+                onClick={() => router.push('/teacher/assignments')}
+              >
                 <span className={styles.statLabel} style={{ color: '#f43f5e' }}>Chờ chấm điểm</span>
                 <span className={styles.statValue} style={{ color: '#f43f5e' }}>{summary?.pending_grading ?? 0}</span>
               </div>
-              <div className={styles.statItem} style={{ background: 'rgba(34, 197, 94, 0.04)', borderColor: 'rgba(34, 197, 94, 0.1)' }}>
+              <div 
+                className={styles.statItem} 
+                style={{ background: 'rgba(34, 197, 94, 0.04)', borderColor: 'rgba(34, 197, 94, 0.1)', cursor: 'pointer' }}
+                onClick={() => router.push('/teacher/feedback')}
+              >
                 <span className={styles.statLabel} style={{ color: '#166534' }}>Phản hồi mới</span>
                 <span className={styles.statValue} style={{ color: '#166534' }}>{summary?.feedback_count ?? 0}</span>
               </div>
             </div>
             
             <div className={styles.actionArea}>
-              <button className="btn-primary" style={{ flex: 1, padding: '1.25rem', borderRadius: '1.25rem' }}>
+              <button 
+                className="btn-primary" 
+                style={{ flex: 1, padding: '1.25rem', borderRadius: '1.25rem' }}
+                onClick={() => router.push('/teacher/grading')}
+              >
                 <Zap size={18} /> Ghi điểm nhanh
               </button>
-              <button className="btn-primary" style={{ flex: 1, background: 'var(--foreground)', padding: '1.25rem', borderRadius: '1.25rem' }}>
-                <FileText size={18} /> Tạo bài tập
+              <button 
+                className="btn-primary" 
+                style={{ flex: 1, background: 'var(--foreground)', padding: '1.25rem', borderRadius: '1.25rem' }}
+                onClick={() => router.push('/teacher/assignments')}
+              >
+                <FileText size={18} /> Tạo kỳ thi
               </button>
             </div>
           </div>
@@ -121,7 +139,11 @@ export default function TeacherDashboard() {
           </div>
         </div>
         
-        <div className={`${styles.quickStatCard} slide-right stagger-3`}>
+        <div 
+          className={`${styles.quickStatCard} slide-right stagger-3`}
+          style={{ cursor: 'pointer' }}
+          onClick={() => router.push('/teacher/grading')}
+        >
           <div className={styles.quickIconBox} style={{ background: 'rgba(var(--secondary-rgb), 0.1)', color: 'var(--secondary)' }}>
             <BookOpen size={32} />
           </div>

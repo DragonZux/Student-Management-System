@@ -18,12 +18,13 @@ logger = logging.getLogger(__name__)
 
 active_connections: Dict[str, List[WebSocket]] = defaultdict(list)
 
-async def create_notification(user_id: str, title: str, message: str) -> dict:
+async def create_notification(user_id: str, title: str, message: str, link: str = None) -> dict:
     db = get_database()
     notification = NotificationCreate(
         user_id=user_id,
         title=title,
         message=message,
+        link=link,
     ).model_dump()
     notification.update({
         "_id": str(uuid.uuid4()),
@@ -38,6 +39,7 @@ async def create_notification(user_id: str, title: str, message: str) -> dict:
             "id": notification["_id"],
             "title": title,
             "message": message,
+            "link": link,
             "created_at": notification["created_at"].isoformat(),
         },
     })
@@ -91,6 +93,7 @@ async def get_my_notifications(
                 "user_id": str(item.get("user_id", user["_id"])),
                 "title": item.get("title") or "Thông báo hệ thống",
                 "message": item.get("message") or "",
+                "link": item.get("link"),
                 "read": bool(item.get("read", False)),
                 "created_at": created_at,
             }
@@ -139,7 +142,12 @@ async def mark_all_as_read(user: dict = Depends(get_current_user)):
 
 @router.post("/send", dependencies=[Depends(check_admin_role)])
 async def send_notification(payload: NotificationCreate):
-    notification = await create_notification(user_id=payload.user_id, title=payload.title, message=payload.message)
+    notification = await create_notification(
+        user_id=payload.user_id, 
+        title=payload.title, 
+        message=payload.message,
+        link=payload.link
+    )
     await log_audit_event(
         action="admin.send_notification",
         actor_role="admin",

@@ -58,6 +58,7 @@ class NotificationBase(BaseModel):
     user_id: str
     title: str
     message: str
+    link: Optional[str] = None
     read: bool = False
 
 
