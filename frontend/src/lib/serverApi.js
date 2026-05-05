@@ -8,29 +8,44 @@ export async function serverApiFetch(path, options = {}) {
   const baseUrl = normalizeBaseUrl(
     process.env.INTERNAL_API_BASE_URL ||
       process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'http://backend:8000/api'
+      'http://localhost:8000/api'
   );
   const normalizedPath = String(path || '').replace(/^\/+/, '');
-  const token = cookies().get('sms_token')?.value;
+  
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sms_token')?.value;
 
-  const response = await fetch(`${baseUrl}/${normalizedPath}`, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
+    const fetchUrl = `${baseUrl}/${normalizedPath}`;
+    console.log(`[SERVER API] Fetching: ${fetchUrl}`);
+    
+    const response = await fetch(fetchUrl, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
 
-  if (!response.ok) {
-    let message = `API request failed with status ${response.status}`;
-    try {
-      const data = await response.json();
-      message = data?.detail || data?.message || message;
-    } catch {
-      // Keep the status-based message.
+    if (!response.ok) {
+      let message = `API request failed with status ${response.status}`;
+      try {
+        const data = await response.json();
+        message = data?.detail || data?.message || message;
+      } catch (e) {
+        const text = await response.text();
+        if (text) message = text;
+      }
+      console.error(`[SERVER API] Error: ${message}`);
+      throw new Error(message);
     }
-    throw new Error(message);
-  }
 
-  return response.json();
+    const data = await response.json();
+    console.log(`[SERVER API] Success:`, data);
+    return data;
+  } catch (error) {
+    console.error(`[SERVER API] Exception:`, error);
+    throw error;
+  }
 }

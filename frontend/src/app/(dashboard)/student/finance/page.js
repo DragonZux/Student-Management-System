@@ -1,13 +1,14 @@
 "use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
-import { CreditCard, History, AlertCircle } from 'lucide-react';
+import { CreditCard, History, AlertCircle, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 
 import usePaginatedData from '@/hooks/usePaginatedData';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import PaginationControls from '@/components/ui/PaginationControls';
+import styles from '@/styles/modules/student/finance.module.css';
 
 export default function StudentFinancePage() {
   const [invoice, setInvoice] = useState(null);
@@ -70,131 +71,154 @@ export default function StudentFinancePage() {
       await api.post('/finance/pay-my-tuition', { amount: balance, method: 'online' });
       await refreshAll();
     } catch (e) {
-      setPayError(e.response?.data?.detail || 'Thanh toán thất bại');
+      setPayError(e.response?.data?.detail || 'Thanh toán thất bại. Vui lòng thử lại sau.');
     } finally {
       setPaying(false);
     }
   };
 
   return (
-    <div className="animate-in">
-      <div style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ marginBottom: '0.5rem' }}>Học phí & Tài chính</h1>
-        <p style={{ fontSize: '1.1rem' }}>Quản lý các khoản phí, thanh toán trực tuyến và xem lịch sử giao dịch.</p>
-      </div>
+    <div className={`${styles.container} animate-in`}>
+      <header className={`${styles.header} slide-right stagger-1`}>
+        <h1>Học phí & Tài chính</h1>
+        <p>Quản lý các khoản phí, thanh toán trực tuyến và theo dõi lịch sử giao dịch minh bạch.</p>
+      </header>
 
-      <div className="grid grid-cols-3" style={{ gap: '2.5rem' }}>
-        <div style={{ gridColumn: 'span 2' }}>
+      <div className={styles.mainGrid}>
+        <div className={`${styles.cardSection} slide-right stagger-2`}>
           {invoiceLoading ? (
-            <div style={{ padding: '2rem' }}>
-              <div style={{ height: '300px', background: 'var(--border)', borderRadius: '2rem', animation: 'pulse 2s infinite' }} />
-            </div>
+            <div style={{ height: '360px', background: 'var(--border)', borderRadius: '2.5rem', animation: 'pulse 2s infinite' }} />
           ) : (
-            <Card className="glass" style={{ 
-              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', 
-              color: 'white',
-              padding: '3rem',
-              position: 'relative',
-              overflow: 'hidden',
-              borderRadius: '2rem',
-              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.4)'
-            }}>
-              <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '300px', height: '300px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '50%', filter: 'blur(80px)' }} />
-              <div style={{ position: 'absolute', bottom: '-20%', left: '-5%', width: '250px', height: '250px', background: 'rgba(168, 85, 247, 0.1)', borderRadius: '50%', filter: 'blur(60px)' }} />
+            <div className={styles.premiumCard}>
+              <div className={styles.cardBlob1} />
+              <div className={styles.cardBlob2} />
               
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
+              <div className={styles.cardContent}>
+                <div className={styles.cardTop}>
                   <div>
-                    <p style={{ margin: 0, opacity: 0.6, fontSize: '0.875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Số dư cần thanh toán</p>
-                    <h1 style={{ margin: '0.75rem 0', fontSize: '4.5rem', fontWeight: 900, letterSpacing: '-0.02em' }}>
+                    <p className={styles.balanceLabel}>Số dư cần thanh toán</p>
+                    <h2 className={styles.balanceAmount}>
                       ${balance.toLocaleString()}
-                    </h1>
+                    </h2>
                   </div>
-                  <CreditCard size={64} style={{ opacity: 0.4 }} />
+                  <CreditCard size={48} strokeWidth={1.5} style={{ opacity: 0.3 }} />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <div style={{ fontSize: '0.8125rem', opacity: 0.6, fontWeight: 600, marginBottom: '0.25rem' }}>Trạng thái tài khoản</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: balance > 0 ? '#fbbf24' : '#10b981' }} />
-                      <span style={{ fontWeight: 800, fontSize: '1rem', textTransform: 'capitalize' }}>
-                        {invoice?.status || 'đã hoàn tất'}
+                <div className={styles.cardBottom}>
+                  <div className={styles.statusWrapper}>
+                    <span className={styles.statusLabel}>Trạng thái tài khoản</span>
+                    <div className={styles.statusIndicator}>
+                      <div 
+                        className={styles.statusDot} 
+                        style={{ color: balance > 0 ? '#fbbf24' : '#10b981', backgroundColor: 'currentColor' }} 
+                      />
+                      <span className={styles.statusText}>
+                        {balance > 0 ? 'Chưa hoàn tất' : 'Đã thanh toán đủ'}
                       </span>
                     </div>
                   </div>
 
                   <button 
-                    style={{ 
-                      padding: '1.25rem 2.5rem', borderRadius: '1.25rem', 
-                      background: 'white', color: '#0f172a', border: 'none', fontWeight: 800, cursor: 'pointer',
-                      fontSize: '1.1rem', transition: 'all 0.3s ease',
-                      boxShadow: '0 10px 20px -5px rgba(255,255,255,0.2)'
-                    }}
+                    className={styles.payButton}
                     disabled={paying || balance <= 0}
                     onClick={payNow}
-                    className="input-hover"
                   >
-                    {balance <= 0 ? 'Học phí đã hoàn tất' : paying ? 'Đang xử lý...' : 'Thanh toán ngay'}
+                    {balance <= 0 ? (
+                      <>
+                        <CheckCircle2 size={22} />
+                        <span>Đã hoàn tất</span>
+                      </>
+                    ) : paying ? (
+                      <span>Đang xử lý...</span>
+                    ) : (
+                      <>
+                        <span>Thanh toán ngay</span>
+                        <ArrowUpRight size={22} />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
-            </Card>
+            </div>
           )}
 
-          <InlineMessage variant="error" style={{ marginTop: '2rem' }}>{payError}</InlineMessage>
+          {payError && (
+            <InlineMessage variant="error" style={{ margin: 0 }}>{payError}</InlineMessage>
+          )}
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '1.25rem', marginTop: '2rem', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
-            <AlertCircle color="var(--primary)" size={24} />
-            <p style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 600, color: 'var(--primary)' }}>
-              Lưu ý: Mọi giao dịch thanh toán đều được mã hóa và bảo mật tuyệt đối. 
-              Vui lòng liên hệ phòng tài vụ nếu có thắc mắc về hóa đơn.
+          <div className={styles.noticeBox}>
+            <div className={styles.historyIcon} style={{ background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--primary)' }}>
+              <AlertCircle size={24} />
+            </div>
+            <p className={styles.noticeText}>
+              <b>Lưu ý quan trọng:</b> Mọi giao dịch thanh toán đều được mã hóa và bảo mật theo tiêu chuẩn quốc tế. 
+              Vui lòng giữ lại biên lai điện tử và liên hệ <b>Phòng Kế hoạch Tài chính</b> nếu có bất kỳ sai sót nào.
             </p>
           </div>
         </div>
 
-        <div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem' }}>Lịch sử giao dịch</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className={`${styles.historySection} slide-right stagger-3`}>
+          <h3 className={styles.historyTitle}>
+            <History size={24} color="var(--primary)" />
+            Lịch sử giao dịch
+          </h3>
+          
+          <div className={styles.paymentList}>
             {paymentsLoading ? (
-              <CardSkeleton />
+              <>
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+              </>
             ) : payments.length === 0 ? (
-              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '1.5rem', border: '2px dashed var(--border)' }}>
-                <p style={{ color: 'var(--muted-foreground)', fontWeight: 600 }}>Chưa có giao dịch nào.</p>
+              <div className={styles.emptyState}>
+                <History size={48} style={{ opacity: 0.1, marginBottom: '1.5rem' }} />
+                <p>Chưa có dữ liệu giao dịch nào được ghi nhận.</p>
               </div>
             ) : (
               <>
-                {payments.map((p) => (
-                  <Card key={p._id || p.id} className="glass card-hover" style={{ padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ padding: '0.75rem', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '1rem' }}>
-                          <History size={20} color="#166534" />
+                {payments.map((p, idx) => (
+                  <Card 
+                    key={p._id || p.id} 
+                    className="glass card-hover"
+                    style={{ animationDelay: `${idx * 0.1}s` }}
+                  >
+                    <div className={styles.paymentItem}>
+                      <div className={styles.paymentLeft}>
+                        <div className={styles.historyIcon}>
+                          <ArrowUpRight size={20} />
                         </div>
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{p.method === 'online' ? 'Thanh toán trực tuyến' : 'Nộp tiền mặt'}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
-                            {p.paid_at ? new Date(p.paid_at).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+                        <div className={styles.paymentInfo}>
+                          <div className={styles.paymentMethod}>
+                            {p.method === 'online' ? 'Thanh toán trực tuyến' : 'Nộp tiền mặt'}
+                          </div>
+                          <div className={styles.paymentDate}>
+                            {p.paid_at ? new Date(p.paid_at).toLocaleString('vi-VN', { 
+                              dateStyle: 'medium', 
+                              timeStyle: 'short' 
+                            }) : 'Không rõ thời gian'}
                           </div>
                         </div>
                       </div>
-                      <div style={{ fontWeight: 900, fontSize: '1.1rem', color: '#166534' }}>
+                      <div className={styles.paymentAmount}>
                         +${Number(p.amount).toLocaleString()}
                       </div>
                     </div>
                   </Card>
                 ))}
 
-                <PaginationControls
-                  page={currentPage}
-                  totalPages={totalPages}
-                  total={total}
-                  currentCount={payments.length}
-                  pageSize={pageSize}
-                  onPageChange={setCurrentPage}
-                  onPageSizeChange={setPageSize}
-                  showPageSize
-                />
+                <div style={{ marginTop: '1rem' }}>
+                  <PaginationControls
+                    page={currentPage}
+                    totalPages={totalPages}
+                    total={total}
+                    currentCount={payments.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                    showPageSize
+                  />
+                </div>
               </>
             )}
           </div>
@@ -203,3 +227,4 @@ export default function StudentFinancePage() {
     </div>
   );
 }
+
