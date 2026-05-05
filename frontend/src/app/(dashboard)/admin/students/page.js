@@ -194,7 +194,11 @@ export default function StudentsPage() {
         maxWidth="800px"
       >
         <div className="modal-inner">
-          <InlineMessage variant="error" style={{ marginBottom: '2rem' }}>{formError}</InlineMessage>
+          {formError && (
+            <InlineMessage variant="error" style={{ marginBottom: '1.5rem', borderRadius: '1.125rem' }}>
+              {formError}
+            </InlineMessage>
+          )}
           <div className={styles.formGrid}>
             <div className={styles.formField}>
               <label>Họ và tên</label>
@@ -239,8 +243,7 @@ export default function StudentsPage() {
           <div className={styles.formActions}>
             <button 
               onClick={() => setShowForm(false)} 
-              className="btn-secondary" 
-              style={{ padding: '0.875rem 1.75rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--surface-1)', fontWeight: 700, cursor: 'pointer' }}
+              className="btn-secondary"
             >
               Hủy bỏ
             </button>

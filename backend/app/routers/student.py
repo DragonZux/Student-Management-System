@@ -1,5 +1,5 @@
 from io import BytesIO
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from fastapi.responses import StreamingResponse
 from typing import List
 from app.dependencies import get_current_user, check_student_role
@@ -500,9 +500,11 @@ async def submit_feedback(payload: FeedbackCreate, student: dict = Depends(check
 
 
 @router.get("/dashboard-summary")
-async def get_dashboard_summary(student: dict = Depends(check_student_role)):
-    db = get_database()
-    enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(1000)
+async def get_dashboard_summary(response: Response, student: dict = Depends(check_student_role)):
+    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    try:
+        db = get_database()
+        enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(1000)
     active_enrollments = [e for e in enrollments if e.get("status") == "enrolled"]
     completed_enrollments = [e for e in enrollments if e.get("status") == "completed" and e.get("grade") is not None]
 
@@ -575,16 +577,24 @@ async def get_dashboard_summary(student: dict = Depends(check_student_role)):
             "course_title": course.get("title") if course else None,
         }
 
-    return {
-        "gpa": gpa,
-        "active_courses": len(active_enrollments),
-        "completed_courses": len(completed_enrollments),
-        "pending_assignments": len(pending_assignments),
-        "unread_notifications": unread_notifications,
-        "outstanding_balance": round(balance, 2),
-        "next_class": next_class,
-        "upcoming_deadline": upcoming_deadline,
-    }
+        return {
+            "gpa": gpa,
+            "active_courses": len(active_enrollments),
+            "completed_courses": len(completed_enrollments),
+            "pending_assignments": len(pending_assignments),
+            "unread_notifications": unread_notifications,
+            "outstanding_balance": round(balance, 2),
+            "next_class": next_class,
+            "upcoming_deadline": upcoming_deadline,
+        }
+    except Exception as e:
+        import traceback
+        print(f"Dashboard summary error: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to load dashboard: {str(e)}"
+        )
 
 @router.get("/my-feedback", response_model=List[FeedbackOut])
 async def list_my_feedback(student: dict = Depends(check_student_role)):

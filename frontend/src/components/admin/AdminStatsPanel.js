@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import api from '@/lib/api';
-import { Users, GraduationCap, Building2, Wallet, LogOut, Loader2, TrendingUp, BookOpen } from 'lucide-react';
+import { Users, GraduationCap, Wallet, LogOut, Loader2, TrendingUp, BookOpen } from 'lucide-react';
 import styles from '@/styles/modules/admin/dashboard.module.css';
 
 function StatCard({ label, value, loading, icon: Icon, color, bg, className, isCurrency, delay }) {
@@ -17,20 +17,20 @@ function StatCard({ label, value, loading, icon: Icon, color, bg, className, isC
       whileHover={{ y: -8, scale: 1.02 }}
       className="h-full"
     >
-      <Card className={`${className} h-full`} style={{ padding: '2.5rem' }}>
+      <Card className={`${className} ${styles.statCard} h-full`}>
         <div className={styles.statCardContent}>
           <div className={styles.statIconWrapper} style={{ background: bg }}>
             <Icon size={36} color={color} />
           </div>
-          <div className="flex-1">
-            <div className="flex justify-between items-start mb-2">
-              <p className={styles.statLabel} style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>{label}</p>
-              {!loading && <TrendingUp size={20} className="text-accent opacity-40" />}
+          <div className={styles.statMain}>
+            <div className={styles.statHeaderRow}>
+              <p className={styles.statLabel}>{label}</p>
+              {!loading && <TrendingUp size={18} className={styles.statTrendIcon} />}
             </div>
             {loading ? (
-              <Loader2 className="animate-spin mt-2" size={32} color={color} />
+              <Loader2 className={`${styles.statLoader} animate-spin`} size={28} color={color} />
             ) : (
-              <h2 className={styles.statValue} style={{ fontSize: '2.75rem', fontWeight: 950, letterSpacing: '-0.06em' }}>
+              <h2 className={`${styles.statValue} ${isCurrency ? styles.currencyValue : ''}`}>
                 {isCurrency 
                   ? (value || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
                   : (value || 0)}

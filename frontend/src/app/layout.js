@@ -16,11 +16,12 @@ const beVietnamPro = Be_Vietnam_Pro({
   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
   subsets: ['vietnamese', 'latin'],
   display: 'swap',
+  variable: '--font-be-vietnam',
 });
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="vi">
+    <html lang="vi" className={beVietnamPro.variable}>
       <body className={beVietnamPro.className}>
         <AuthProvider>
           <PopupHost />

@@ -5,6 +5,7 @@
   --primary-hover: #4f46e5;
   --secondary: #8b5cf6;
   --accent: #10b981;
+  --accent-rgb: 16, 185, 129;
   
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -73,13 +74,13 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: inherit;
+  font-family: var(--font-be-vietnam), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: inherit;
+  font-family: var(--font-be-vietnam), system-ui, -apple-system, sans-serif;
   letter-spacing: -0.02em;
   color: var(--foreground);
 }
@@ -124,6 +125,10 @@ h1 {
 }
 
 /* Beautiful Buttons */
+button.primary, .btn-primary, button {
+  font-family: var(--font-be-vietnam), system-ui, sans-serif;
+}
+
 button.primary, .btn-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
   color: white;
@@ -155,7 +160,7 @@ input, select, textarea {
   border: 1px solid var(--border);
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  font-family: inherit;
+  font-family: var(--font-be-vietnam), system-ui, sans-serif;
   color: inherit;
   transition: all 0.2s ease;
   outline: none;

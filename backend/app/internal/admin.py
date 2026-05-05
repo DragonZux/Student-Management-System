@@ -3,7 +3,7 @@ from typing import List, Optional
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
-from app.dependencies import check_admin_role
+from app.dependencies import check_admin_role, get_current_user
 from app.core.audit import log_audit_event
 from app.db.database import get_database
 from app.core.schedule import schedules_conflict
@@ -94,7 +94,7 @@ async def get_users_by_role(
     }
 
 @router.get("/dashboard-stats")
-async def get_dashboard_stats(response: Response):
+async def get_dashboard_stats(response: Response, user: dict = Depends(get_current_user)):
     db = get_database()
     counts = await db.users.aggregate([
         {"$group": {"_id": "$role", "count": {"$sum": 1}}}
@@ -113,6 +113,9 @@ async def get_dashboard_stats(response: Response):
     
     # Count pending withdrawals
     stats["pending_withdrawals"] = await db.enrollments.count_documents({"status": "withdrawal_pending"})
+    
+    # Count unread notifications for current admin user
+    stats["unread_notifications"] = await db.notifications.count_documents({"user_id": user["_id"], "read": False})
     
     response.headers["Cache-Control"] = "no-cache, must-revalidate"
     return stats
