@@ -12,24 +12,24 @@ function normalizeBaseUrl(value) {
 
 function getWebSocketBaseUrl() {
   const configuredWsBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_WS_BASE_URL);
-  if (configuredWsBase && !configuredWsBase.includes('backend')) return configuredWsBase;
+  if (configuredWsBase && !configuredWsBase.includes('backend')) {
+    return configuredWsBase.replace('localhost', '127.0.0.1');
+  }
 
   const configuredApiBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL);
   if (configuredApiBase && /^https?:\/\//i.test(configuredApiBase) && !configuredApiBase.includes('backend')) {
-    return configuredApiBase.replace(/^http/i, 'ws');
+    return configuredApiBase.replace(/^http/i, 'ws').replace('localhost', '127.0.0.1');
   }
 
   if (typeof window !== 'undefined') {
-    // If on localhost, hit the backend directly on port 8000 to bypass Next.js proxy (which doesn't support WS rewrites)
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'ws://localhost:8000/api';
+      return `ws://127.0.0.1:8000/api`;
     }
-    // Fallback for external access
     const wsBase = window.location.origin.replace(/^http/i, 'ws') + '/api';
-    return wsBase;
+    return wsBase.replace('localhost', '127.0.0.1');
   }
 
-  return 'ws://backend:8000/api';
+  return 'ws://127.0.0.1:8000/api';
 }
 
 function normalizeNotification(raw) {
@@ -54,8 +54,18 @@ export function NotificationProvider({ children }) {
   const pingTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const idleReloadRef = useRef(null);
+  const processedIdsRef = useRef(new Set());
 
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await api.get('/notifications/unread-count');
+      setUnreadCount(res.data.count || 0);
+    } catch (e) {
+      console.error('Failed to fetch unread count', e);
+    }
+  }, []);
 
   const reload = useCallback(async () => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -70,33 +80,33 @@ export function NotificationProvider({ children }) {
       const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       const normalized = list.map(normalizeNotification).filter(Boolean);
       setNotifications(normalized);
+      normalized.forEach(n => processedIdsRef.current.add(n.id));
+      await fetchUnreadCount();
     } catch {
       setNotifications([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchUnreadCount]);
 
   const markRead = useCallback(async (id) => {
     if (!id) return;
-    // optimistic
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setUnreadCount(prev => Math.max(0, prev - 1));
     try {
       await api.post(`/notifications/${id}/read`);
     } catch {
-      // revert if failed
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: false } : n)));
+      setUnreadCount(prev => prev + 1);
     }
   }, []);
 
   const markAllRead = useCallback(async () => {
-    // optimistic
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
       await api.post("/notifications/mark-all-read");
     } catch (e) {
       console.error("Failed to mark all as read", e);
-      // Optional: reload if failed to ensure sync
       reload();
     }
   }, [reload]);
@@ -140,7 +150,12 @@ export function NotificationProvider({ children }) {
       try {
         const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3");
         audio.volume = 0.5;
-        audio.play();
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Silently ignore autoplay blocks
+          });
+        }
       } catch (e) {
         // ignore audio errors
       }
@@ -149,6 +164,10 @@ export function NotificationProvider({ children }) {
     const connect = () => {
       const nextToken = localStorage.getItem("token");
       if (!nextToken) return;
+
+      if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
 
       const fullUrl = `${getWsUrl()}?token=${encodeURIComponent(nextToken)}`;
       const ws = new WebSocket(fullUrl);
@@ -170,10 +189,6 @@ export function NotificationProvider({ children }) {
         }, 25000);
       };
 
-      ws.onerror = () => {
-        // onclose will handle reconnect
-      };
-
       ws.onclose = (event) => {
         if (pingTimerRef.current) {
           window.clearInterval(pingTimerRef.current);
@@ -181,7 +196,6 @@ export function NotificationProvider({ children }) {
         }
         wsRef.current = null;
 
-        // 1008: policy violation (server closes when token/jti invalid)
         if (event?.code === 1008) {
           showPopup("Phiên đăng nhập không hợp lệ hoặc đã bị đăng nhập ở nơi khác. Vui lòng đăng nhập lại.", {
             type: "error",
@@ -192,7 +206,7 @@ export function NotificationProvider({ children }) {
 
         const attempt = (reconnectAttemptRef.current || 0) + 1;
         reconnectAttemptRef.current = attempt;
-        const delayMs = Math.min(30000, 1000 * Math.pow(2, Math.min(5, attempt))); // 1s..30s
+        const delayMs = Math.min(30000, 1000 * Math.pow(2, Math.min(5, attempt)));
         reconnectTimerRef.current = window.setTimeout(connect, delayMs);
       };
 
@@ -209,19 +223,18 @@ export function NotificationProvider({ children }) {
           });
           if (!incoming) return;
 
+          if (processedIdsRef.current.has(incoming.id)) return;
+          processedIdsRef.current.add(incoming.id);
+
           setNotifications((prev) => {
             if (prev.some((n) => n.id === incoming.id)) return prev;
             return [incoming, ...prev];
           });
+          setUnreadCount(c => c + 1);
 
-          // Play sound
           playNotifySound();
-
-          // Alert/popup ngay khi có thông báo mới
           const popupText = incoming.message ? `${incoming.title}: ${incoming.message}` : incoming.title;
           showPopup(popupText, { type: "success", durationMs: 4500 });
-
-          // Dispatch global event so other components (like NotificationsPage) can refresh
           window.dispatchEvent(new CustomEvent('notification-received', { detail: incoming }));
         } catch (e) {
           console.error('[WS] Error processing message:', e);
@@ -249,28 +262,14 @@ export function NotificationProvider({ children }) {
     }
 
     return () => {
-      if (removeVisibilityListener) {
-        removeVisibilityListener();
-      }
-      if (bootTimer) {
-        window.clearTimeout(bootTimer);
-      }
-      if (reconnectTimerRef.current) {
-        window.clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
-      if (pingTimerRef.current) {
-        window.clearInterval(pingTimerRef.current);
-        pingTimerRef.current = null;
-      }
-      try {
-        wsRef.current?.close();
-      } catch {
-        // ignore
-      }
+      if (removeVisibilityListener) removeVisibilityListener();
+      if (bootTimer) window.clearTimeout(bootTimer);
+      if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+      if (pingTimerRef.current) window.clearInterval(pingTimerRef.current);
+      try { wsRef.current?.close(); } catch {}
       wsRef.current = null;
     };
-  }, [user?._id]); // Re-connect if user changes (login/logout)
+  }, [user?._id]);
 
   const value = useMemo(
     () => ({
@@ -294,4 +293,3 @@ export function useNotifications() {
   }
   return ctx;
 }
-

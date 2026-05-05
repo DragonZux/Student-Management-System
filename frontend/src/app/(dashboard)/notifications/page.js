@@ -2,12 +2,14 @@
 import Card from '@/components/ui/Card';
 import { Bell, Clock, Info, CheckCircle, Trash2, CheckCheck, Loader2, BookOpen, CreditCard, ShieldCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import usePaginatedData from '@/hooks/usePaginatedData';
 import PaginationControls from '@/components/ui/PaginationControls';
 
 import styles from '@/styles/modules/notifications.module.css';
+import { useNotifications } from '@/components/providers/NotificationProvider';
 
 function normalizeNotification(raw) {
   if (!raw) return null;
@@ -22,7 +24,9 @@ function normalizeNotification(raw) {
 }
 
 export default function NotificationsPage() {
+  const { markRead: globalMarkRead, markAllRead: globalMarkAllRead } = useNotifications();
   const [markingAll, setMarkingAll] = useState(false);
+  const router = useRouter();
   const {
     data: notifications,
     loading,
@@ -80,7 +84,7 @@ export default function NotificationsPage() {
   const handleMarkAll = async () => {
     setMarkingAll(true);
     try {
-      await api.post('/notifications/mark-all-read');
+      await globalMarkAllRead();
       refresh();
     } finally {
       setMarkingAll(false);
@@ -90,7 +94,7 @@ export default function NotificationsPage() {
   const markRead = async (id) => {
     if (!id) return;
     try {
-      await api.post(`/notifications/${id}/read`);
+      await globalMarkRead(id);
       refresh();
     } catch (e) {
       console.error("Failed to mark read", e);
@@ -162,8 +166,12 @@ export default function NotificationsPage() {
                   layout
                 >
                   <div 
-                    onClick={() => !n.read && markRead(n.id)}
-                    className={`${styles.card} ${!n.read ? styles.unread : styles.read}`}
+                    onClick={async () => {
+                      if (!n.read) await markRead(n.id);
+                      if (n.link) router.push(n.link);
+                    }}
+                    className={`${styles.card} ${!n.read ? styles.unread : styles.read} ${n.link ? styles.clickable : ''}`}
+                    style={{ cursor: n.link ? 'pointer' : 'default' }}
                   >
                     {!n.read && <div className={styles.unreadDot} />}
 
@@ -206,4 +214,3 @@ export default function NotificationsPage() {
     </div>
   );
 }
-

@@ -29,17 +29,9 @@ app = FastAPI(
     description="Professional Student Management System API",
     version=settings.VERSION,
     lifespan=lifespan,
-    redirect_slashes=True
+    redirect_slashes=False
 )
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Add GZip compression (Optimizes response size)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -97,6 +89,17 @@ async def log_requests(request, call_next):
 
 
 # Include All Routers
+
+# Outer-most middleware: CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origin_list,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?" if settings.DEBUG else None,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 app.include_router(api_router, prefix="/api")
 
 @app.get("/")

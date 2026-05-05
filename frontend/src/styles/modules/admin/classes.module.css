@@ -207,3 +207,101 @@
     grid-template-columns: 1fr;
   }
 }
+
+.scheduleBuilder {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.scheduleTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.scheduleTable th {
+  text-align: left;
+  padding: 0 1rem 1rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.scheduleTable td {
+  padding: 1rem 0.5rem;
+  vertical-align: middle;
+}
+
+.scheduleTable tr:last-child td {
+  padding-bottom: 0;
+}
+
+.tableInput {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--foreground);
+  transition: all 0.2s;
+  outline: none;
+}
+
+.tableInput:focus {
+  border-color: var(--primary);
+  background: var(--card);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+.addBtn {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--surface-2);
+  border: 1.5px dashed var(--primary);
+  color: var(--primary);
+  padding: 1rem;
+  border-radius: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.addBtn:hover {
+  background: rgba(var(--primary-rgb), 0.05);
+  border-style: solid;
+  transform: translateY(-2px);
+}
+
+.removeBtn {
+  background: rgba(244, 63, 94, 0.08);
+  color: #f43f5e;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+
+.removeBtn:hover {
+  background: #f43f5e;
+  color: white;
+  transform: scale(1.05);
+}

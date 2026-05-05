@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.dependencies import check_admin_role, get_current_user, check_teacher_or_admin
+from typing import List
+from app.dependencies import check_admin_role, get_current_user, check_teacher_role
 from app.routers.notifications import create_notification
 from app.core.audit import log_audit_event
 from app.db.database import get_database
 from app.schemas.academic import ExamCreate, ExamOut, ExamUpdate, ExamGrade
 from app.schemas.user import UserRole
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 router = APIRouter()
@@ -24,6 +25,9 @@ async def list_exams(
     elif current_user["role"] == UserRole.STUDENT:
         enrolled_classes = await db.enrollments.find({"student_id": current_user["_id"], "status": {"$in": ["enrolled", "completed"]}}).to_list(1000)
         query["class_id"] = {"$in": [enrollment["class_id"] for enrollment in enrolled_classes]}
+    else:
+        # Admins or others get nothing
+        return {"data": [], "total": 0, "skip": skip, "limit": limit}
     
     total = await db.exams.count_documents(query)
     exams = await db.exams.find(query).sort("scheduled_at", -1).skip(skip).limit(limit).to_list(limit)
@@ -52,6 +56,15 @@ async def list_exams(
                 else:
                     e["class_name"] = "Unknown"
 
+    for e in exams:
+        scheduled_at = e.get("scheduled_at")
+        if scheduled_at and isinstance(scheduled_at, datetime) and scheduled_at.tzinfo is None:
+            e["scheduled_at"] = scheduled_at.replace(tzinfo=timezone.utc)
+            
+        created_at = e.get("created_at")
+        if created_at and isinstance(created_at, datetime) and created_at.tzinfo is None:
+            e["created_at"] = created_at.replace(tzinfo=timezone.utc)
+
     return {
         "data": exams,
         "total": total,
@@ -60,10 +73,16 @@ async def list_exams(
     }
 
 @router.post("", response_model=ExamOut)
-async def create_exam(payload: ExamCreate, current_user: dict = Depends(check_teacher_or_admin)):
+async def create_exam(payload: ExamCreate, current_user: dict = Depends(check_teacher_role)):
     db = get_database()
+    
+    # Validation: Only one exam of each type per class
+    existing = await db.exams.find_one({"class_id": payload.class_id, "title": payload.title})
+    if (existing):
+        raise HTTPException(status_code=400, detail=f"Kỳ thi '{payload.title}' đã tồn tại cho lớp học này.")
+
     exam = payload.model_dump()
-    exam.update({"_id": str(uuid.uuid4()), "created_at": datetime.utcnow()})
+    exam.update({"_id": str(uuid.uuid4()), "created_at": datetime.now(timezone.utc)})
     await db.exams.insert_one(exam)
     
     # Notify enrolled students
@@ -72,8 +91,9 @@ async def create_exam(payload: ExamCreate, current_user: dict = Depends(check_te
         # Fixed: create_notification takes (user_id, title, message)
         await create_notification(
             user_id=enrollment["student_id"],
-            title="Kỳ thi mới được tạo",
-            message=f"Kỳ thi '{payload.title}' đã được lên lịch vào {payload.scheduled_at}"
+            title="KỲ THI MỚI ĐƯỢC TẠO",
+            message=f"Kỳ thi '{payload.title}' đã được lên lịch vào {payload.scheduled_at}",
+            link="/exams"
         )
     
     await log_audit_event(
@@ -86,7 +106,7 @@ async def create_exam(payload: ExamCreate, current_user: dict = Depends(check_te
     return exam
 
 @router.put("/{exam_id}", response_model=ExamOut)
-async def update_exam(exam_id: str, payload: ExamUpdate, current_user: dict = Depends(check_teacher_or_admin)):
+async def update_exam(exam_id: str, payload: ExamUpdate, current_user: dict = Depends(check_teacher_role)):
     db = get_database()
     update_data = payload.model_dump(exclude_none=True)
     if not update_data:
@@ -107,7 +127,7 @@ async def update_exam(exam_id: str, payload: ExamUpdate, current_user: dict = De
     return updated
 
 @router.delete("/{exam_id}")
-async def delete_exam(exam_id: str, current_user: dict = Depends(check_teacher_or_admin)):
+async def delete_exam(exam_id: str, current_user: dict = Depends(check_teacher_role)):
     db = get_database()
     result = await db.exams.delete_one({"_id": exam_id})
     if result.deleted_count == 0:
@@ -123,7 +143,7 @@ async def delete_exam(exam_id: str, current_user: dict = Depends(check_teacher_o
     return {"message": "Exam deleted successfully"}
 
 @router.post("/{exam_id}/grades")
-async def record_exam_grade(exam_id: str, payload: ExamGrade, current_user: dict = Depends(check_teacher_or_admin)):
+async def record_exam_grade(exam_id: str, payload: ExamGrade, current_user: dict = Depends(check_teacher_role)):
     db = get_database()
     exam = await db.exams.find_one({"_id": exam_id})
     if not exam:
@@ -134,7 +154,7 @@ async def record_exam_grade(exam_id: str, payload: ExamGrade, current_user: dict
     grades = [grade for grade in grades if grade.get("student_id") != payload.student_id]
     
     new_grade = payload.model_dump()
-    new_grade["graded_at"] = datetime.utcnow()
+    new_grade["graded_at"] = datetime.now(timezone.utc)
     new_grade["teacher_id"] = current_user["_id"]
     grades.append(new_grade)
     
@@ -142,8 +162,9 @@ async def record_exam_grade(exam_id: str, payload: ExamGrade, current_user: dict
     
     await create_notification(
         user_id=payload.student_id,
-        title="Đã có điểm thi",
-        message=f"Bạn đã nhận được điểm cho kỳ thi '{exam.get('title')}': {payload.score}"
+        title="ĐÃ CÓ ĐIỂM THI",
+        message=f"Bạn đã nhận được điểm cho kỳ thi '{exam.get('title')}': {payload.score}",
+        link="/exams"
     )
     
     await log_audit_event(
@@ -156,6 +177,51 @@ async def record_exam_grade(exam_id: str, payload: ExamGrade, current_user: dict
     )
     return {"message": "Grade recorded successfully"}
 
+@router.post("/{exam_id}/grades/batch")
+async def record_exam_grades_batch(exam_id: str, payload: List[ExamGrade], current_user: dict = Depends(check_teacher_role)):
+    db = get_database()
+    exam = await db.exams.find_one({"_id": exam_id})
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
+    
+    grades = exam.get("grades", [])
+    new_grades_map = {g.student_id: g for g in payload}
+    
+    # Update existing or add new
+    updated_grades = []
+    # Keep grades for students NOT in the payload
+    student_ids_in_payload = set(new_grades_map.keys())
+    for existing_grade in grades:
+        if existing_grade.get("student_id") not in student_ids_in_payload:
+            updated_grades.append(existing_grade)
+            
+    # Add all from payload
+    for student_id, grade_payload in new_grades_map.items():
+        g_dict = grade_payload.model_dump()
+        g_dict["graded_at"] = datetime.now(timezone.utc)
+        g_dict["teacher_id"] = current_user["_id"]
+        updated_grades.append(g_dict)
+        
+        # Notify student in batch
+        await create_notification(
+            user_id=student_id,
+            title="ĐÃ CÓ ĐIỂM THI",
+            message=f"Bạn đã nhận được điểm cho kỳ thi '{exam.get('title')}' (Batch).",
+            link="/exams"
+        )
+    
+    await db.exams.update_one({"_id": exam_id}, {"$set": {"grades": updated_grades}})
+    
+    await log_audit_event(
+        action="exam.grade_batch",
+        actor_id=current_user["_id"],
+        actor_role=current_user["role"],
+        target_type="exam",
+        target_id=exam_id,
+        metadata={"count": len(payload)}
+    )
+    return {"message": f"Successfully recorded {len(payload)} grades"}
+
 @router.post("/{exam_id}/submit")
 async def record_exam_submission(exam_id: str, payload: dict, student: dict = Depends(get_current_user)):
     db = get_database()
@@ -167,23 +233,31 @@ async def record_exam_submission(exam_id: str, payload: dict, student: dict = De
     # Check if student already submitted
     existing = next((s for s in submissions if s.get("student_id") == student["_id"]), None)
     
+    if existing:
+        raise HTTPException(status_code=400, detail="Bạn đã nộp bài thi này rồi. Mỗi sinh viên chỉ được nộp một lần.")
+
     submission = {
         "student_id": student["_id"],
         "content": payload.get("content"),
-        "submitted_at": datetime.utcnow()
+        "submitted_at": datetime.now(timezone.utc)
     }
     
-    if existing:
-        # Update existing submission
-        for i, s in enumerate(submissions):
-            if s.get("student_id") == student["_id"]:
-                submissions[i] = submission
-                break
-    else:
-        submissions.append(submission)
+    submissions.append(submission)
         
     await db.exams.update_one({"_id": exam_id}, {"$set": {"submissions": submissions}})
     
+    # Notify the teacher
+    class_id = exam.get("class_id")
+    if class_id:
+        target_class = await db.classes.find_one({"_id": class_id})
+        if target_class and target_class.get("teacher_id"):
+            await create_notification(
+                user_id=target_class["teacher_id"],
+                title="BÀI THI MỚI ĐÃ NỘP",
+                message=f"Sinh viên {student.get('full_name')} đã nộp bài cho kỳ thi '{exam.get('title')}'.",
+                link="/teacher/assignments"
+            )
+
     await log_audit_event(
         action="exam.submit",
         actor_id=student["_id"],

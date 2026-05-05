@@ -202,8 +202,7 @@
 
 /* Collapsed States */
 .collapsed .logoText,
-.collapsed .label,
-.collapsed .notifBadge:not(.absolute) {
+.collapsed .label {
   opacity: 0;
   pointer-events: none;
   width: 0;

@@ -2,6 +2,48 @@
   max-width: 1600px;
   margin: 0 auto;
   padding-bottom: 5rem;
+  position: relative;
+}
+
+.bgDecor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: floatBlobs 20s infinite alternate ease-in-out;
+}
+
+.blob1 { top: -100px; right: -100px; animation-delay: 0s; }
+.blob2 { bottom: -100px; left: -100px; animation-delay: -5s; background: radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 70%); }
+
+@keyframes floatBlobs {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(100px, 50px) scale(1.1); }
+  100% { transform: translate(-50px, 100px) scale(0.9); }
+}
+
+.mesh {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(var(--primary-rgb), 0.03) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, rgba(168, 85, 247, 0.03) 0, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(var(--primary-rgb), 0.03) 0, transparent 50%);
+  pointer-events: none;
 }
 
 .hero {
@@ -88,9 +130,37 @@
   box-shadow: 0 24px 45px rgba(15, 23, 42, 0.2);
 }
 
+@keyframes floatHeroIcon {
+  0% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-15px) rotate(5deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+.heroIconFloating {
+  animation: floatHeroIcon 8s infinite ease-in-out;
+}
+
 @keyframes float {
   from { transform: translate(0, 0); }
   to { transform: translate(-30px, 40px); }
+}
+
+.shortcutsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .shortcutsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .shortcutsGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .header {
@@ -152,9 +222,22 @@
   border-color: var(--primary);
   color: var(--primary);
   transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.2), 
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15), 
               0 0 0 1px rgba(99, 102, 241, 0.1) inset;
-  background: linear-gradient(135deg, var(--card) 0%, rgba(255, 255, 255, 0.9) 100%);
+  background: linear-gradient(135deg, var(--card) 0%, rgba(255, 255, 255, 0.95) 100%);
+}
+
+.actionBtn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(var(--primary-rgb), 0.08) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.actionBtn:hover::after {
+  opacity: 1;
 }
 
 .actionMeta {
@@ -179,6 +262,12 @@
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
   box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.15),
               0 0 20px rgba(99, 102, 241, 0.15);
+  animation: iconBounce 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes iconBounce {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-6px) scale(1.05); }
 }
 
 .actionText {
@@ -263,6 +352,32 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s var(--spring) !important;
+}
+
+.statCard::after {
+  content: "";
+  position: absolute;
+  top: -110%;
+  left: -210%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: rotate(35deg);
+  transition: all 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+  pointer-events: none;
+}
+
+.statCard:hover::after {
+  left: 120%;
+  top: 100%;
 }
 
 .statCardContent {
@@ -304,9 +419,17 @@
   margin: 0;
 }
 
-.statTrendIcon {
-  color: var(--accent);
-  opacity: 0.42;
+.statTrendIcon,
+.statLinkIcon {
+  color: var(--primary);
+  opacity: 0.3;
+  transition: all 0.3s ease;
+}
+
+.statCard:hover .statLinkIcon {
+  opacity: 1;
+  transform: translate(2px, -2px);
+  color: var(--primary);
 }
 
 .statValue {

@@ -6,7 +6,7 @@ from app.schemas.user import UserCreate, UserOut
 from app.schemas.common import ProfileUpdate
 from app.dependencies import get_current_user
 from app.core.audit import log_audit_event
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import logging
 
@@ -69,7 +69,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         session_id = str(uuid.uuid4())
         await db.users.update_one(
             {"_id": user["_id"]},
-            {"$set": {"active_jti": session_id, "active_jti_created_at": datetime.utcnow()}},
+            {"$set": {"active_jti": session_id, "active_jti_created_at": datetime.now(timezone.utc)}},
         )
         access_token = create_access_token(subject=user["_id"], jti=session_id)
         await log_audit_event(

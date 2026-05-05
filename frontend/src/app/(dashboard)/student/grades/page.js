@@ -1,9 +1,10 @@
 "use client";
 import Card from '@/components/ui/Card';
-import { Award, BookOpen, TrendingUp, Search, Star, FileText } from 'lucide-react';
-import { useMemo } from 'react';
+import { Award, BookOpen, TrendingUp, Search, Star, FileText, ChevronRight, Info, Percent, CheckCircle2, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import usePaginatedData from '@/hooks/usePaginatedData';
 import PaginationControls from '@/components/ui/PaginationControls';
+import Modal from '@/components/ui/Modal';
 import styles from '@/styles/modules/student/grades.module.css';
 
 export default function StudentGradesPage() {
@@ -28,6 +29,8 @@ export default function StudentGradesPage() {
     }),
   });
 
+  const [selectedGrade, setSelectedGrade] = useState(null);
+
   const summary = useMemo(() => ({
     gpa: rawData?.gpa ?? 0,
     graded_credits: rawData?.graded_credits ?? 0,
@@ -36,14 +39,14 @@ export default function StudentGradesPage() {
   const gpa = summary.gpa;
   const gradedCredits = summary.graded_credits;
 
-  const getGradeInfo = (value) => {
-    const v = Number(value);
-    if (Number.isNaN(v)) return { letter: '—', color: 'var(--muted-foreground)', bg: 'var(--surface-2)' };
-    if (v >= 9) return { letter: 'A', color: '#059669', bg: 'rgba(16, 185, 129, 0.1)' };
-    if (v >= 8) return { letter: 'B+', color: '#10b981', bg: 'rgba(16, 185, 129, 0.05)' };
-    if (v >= 7) return { letter: 'B', color: 'var(--primary)', bg: 'rgba(99, 102, 241, 0.1)' };
-    if (v >= 6) return { letter: 'C+', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.05)' };
-    if (v >= 5) return { letter: 'C', color: '#d97706', bg: 'rgba(245, 158, 11, 0.05)' };
+  const getGradeInfo = (item) => {
+    const letter = item.letter_grade || '—';
+    const passed = item.is_passed;
+    if (letter === '—') return { letter: '—', color: 'var(--muted-foreground)', bg: 'var(--surface-2)' };
+    if (letter.startsWith('A')) return { letter, color: '#059669', bg: 'rgba(16, 185, 129, 0.1)' };
+    if (letter.startsWith('B')) return { letter, color: 'var(--primary)', bg: 'rgba(99, 102, 241, 0.1)' };
+    if (letter.startsWith('C')) return { letter, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.05)' };
+    if (letter.startsWith('D')) return { letter, color: '#d97706', bg: 'rgba(245, 158, 11, 0.05)' };
     return { letter: 'F', color: '#e11d48', bg: 'rgba(244, 63, 94, 0.1)' };
   };
 
@@ -77,15 +80,22 @@ export default function StudentGradesPage() {
 
         <div className={`${styles.statCard} slide-right stagger-2`} style={{ animationDelay: '0.4s' }}>
           <div className={styles.statIcon} style={{ 
-            background: gpa >= 8 ? 'rgba(16, 185, 129, 0.1)' : gpa >= 6.5 ? 'rgba(99, 102, 241, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-            color: gpa >= 8 ? '#059669' : gpa >= 6.5 ? 'var(--primary)' : '#d97706'
+            background: gpa >= 3.2 ? 'rgba(16, 185, 129, 0.1)' : gpa >= 2.5 ? 'rgba(99, 102, 241, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+            color: gpa >= 3.2 ? '#059669' : gpa >= 2.5 ? 'var(--primary)' : '#d97706'
           }}>
             <Award size={32} strokeWidth={2.5} />
           </div>
           <div className={styles.statInfo}>
             <p>Xếp loại học lực</p>
-            <h2 style={{ color: gpa >= 8 ? '#059669' : gpa >= 6.5 ? 'var(--primary)' : '#d97706' }}>
-              {loading ? '...' : (gpa >= 8 ? 'Giỏi' : gpa >= 6.5 ? 'Khá' : 'Trung bình')}
+            <h2 style={{ 
+              color: gpa >= 3.6 ? '#059669' : gpa >= 3.2 ? '#10b981' : gpa >= 2.5 ? 'var(--primary)' : '#d97706' 
+            }}>
+              {loading ? '...' : (
+                gpa >= 3.6 ? 'Xuất sắc' : 
+                gpa >= 3.2 ? 'Giỏi' : 
+                gpa >= 2.5 ? 'Khá' : 
+                gpa >= 2.0 ? 'Trung bình' : 'Yếu'
+              )}
             </h2>
           </div>
         </div>
@@ -114,9 +124,14 @@ export default function StudentGradesPage() {
               <>
                 <div className={styles.gradeList}>
                   {records.map((item, index) => {
-                    const gradeInfo = getGradeInfo(item.grade);
+                    const gradeInfo = getGradeInfo(item);
                     return (
-                      <div key={index} className={styles.gradeItem} style={{ animationDelay: `${index * 0.05}s` }}>
+                      <div 
+                        key={index} 
+                        className={`${styles.gradeItem} ${styles.clickable}`} 
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                        onClick={() => setSelectedGrade(item)}
+                      >
                         <div className={styles.courseInfo}>
                           <div className={styles.courseTitle}>{item.course_code}: {item.course_title}</div>
                           <div className={styles.courseMeta}>
@@ -140,6 +155,7 @@ export default function StudentGradesPage() {
                           }}>
                             {gradeInfo.letter}
                           </div>
+                          <ChevronRight size={18} className={styles.chevron} />
                         </div>
                       </div>
                     );
@@ -163,6 +179,100 @@ export default function StudentGradesPage() {
           </div>
         </Card>
       </div>
+
+      <Modal 
+        isOpen={!!selectedGrade} 
+        onClose={() => setSelectedGrade(null)}
+        title={selectedGrade ? `${selectedGrade.course_code}: ${selectedGrade.course_title}` : ''}
+      >
+        {selectedGrade && (
+          <div className={styles.detailContent}>
+            <div className={styles.detailHeader}>
+              <div className={styles.mainScore}>
+                <label>Điểm tổng kết</label>
+                <div className={styles.scoreRow}>
+                  <span className={styles.bigScore}>{selectedGrade.score_10?.toFixed(1) || '—'}</span>
+                  <div className={styles.badgeLetter} style={{ 
+                    backgroundColor: getGradeInfo(selectedGrade).bg,
+                    color: getGradeInfo(selectedGrade).color
+                  }}>
+                    {selectedGrade.letter_grade}
+                  </div>
+                </div>
+                <div className={styles.passBadge}>
+                  {selectedGrade.is_passed ? (
+                    <span className={styles.pass}><CheckCircle2 size={14} /> Đạt học phần</span>
+                  ) : (
+                    <span className={styles.fail}><X size={14} /> Chưa đạt</span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.courseQuickInfo}>
+                <div className={styles.infoItem}>
+                  <BookOpen size={16} />
+                  <span>Số tín chỉ: {selectedGrade.credits}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <Award size={16} />
+                  <span>Hệ 4: {selectedGrade.grade?.toFixed(2) || '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.componentsSection}>
+              <h3>Chi tiết điểm thành phần</h3>
+              <div className={styles.componentGrid}>
+                <div className={styles.componentCard}>
+                  <div className={styles.compLabel}>
+                    <Info size={14} />
+                    <span>Chuyên cần</span>
+                  </div>
+                  <div className={styles.compValue}>{selectedGrade.score_attendance?.toFixed(1) || '—'}</div>
+                  <div className={styles.compWeight}>
+                    <Percent size={12} />
+                    <span>Trọng số: 10%</span>
+                  </div>
+                </div>
+                <div className={styles.componentCard}>
+                  <div className={styles.compLabel}>
+                    <Info size={14} />
+                    <span>Giữa kỳ</span>
+                  </div>
+                  <div className={styles.compValue}>{selectedGrade.score_midterm?.toFixed(1) || '—'}</div>
+                  <div className={styles.compWeight}>
+                    <Percent size={12} />
+                    <span>Trọng số: 30%</span>
+                  </div>
+                </div>
+                <div className={styles.componentCard}>
+                  <div className={styles.compLabel}>
+                    <Info size={14} />
+                    <span>Cuối kỳ</span>
+                  </div>
+                  <div className={styles.compValue}>{selectedGrade.score_final?.toFixed(1) || '—'}</div>
+                  <div className={styles.compWeight}>
+                    <Percent size={12} />
+                    <span>Trọng số: 60%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {selectedGrade.teacher_comments && (
+              <div className={styles.commentSection}>
+                <h3>Nhận xét từ Giảng viên</h3>
+                <div className={styles.commentBox}>
+                  {selectedGrade.teacher_comments}
+                </div>
+              </div>
+            )}
+            
+            <div className={styles.formulaNote}>
+              * Điểm tổng kết = (Chuyên cần × 0.1) + (Giữa kỳ × 0.3) + (Cuối kỳ × 0.6)
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -9,7 +9,7 @@ from app.db.database import get_database
 from app.schemas.academic import AttendanceOut, EnrollmentOut, SubmissionCreate
 from app.schemas.organization import FeedbackCreate, FeedbackOut
 from app.schemas.user import UserRole
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 router = APIRouter(dependencies=[Depends(check_student_role)], redirect_slashes=False)
@@ -87,12 +87,31 @@ async def list_available_classes(
     courses = await db.courses.find({"_id": {"$in": list(course_ids)}}).to_list(1000) if course_ids else []
     teacher_by_id = {t["_id"]: t for t in teachers}
     course_by_id = {c["_id"]: c for c in courses}
+    # Get current enrollments to identify already taken courses in the same semester
+    active_enrollments = await db.enrollments.find({
+        "student_id": student["_id"],
+        "status": {"$in": ["enrolled", "withdrawal_pending"]}
+    }).to_list(1000)
+    
+    enrolled_info = []
+    if active_enrollments:
+        e_class_ids = [e["class_id"] for e in active_enrollments]
+        e_classes = await db.classes.find({"_id": {"$in": e_class_ids}}).to_list(1000)
+        enrolled_info = [{"course_id": ec.get("course_id"), "semester": ec.get("semester")} for ec in e_classes]
+
     for cls in classes:
         t = teacher_by_id.get(cls.get("teacher_id"))
         crs = course_by_id.get(cls.get("course_id"))
         cls["teacher_name"] = t.get("full_name") if t else None
         cls["course_code"] = crs.get("code") if crs else None
         cls["course_title"] = crs.get("title") if crs else None
+        
+        # Check if already enrolled in this course for this semester
+        cls["is_course_already_enrolled"] = any(
+            info["course_id"] == cls.get("course_id") and info["semester"] == cls.get("semester")
+            for info in enrolled_info
+        )
+
     return {
         "data": classes,
         "total": total,
@@ -121,8 +140,14 @@ async def list_my_enrollments(
     for e in enrollments:
         cls = class_by_id.get(e["class_id"])
         crs = course_by_id.get(cls.get("course_id")) if cls else None
+        
+        enrolled_at = e.get("enrolled_at")
+        if enrolled_at and isinstance(enrolled_at, datetime) and enrolled_at.tzinfo is None:
+            enrolled_at = enrolled_at.replace(tzinfo=timezone.utc)
+
         items.append({
             **e,
+            "enrolled_at": enrolled_at,
             "class": cls,
             "course": crs,
         })
@@ -133,41 +158,7 @@ async def list_my_enrollments(
         "limit": limit,
     }
 
-@router.get("")
-@router.get("/my-assignments")
-async def list_my_assignments(
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=2000),
-    student: dict = Depends(check_student_role),
-):
-    db = get_database()
-    class_ids = await db.enrollments.distinct("class_id", {"student_id": student["_id"], "status": {"$in": ["enrolled", "completed"]}})
-    query = {"class_id": {"$in": class_ids}} if class_ids else {"class_id": {"$in": []}}
-    total = await db.assignments.count_documents(query)
-    assignments = await db.assignments.find(query).sort("deadline", 1).skip(skip).limit(limit).to_list(limit) if class_ids else []
-    return {
-        "data": assignments,
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-    }
 
-@router.get("/my-submissions")
-async def list_my_submissions(
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=2000),
-    student: dict = Depends(check_student_role),
-):
-    db = get_database()
-    query = {"student_id": student["_id"]}
-    total = await db.submissions.count_documents(query)
-    submissions = await db.submissions.find(query).sort("submitted_at", -1).skip(skip).limit(limit).to_list(limit)
-    return {
-        "data": submissions,
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-    }
 
 @router.post("/enroll/{class_id}")
 async def enroll_in_class(
@@ -193,6 +184,28 @@ async def enroll_in_class(
     if existing:
         raise HTTPException(status_code=400, detail="Already enrolled in this class")
 
+    # 3.5. Check if already enrolled in another class of the same course in the same semester
+    # Find all active enrollments for this student
+    active_enrollments = await db.enrollments.find({
+        "student_id": student["_id"],
+        "status": {"$in": ["enrolled", "withdrawal_pending"]}
+    }).to_list(1000)
+    
+    if active_enrollments:
+        enrolled_class_ids = [e["class_id"] for e in active_enrollments]
+        # Get details of those classes to check course and semester
+        enrolled_classes = await db.classes.find({"_id": {"$in": enrolled_class_ids}}).to_list(1000)
+        
+        target_course_id = target_class["course_id"]
+        target_semester = target_class.get("semester")
+        
+        for ec in enrolled_classes:
+            if ec.get("course_id") == target_course_id and ec.get("semester") == target_semester:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Bạn đã đăng ký một lớp học khác cho môn học này trong học kỳ này"
+                )
+
     # 4. Check Prerequisites
     course = await db.courses.find_one({"_id": target_class["course_id"]})
     if course and course.get("prerequisites"):
@@ -213,7 +226,7 @@ async def enroll_in_class(
             "student_id": student["_id"],
             "class_id": {"$in": [cls["_id"] for cls in prereq_classes]},
             "status": "completed",
-            "grade": {"$gte": 2.0},
+            "is_passed": True,
         }).to_list(5000)
         completed_class_ids = {item["class_id"] for item in completed_enrollments}
 
@@ -229,7 +242,7 @@ async def enroll_in_class(
         "student_id": student["_id"],
         "class_id": class_id,
         "status": "enrolled",
-        "enrolled_at": datetime.utcnow()
+        "enrolled_at": datetime.now(timezone.utc)
     }
     
     await db.enrollments.insert_one(enrollment)
@@ -248,47 +261,6 @@ async def enroll_in_class(
     
     return {"message": "Successfully enrolled", "enrollment_id": enrollment["_id"]}
 
-@router.post("/submit-assignment/{assignment_id}")
-async def submit_assignment(
-    assignment_id: str,
-    submission_content: str, # Link or text
-    student: dict = Depends(check_student_role)
-):
-    db = get_database()
-    # Check if assignment exists
-    assignment = await db.assignments.find_one({"_id": assignment_id})
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-    
-    # Check if student is enrolled in the class of this assignment
-    enrolled = await db.enrollments.find_one({
-        "student_id": student["_id"],
-        "class_id": assignment["class_id"]
-    })
-    if not enrolled:
-        raise HTTPException(status_code=403, detail="You are not enrolled in this class")
-    
-    submission = SubmissionCreate(
-        assignment_id=assignment_id,
-        student_id=student["_id"],
-        content=submission_content,
-    ).model_dump()
-    submission.update({
-        "_id": str(uuid.uuid4()),
-        "submitted_at": datetime.utcnow(),
-        "status": "submitted",
-    })
-    
-    await db.submissions.insert_one(submission)
-    await log_audit_event(
-        action="student.submit_assignment",
-        actor_id=student["_id"],
-        actor_role=student["role"],
-        target_type="assignment",
-        target_id=assignment_id,
-        metadata={"submission_id": submission["_id"]},
-    )
-    return {"message": "Assignment submitted successfully", "submission_id": submission["_id"]}
 
 @router.get("/my-schedule")
 async def get_my_schedule(
@@ -384,6 +356,12 @@ async def get_my_grades(
             "course_title": course.get("title"),
             "status": enrollment.get("status"),
             "grade": grade,
+            "score_10": enrollment.get("score_10"),
+            "score_attendance": enrollment.get("score_attendance"),
+            "score_midterm": enrollment.get("score_midterm"),
+            "score_final": enrollment.get("score_final"),
+            "letter_grade": enrollment.get("letter_grade"),
+            "is_passed": enrollment.get("is_passed", False),
             "credits": credits,
             "teacher_comments": enrollment.get("teacher_comments"),
         })
@@ -421,7 +399,7 @@ async def withdraw_course(enrollment_id: str, payload: dict, student: dict = Dep
         {"_id": enrollment_id},
         {"$set": {
             "status": "withdrawal_pending", 
-            "withdrawal_requested_at": datetime.utcnow(), 
+            "withdrawal_requested_at": datetime.now(timezone.utc), 
             "withdrawal_reason": reason
         }},
     )
@@ -464,6 +442,7 @@ async def withdraw_course(enrollment_id: str, payload: dict, student: dict = Dep
             user_id=recipient_id,
             title="Yêu cầu rút học phần mới",
             message=message,
+            link="/admin/withdrawals"
         )
 
     return {"message": "Withdrawal request submitted for approval"}
@@ -485,7 +464,7 @@ async def submit_feedback(payload: FeedbackCreate, student: dict = Depends(check
     feedback.update({
         "student_id": student["_id"],
         "_id": str(uuid.uuid4()),
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     })
     await db.feedback.insert_one(feedback)
     await log_audit_event(
@@ -505,87 +484,94 @@ async def get_dashboard_summary(response: Response, student: dict = Depends(chec
     try:
         db = get_database()
         enrollments = await db.enrollments.find({"student_id": student["_id"]}).to_list(1000)
-    active_enrollments = [e for e in enrollments if e.get("status") == "enrolled"]
-    completed_enrollments = [e for e in enrollments if e.get("status") == "completed" and e.get("grade") is not None]
+        active_enrollments = [e for e in enrollments if e.get("status") == "enrolled"]
+        completed_enrollments = [e for e in enrollments if e.get("status") == "completed" and e.get("grade") is not None]
 
-    class_ids = [e["class_id"] for e in enrollments]
-    class_by_id = await _fetch_classes_by_ids(db, class_ids)
-    course_by_id = await _fetch_courses_by_ids(db, [item.get("course_id") for item in class_by_id.values()])
+        class_ids = [e["class_id"] for e in enrollments]
+        class_by_id = await _fetch_classes_by_ids(db, class_ids)
+        course_by_id = await _fetch_courses_by_ids(db, [item.get("course_id") for item in class_by_id.values()])
 
-    total_points = 0.0
-    total_credits = 0
-    for enrollment in completed_enrollments:
-        cls = class_by_id.get(enrollment["class_id"])
-        course = course_by_id.get(cls.get("course_id")) if cls else None
-        credits = int(course.get("credits", 0)) if course else 0
-        total_points += float(enrollment["grade"]) * credits
-        total_credits += credits
-    gpa = round(total_points / total_credits, 2) if total_credits > 0 else 0.0
-
-    next_class = None
-    active_classes = [class_by_id[e["class_id"]] for e in active_enrollments if e["class_id"] in class_by_id]
-    ordered_days = {"Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6, "Sunday": 7}
-    next_slots = []
-    for cls in active_classes:
-        course = course_by_id.get(cls.get("course_id"))
-        for slot in cls.get("schedule", []):
-            next_slots.append(
-                {
-                    "course_code": course.get("code") if course else None,
-                    "course_title": course.get("title") if course else None,
-                    "room": cls.get("room"),
-                    "day": slot.get("day"),
-                    "start": slot.get("start"),
-                    "end": slot.get("end"),
-                    "sort_day": ordered_days.get(slot.get("day"), 99),
-                }
-            )
-    if next_slots:
-        next_slots.sort(key=lambda item: (item["sort_day"], str(item.get("start") or "")))
-        next_class = next_slots[0]
-        next_class.pop("sort_day", None)
-
-    assignments = await db.assignments.find({"class_id": {"$in": [c["_id"] for c in active_classes]}}).sort("deadline", 1).to_list(1000) if active_classes else []
-    submissions = await db.submissions.find({"student_id": student["_id"]}).to_list(1000)
-    submitted_assignment_ids = {item["assignment_id"] for item in submissions}
-    pending_assignments = [item for item in assignments if item["_id"] not in submitted_assignment_ids]
-
-    invoice = await db.invoices.find_one({"student_id": student["_id"]})
-    if not invoice:
-        total_registered_credits = 0
-        for enrollment in enrollments:
+        total_points = 0.0
+        total_credits = 0
+        for enrollment in completed_enrollments:
             cls = class_by_id.get(enrollment["class_id"])
             course = course_by_id.get(cls.get("course_id")) if cls else None
-            if course:
-                total_registered_credits += int(course.get("credits", 0))
-        balance = float(total_registered_credits) * 500.0
-    else:
-        balance = max(0.0, float(invoice.get("total_amount", 0)) - float(invoice.get("paid_amount", 0)))
+            credits = int(course.get("credits", 0)) if course else 0
+            total_points += float(enrollment["grade"]) * credits
+            total_credits += credits
+        gpa = round(total_points / total_credits, 2) if total_credits > 0 else 0.0
 
-    unread_notifications = await db.notifications.count_documents({"user_id": student["_id"], "read": False})
+        next_class = None
+        active_classes = [class_by_id[e["class_id"]] for e in active_enrollments if e["class_id"] in class_by_id]
+        ordered_days = {"Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6, "Sunday": 7}
+        next_slots = []
+        for cls in active_classes:
+            course = course_by_id.get(cls.get("course_id"))
+            for slot in cls.get("schedule", []):
+                next_slots.append(
+                    {
+                        "course_code": course.get("code") if course else None,
+                        "course_title": course.get("title") if course else None,
+                        "room": cls.get("room"),
+                        "day": slot.get("day"),
+                        "start": slot.get("start"),
+                        "end": slot.get("end"),
+                        "sort_day": ordered_days.get(slot.get("day"), 99),
+                    }
+                )
+        if next_slots:
+            next_slots.sort(key=lambda item: (item["sort_day"], str(item.get("start") or "")))
+            next_class = next_slots[0]
+            next_class.pop("sort_day", None)
 
-    upcoming_deadline = None
-    if pending_assignments:
-        nearest = pending_assignments[0]
-        cls = class_by_id.get(nearest.get("class_id"))
-        course = course_by_id.get(cls.get("course_id")) if cls else None
-        upcoming_deadline = {
-            "title": nearest.get("title"),
-            "description": nearest.get("description"),
-            "deadline": nearest.get("deadline"),
-            "course_code": course.get("code") if course else None,
-            "course_title": course.get("title") if course else None,
-        }
+        # Use exams instead of assignments
+        active_class_ids = [c["_id"] for c in active_classes]
+        exams = await db.exams.find({"class_id": {"$in": active_class_ids}}).sort("scheduled_at", 1).to_list(1000) if active_class_ids else []
+        
+        pending_exams = []
+        for exam in exams:
+            # Check if student has submitted for this exam
+            submissions = exam.get("submissions", [])
+            has_submitted = any(s.get("student_id") == student["_id"] for s in submissions)
+            if not has_submitted:
+                pending_exams.append(exam)
+
+        invoice = await db.invoices.find_one({"student_id": student["_id"]})
+        if not invoice:
+            total_registered_credits = 0
+            for enrollment in enrollments:
+                cls = class_by_id.get(enrollment["class_id"])
+                course = course_by_id.get(cls.get("course_id")) if cls else None
+                if course:
+                    total_registered_credits += int(course.get("credits", 0))
+            balance = float(total_registered_credits) * 500.0
+        else:
+            balance = max(0.0, float(invoice.get("total_amount", 0)) - float(invoice.get("paid_amount", 0)))
+
+        unread_notifications = await db.notifications.count_documents({"user_id": student["_id"], "read": False})
+
+        upcoming_exam = None
+        if pending_exams:
+            nearest = pending_exams[0]
+            cls = class_by_id.get(nearest.get("class_id"))
+            course = course_by_id.get(cls.get("course_id")) if cls else None
+            upcoming_exam = {
+                "title": nearest.get("title"),
+                "description": nearest.get("description"),
+                "deadline": nearest.get("scheduled_at"), # Use scheduled_at as deadline for UI
+                "course_code": course.get("code") if course else None,
+                "course_title": course.get("title") if course else None,
+            }
 
         return {
             "gpa": gpa,
             "active_courses": len(active_enrollments),
             "completed_courses": len(completed_enrollments),
-            "pending_assignments": len(pending_assignments),
+            "pending_assignments": len(pending_exams),
             "unread_notifications": unread_notifications,
             "outstanding_balance": round(balance, 2),
             "next_class": next_class,
-            "upcoming_deadline": upcoming_deadline,
+            "upcoming_deadline": upcoming_exam,
         }
     except Exception as e:
         import traceback

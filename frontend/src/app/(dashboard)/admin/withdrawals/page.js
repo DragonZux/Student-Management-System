@@ -244,14 +244,13 @@ export default function AdminWithdrawalsPage() {
                           </span>
                         </td>
                         <td>
-                          <div className={styles.actionButtons} style={{ justifyContent: 'flex-end' }}>
+                          <div className={styles.actionButtons}>
                             {(req.status || 'pending') === 'pending' && (
                               <>
                                 <button
                                   onClick={() => setRejectModal({ isOpen: true, id: req.enrollment_id, reason: '' })}
                                   disabled={actionLoading === req.enrollment_id}
                                   className={styles.rejectBtn}
-                                  style={{ ...({ padding: '0.625rem 1rem' }), ...(!!(actionLoading === req.enrollment_id) && { opacity: 0.5 }) }}
                                   title="Từ chối yêu cầu"
                                 >
                                   <XCircle size={16} /> Từ chối
@@ -260,7 +259,6 @@ export default function AdminWithdrawalsPage() {
                                   onClick={() => setApproveModal({ isOpen: true, id: req.enrollment_id })}
                                   disabled={actionLoading === req.enrollment_id}
                                   className={styles.approveBtn}
-                                  style={{ ...({ padding: '0.625rem 1rem' }), ...(!!(actionLoading === req.enrollment_id) && { opacity: 0.5 }) }}
                                   title="Phê duyệt yêu cầu"
                                 >
                                   <CheckCircle size={16} /> Phê duyệt

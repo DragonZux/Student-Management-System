@@ -98,7 +98,7 @@ export default function StudentFinancePage() {
                   <div>
                     <p className={styles.balanceLabel}>Số dư cần thanh toán</p>
                     <h2 className={styles.balanceAmount}>
-                      ${balance.toLocaleString()}
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(balance)}
                     </h2>
                   </div>
                   <CreditCard size={48} strokeWidth={1.5} style={{ opacity: 0.3 }} />
@@ -201,7 +201,7 @@ export default function StudentFinancePage() {
                         </div>
                       </div>
                       <div className={styles.paymentAmount}>
-                        +${Number(p.amount).toLocaleString()}
+                        +{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.amount)}
                       </div>
                     </div>
                   </Card>

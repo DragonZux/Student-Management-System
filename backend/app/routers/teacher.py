@@ -7,7 +7,7 @@ from app.db.database import get_database
 from app.schemas.academic import AssignmentCreate, AttendanceCreate, AttendanceOut, AttendanceRecord, ExamGrade
 from app.schemas.organization import FeedbackOut
 from app.schemas.user import UserRole
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 router = APIRouter(dependencies=[Depends(check_teacher_role)], redirect_slashes=False)
@@ -22,24 +22,24 @@ async def get_teacher_dashboard_summary(teacher: dict = Depends(check_teacher_ro
     courses = await db.courses.find({"_id": {"$in": list(course_ids)}}).to_list(1000) if course_ids else []
     course_by_id = {item["_id"]: item for item in courses}
 
-    assignments = await db.assignments.find({"class_id": {"$in": class_ids}}).to_list(2000) if class_ids else []
-    assignment_ids = [item["_id"] for item in assignments]
-    submissions = await db.submissions.find({"assignment_id": {"$in": assignment_ids}}).to_list(5000) if assignment_ids else []
+    # Use exams instead of assignments
+    exams = await db.exams.find({"class_id": {"$in": class_ids}}).to_list(2000) if class_ids else []
+    
+    pending_grading = 0
+    for exam in exams:
+        submissions = exam.get("submissions", [])
+        # We consider grading "pending" if there are submissions but not all have been processed (this is a simple heuristic)
+        # For a better metric, we'd need to compare enrollment counts with submission grades
+        # But for now, let's just count total submissions in exams that might need review
+        pending_grading += len(submissions)
+
     enrollments = await db.enrollments.find({"class_id": {"$in": class_ids}}).to_list(5000) if class_ids else []
     feedback_count = await db.feedback.count_documents({"class_id": {"$in": class_ids}}) if class_ids else 0
-
-    submission_map = {}
-    for submission in submissions:
-        submission_map.setdefault(submission["assignment_id"], []).append(submission)
-
-    pending_grading = 0
-    for assignment in assignments:
-        pending_grading += len(submission_map.get(assignment["_id"], []))
 
     graded_count = sum(1 for item in enrollments if item.get("grade") is not None)
     completion_rate = round((graded_count / len(enrollments)) * 100, 2) if enrollments else 0
 
-    today_idx = datetime.utcnow().weekday()
+    today_idx = datetime.now(timezone.utc).weekday()
     day_labels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     today_label = day_labels[today_idx]
     today_classes = []
@@ -61,7 +61,7 @@ async def get_teacher_dashboard_summary(teacher: dict = Depends(check_teacher_ro
 
     return {
         "total_classes": len(classes),
-        "total_assignments": len(assignments),
+        "total_assignments": len(exams), # Return exams count as 'assignments' for UI compatibility
         "pending_grading": pending_grading,
         "feedback_count": feedback_count,
         "graded_count": graded_count,
@@ -121,57 +121,6 @@ async def list_class_students(
         "limit": limit,
     }
 
-@router.get("")
-@router.get("/assignments")
-async def list_my_assignments(
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=2000),
-    teacher: dict = Depends(check_teacher_role),
-):
-    db = get_database()
-    classes = await db.classes.find({"teacher_id": teacher["_id"]}).to_list(1000)
-    class_ids = [c["_id"] for c in classes]
-    query = {"class_id": {"$in": class_ids}} if class_ids else {"class_id": {"$in": []}}
-    total = await db.assignments.count_documents(query)
-    assignments = await db.assignments.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit) if class_ids else []
-    return {
-        "data": assignments,
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-    }
-
-@router.get("/attendance/{class_id}")
-async def list_attendance(class_id: str, teacher: dict = Depends(check_teacher_role)):
-    db = get_database()
-    target_class = await db.classes.find_one({"_id": class_id, "teacher_id": teacher["_id"]})
-    if not target_class:
-        raise HTTPException(status_code=403, detail="You do not teach this class")
-    return await db.attendance.find({"class_id": class_id}).sort("date", -1).to_list(200)
-
-@router.get("/submissions/{assignment_id}")
-async def list_assignment_submissions(
-    assignment_id: str,
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=2000),
-    teacher: dict = Depends(check_teacher_role),
-):
-    db = get_database()
-    assignment = await db.assignments.find_one({"_id": assignment_id})
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-    target_class = await db.classes.find_one({"_id": assignment["class_id"], "teacher_id": teacher["_id"]})
-    if not target_class:
-        raise HTTPException(status_code=403, detail="You do not teach this class")
-    query = {"assignment_id": assignment_id}
-    total = await db.submissions.count_documents(query)
-    submissions = await db.submissions.find(query).sort("submitted_at", -1).skip(skip).limit(limit).to_list(limit)
-    return {
-        "data": submissions,
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-    }
 
 # --- Attendance ---
 
@@ -195,7 +144,7 @@ async def record_attendance(
     ).model_dump()
     attendance_record.update({
         "_id": f"{class_id}_{date}",
-        "recorded_at": datetime.utcnow(),
+        "recorded_at": datetime.now(timezone.utc),
     })
     
     await db.attendance.replace_one({"_id": attendance_record["_id"]}, attendance_record, upsert=True)
@@ -209,69 +158,23 @@ async def record_attendance(
     )
     return {"message": "Attendance recorded successfully"}
 
-# --- Assignments ---
-
-@router.post("/assignments/{class_id}")
-async def create_assignment(
-    class_id: str,
-    title: str,
-    description: str,
-    deadline: datetime,
-    teacher: dict = Depends(check_teacher_role)
-):
+@router.get("/attendance/{class_id}")
+async def list_attendance(class_id: str, teacher: dict = Depends(check_teacher_role)):
     db = get_database()
     target_class = await db.classes.find_one({"_id": class_id, "teacher_id": teacher["_id"]})
     if not target_class:
         raise HTTPException(status_code=403, detail="You do not teach this class")
-    
-    assignment = AssignmentCreate(
-        class_id=class_id,
-        title=title,
-        description=description,
-        deadline=deadline,
-    ).model_dump()
-    assignment.update({
-        "_id": str(uuid.uuid4()),
-        "created_at": datetime.utcnow()
-    })
-    
-    await db.assignments.insert_one(assignment)
-    await log_audit_event(
-        action="teacher.create_assignment",
-        actor_id=teacher["_id"],
-        actor_role=teacher["role"],
-        target_type="assignment",
-        target_id=assignment["_id"],
-        metadata={"class_id": class_id},
-    )
-
-    # Notify enrolled students about the new assignment
-    enrollments = await db.enrollments.find({"class_id": class_id, "status": {"$in": ["enrolled", "completed"]}}).to_list(5000)
-    student_ids = {e.get("student_id") for e in enrollments if e.get("student_id")}
-    course = await db.courses.find_one({"_id": target_class.get("course_id")}) if target_class.get("course_id") else None
-    course_label = ""
-    if course:
-        code = course.get("code") or ""
-        t = course.get("title") or ""
-        course_label = f"{code} - {t}".strip(" -")
-    label = course_label or f"Lớp {class_id}"
-    deadline_text = deadline.strftime("%Y-%m-%d %H:%M")
-    message = f"Có bài tập mới trong {label}. Hạn nộp: {deadline_text}."
-
-    for sid in student_ids:
-        await create_notification(
-            user_id=sid,
-            title=f"Bài tập mới: {title}",
-            message=message,
-        )
-    return assignment
+    return await db.attendance.find({"class_id": class_id}).sort("date", -1).to_list(200)
 
 # --- Grading ---
 
 @router.post("/grade/{enrollment_id}")
 async def grade_student(
     enrollment_id: str,
-    grade: float,
+    grade: float = None, # Legacy final grade
+    score_attendance: float = None,
+    score_midterm: float = None,
+    score_final: float = None,
     comments: str = None,
     teacher: dict = Depends(check_teacher_role)
 ):
@@ -285,40 +188,78 @@ async def grade_student(
     if not target_class:
         raise HTTPException(status_code=403, detail="You do not teach this student's class")
     
-    await db.enrollments.update_one(
-        {"_id": enrollment_id},
-        {"$set": {
-            "grade": grade, 
-            "teacher_comments": comments, 
-            "graded_at": datetime.utcnow(),
+    # Get course weights if possible
+    cls = await db.classes.find_one({"_id": enrollment["class_id"]})
+    course = await db.courses.find_one({"_id": cls.get("course_id")}) if cls else None
+    
+    weights = None
+    if course:
+        weights = {
+            "attendance": course.get("weight_attendance", 0.1),
+            "midterm": course.get("weight_midterm", 0.3),
+            "final": course.get("weight_final", 0.6)
+        }
+
+    from app.core.grading import calculate_enrollment_grade, map_score_to_letter
+    
+    # Get current enrollment data to preserve existing scores
+    att = score_attendance if score_attendance is not None else enrollment.get("score_attendance")
+    mid = score_midterm if score_midterm is not None else enrollment.get("score_midterm")
+    fin = score_final if score_final is not None else enrollment.get("score_final")
+    
+    update_data = {
+        "score_attendance": att,
+        "score_midterm": mid,
+        "score_final": fin,
+        "teacher_comments": comments or enrollment.get("teacher_comments"),
+        "graded_at": datetime.now(timezone.utc),
+        "grading_weights": weights
+    }
+
+    # Calculate final grade only if ALL components are present
+    if fin is not None and att is not None and mid is not None:
+        calc_result = calculate_enrollment_grade(att, mid, fin, weights)
+        final_info = calc_result["result"]
+        update_data.update({
+            "grade": final_info["point_4"],
+            "score_10": final_info["score_10"],
+            "letter_grade": final_info["letter"],
+            "is_passed": final_info["is_passed"],
             "status": "completed"
-        }}
-    )
+        })
+    elif grade is not None:
+        # Legacy support
+        final_info = map_score_to_letter(grade)
+        update_data.update({
+            "grade": final_info["point_4"],
+            "score_10": final_info["score_10"],
+            "letter_grade": final_info["letter"],
+            "is_passed": final_info["is_passed"],
+            "status": "completed"
+        })
+    
+    await db.enrollments.update_one({"_id": enrollment_id}, {"$set": update_data})
+    
     await log_audit_event(
         action="teacher.grade_student",
         actor_id=teacher["_id"],
         actor_role=teacher["role"],
         target_type="enrollment",
         target_id=enrollment_id,
-        metadata={"grade": grade},
+        metadata={"midterm": score_midterm, "final": score_final},
     )
 
-    # Notify student that final grade has been updated
-    student_id = enrollment.get("student_id")
-    if student_id:
-        cls = await db.classes.find_one({"_id": enrollment.get("class_id")}) if enrollment.get("class_id") else None
-        course = await db.courses.find_one({"_id": cls.get("course_id")}) if cls and cls.get("course_id") else None
-        course_label = ""
-        if course:
-            code = course.get("code") or ""
-            t = course.get("title") or ""
-            course_label = f"{code} - {t}".strip(" -")
-        title_text = "Cập nhật điểm tổng kết"
-        msg = f"Điểm tổng kết của bạn đã được cập nhật"
-        if course_label:
-            msg += f" cho học phần {course_label}"
-        msg += f": {grade}."
-        await create_notification(user_id=student_id, title=title_text, message=msg)
+    # Notify student only on final grade
+    if fin is not None or grade is not None:
+        student_id = enrollment.get("student_id")
+        if student_id:
+            # (Notification logic remains similar but safe)
+            await create_notification(
+                user_id=student_id, 
+                title="CẬP NHẬT ĐIỂM TỔNG KẾT", 
+                message=f"Điểm tổng kết của bạn đã được chốt.",
+                link="/student/grades"
+            )
     
     return {"message": "Grade updated successfully"}
 
@@ -336,6 +277,11 @@ async def view_class_feedback(
     query = {"class_id": class_id}
     total = await db.feedback.count_documents(query)
     items = await db.feedback.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    for f in items:
+        created_at = f.get("created_at")
+        if created_at and isinstance(created_at, datetime) and created_at.tzinfo is None:
+            f["created_at"] = created_at.replace(tzinfo=timezone.utc)
+
     return {
         "data": items,
         "total": total,

@@ -10,7 +10,7 @@ from app.core.audit import log_audit_event
 from app.core.config import settings
 from app.db.database import get_database
 from app.schemas.organization import NotificationCreate, NotificationOut
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 router = APIRouter(redirect_slashes=False)
@@ -18,17 +18,18 @@ logger = logging.getLogger(__name__)
 
 active_connections: Dict[str, List[WebSocket]] = defaultdict(list)
 
-async def create_notification(user_id: str, title: str, message: str) -> dict:
+async def create_notification(user_id: str, title: str, message: str, link: str = None) -> dict:
     db = get_database()
     notification = NotificationCreate(
         user_id=user_id,
         title=title,
         message=message,
+        link=link,
     ).model_dump()
     notification.update({
         "_id": str(uuid.uuid4()),
         "read": False,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc)
     })
     await db.notifications.insert_one(notification)
     logger.debug("Inserted notification %s for user %s", notification["_id"], user_id)
@@ -38,6 +39,7 @@ async def create_notification(user_id: str, title: str, message: str) -> dict:
             "id": notification["_id"],
             "title": title,
             "message": message,
+            "link": link,
             "created_at": notification["created_at"].isoformat(),
         },
     })
@@ -58,6 +60,12 @@ async def _broadcast_to_user(user_id: str, payload: dict):
     if stale:
         active_connections[user_id] = [ws for ws in active_connections[user_id] if ws not in stale]
 
+@router.get("/unread-count")
+async def get_unread_count(user: dict = Depends(get_current_user)):
+    db = get_database()
+    count = await db.notifications.count_documents({"user_id": user["_id"], "read": False})
+    return {"count": count}
+
 @router.get("")
 @router.get("/")
 async def get_my_notifications(
@@ -72,6 +80,12 @@ async def get_my_notifications(
     normalized = []
     for item in notifications:
         notification_id = str(item.get("_id", ""))
+        created_at = item.get("created_at")
+        if created_at and created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        elif not created_at:
+            created_at = datetime.now(timezone.utc)
+            
         normalized.append(
             {
                 "_id": notification_id,
@@ -79,8 +93,9 @@ async def get_my_notifications(
                 "user_id": str(item.get("user_id", user["_id"])),
                 "title": item.get("title") or "Thông báo hệ thống",
                 "message": item.get("message") or "",
+                "link": item.get("link"),
                 "read": bool(item.get("read", False)),
-                "created_at": item.get("created_at") or datetime.utcnow(),
+                "created_at": created_at,
             }
         )
     return {
@@ -127,7 +142,12 @@ async def mark_all_as_read(user: dict = Depends(get_current_user)):
 
 @router.post("/send", dependencies=[Depends(check_admin_role)])
 async def send_notification(payload: NotificationCreate):
-    notification = await create_notification(user_id=payload.user_id, title=payload.title, message=payload.message)
+    notification = await create_notification(
+        user_id=payload.user_id, 
+        title=payload.title, 
+        message=payload.message,
+        link=payload.link
+    )
     await log_audit_event(
         action="admin.send_notification",
         actor_role="admin",

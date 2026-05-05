@@ -8,6 +8,7 @@ import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import PaginationControls from "@/components/ui/PaginationControls";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import usePaginatedData from "@/hooks/usePaginatedData";
 import { isInRange, popupValidationError, toNumber } from "@/lib/validation";
@@ -15,6 +16,13 @@ import { showPopup } from "@/lib/popup";
 
 export default function ExamsPage() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user && user.role === "admin") {
+      router.push("/admin");
+    }
+  }, [user, router]);
   const [createError, setCreateError] = useState("");
   const [gradeError, setGradeError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -26,13 +34,14 @@ export default function ExamsPage() {
     description: "",
     scheduled_at: "",
     duration_minutes: 90,
-    max_score: 100,
+    max_score: 10,
   });
 
   const [myClasses, setMyClasses] = useState([]);
   const [gradeExam, setGradeExam] = useState(null);
   const [gradeForm, setGradeForm] = useState({ student_id: "", score: "", comments: "" });
   const [takeExam, setTakeExam] = useState(null);
+  const [viewSubmission, setViewSubmission] = useState(null);
   const [takeForm, setTakeForm] = useState({ content: "" });
   const [takeError, setTakeError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, exam: null });
@@ -104,8 +113,8 @@ export default function ExamsPage() {
       popupValidationError(setCreateError, "Thời lượng thi phải trong khoảng 15 đến 600 phút.");
       return;
     }
-    if (!isInRange(createForm.max_score, 1, 1000)) {
-      popupValidationError(setCreateError, "Điểm tối đa phải trong khoảng 1 đến 1000.");
+    if (!isInRange(createForm.max_score, 1, 10)) {
+      popupValidationError(setCreateError, "Điểm tối đa phải trong khoảng 1 đến 10.");
       return;
     }
     const scheduledAt = new Date(createForm.scheduled_at);
@@ -131,7 +140,7 @@ export default function ExamsPage() {
         description: "",
         scheduled_at: "",
         duration_minutes: 90,
-        max_score: 100,
+        max_score: 10,
       });
       refresh();
     } catch (e) {
@@ -184,7 +193,7 @@ export default function ExamsPage() {
       popupValidationError(setGradeError, "Điểm không hợp lệ.");
       return;
     }
-    const maxScore = Number(gradeExam.max_score || 100);
+    const maxScore = Number(gradeExam.max_score || 10);
     if (!isInRange(score, 0, maxScore)) {
       popupValidationError(setGradeError, `Điểm phải trong khoảng 0 đến ${maxScore}.`);
       return;
@@ -236,17 +245,9 @@ export default function ExamsPage() {
     <div className={`${styles.container} animate-in`}>
       <header className={styles.header}>
         <div className="slide-right stagger-1">
-          <h1>Quản lý Kỳ thi</h1>
-          <p>Lịch thi, bài làm và hệ thống chấm điểm trực tuyến.</p>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900 }}>Lịch thi & Kết quả</h1>
+          <p style={{ fontWeight: 600, color: 'var(--muted-foreground)' }}>Theo dõi lịch thi và thực hiện bài làm trực tuyến của bạn.</p>
         </div>
-        {user?.role === "admin" && (
-          <button
-            onClick={() => setShowCreate(true)}
-            className="btn-primary slide-right stagger-2"
-          >
-            <Plus size={18} /> Tạo kỳ thi mới
-          </button>
-        )}
       </header>
 
       <Modal
@@ -411,7 +412,7 @@ export default function ExamsPage() {
           <div className={styles.takeExamHeader}>
             <p style={{ fontSize: "1.1rem", color: "var(--foreground)", marginBottom: "1.5rem", lineHeight: "1.6", fontWeight: 500 }}>{takeExam?.description || "Hãy thực hiện bài thi theo yêu cầu của giảng viên."}</p>
             <div style={{ display: "flex", gap: "1rem" }}>
-               <span className="badge badge-primary" style={{ padding: '0.5rem 1rem', borderRadius: '0.75rem', fontWeight: 800 }}>Điểm tối đa: {takeExam?.max_score}</span>
+               <span className="badge badge-primary" style={{ padding: '0.5rem 1rem', borderRadius: '0.75rem', fontWeight: 800 }}>Điểm tối đa: 10</span>
                <span className="badge badge-warning" style={{ padding: '0.5rem 1rem', borderRadius: '0.75rem', fontWeight: 800 }}>Thời lượng: {takeExam?.duration_minutes} phút</span>
             </div>
           </div>
@@ -429,6 +430,28 @@ export default function ExamsPage() {
             <button onClick={submitTake} className="btn-primary" style={{ padding: "1rem 3rem", borderRadius: '1.25rem' }}>
               <Send size={18} /> Nộp bài ngay
             </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!viewSubmission}
+        onClose={() => setViewSubmission(null)}
+        title={`Bài làm của bạn: ${viewSubmission?.exam_title}`}
+        maxWidth="800px"
+      >
+        <div style={{ padding: '1rem' }}>
+          <div style={{ padding: '1.5rem', background: 'var(--surface-1)', borderRadius: '1rem', border: '1px solid var(--border)', marginBottom: '2rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '1rem' }}>Nội dung bài làm</label>
+            <div style={{ fontSize: '1.1rem', lineHeight: '1.8', whiteSpace: 'pre-wrap', color: 'var(--foreground)' }}>
+              {viewSubmission?.content}
+            </div>
+          </div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+            <Clock size={16} /> Nộp lúc: {viewSubmission?.submitted_at ? new Date(viewSubmission.submitted_at).toLocaleString('vi-VN') : '—'}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
+            <button className="btn-secondary" onClick={() => setViewSubmission(null)} style={{ padding: '0.75rem 2rem', borderRadius: '1rem', fontWeight: 700 }}>Đóng</button>
           </div>
         </div>
       </Modal>
@@ -453,9 +476,9 @@ export default function ExamsPage() {
         ) : (
           <>
             {sorted.map((e, idx) => {
-              const isGraded = e.grades?.some(g => g.student_id === user?.id);
-              const isSubmitted = e.submissions?.some(s => s.student_id === user?.id);
-              const studentGrade = e.grades?.find(g => g.student_id === user?.id);
+              const isGraded = e.grades?.some(g => g.student_id === user?._id);
+              const isSubmitted = e.submissions?.some(s => s.student_id === user?._id);
+              const studentGrade = e.grades?.find(g => g.student_id === user?._id);
               
               return (
                 <div key={e._id || e.id} className={`${styles.examCard} slide-right`} style={{ animationDelay: `${idx * 0.1 + 0.3}s` }}>
@@ -475,7 +498,7 @@ export default function ExamsPage() {
                         <div className={styles.gradeBox}>
                           <div className={styles.gradeTitle}>
                             <Award size={20} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
-                            Kết quả: {studentGrade.score} / {e.max_score}
+                            Kết quả: {studentGrade.score} / 10
                           </div>
                           {studentGrade.comments && (
                             <div className={styles.gradeComments}>
@@ -494,47 +517,58 @@ export default function ExamsPage() {
                           {e.scheduled_at ? new Date(e.scheduled_at).toLocaleString('vi-VN') : "—"}
                         </div>
                       </div>
-                      <div className={styles.statusRow}>
-                        <CheckCircle size={14} />
-                        <span>{e.grades?.length || 0} bài đã chấm điểm</span>
-                      </div>
+                      {canManage && (
+                        <div className={styles.statusRow}>
+                          <CheckCircle size={14} />
+                          <span>{e.grades?.length || 0} bài đã chấm điểm</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
                   <div className={styles.cardFooter}>
-                    {canManage ? (
-                      <>
-                        <button onClick={() => openGrade(e)} className="btn-primary" style={{ flex: 1, justifyContent: "center", background: "var(--surface-1)", color: "var(--primary)", border: "1px solid var(--border)", boxShadow: 'none' }}>
-                          <Edit3 size={18} /> Ghi điểm / Xem bài làm
-                        </button>
-                        {user?.role === "admin" && (
-                          <button onClick={() => deleteExam(e)} className="action-icon-btn" style={{ background: "rgba(244, 63, 94, 0.08)", color: "#f43f5e", border: "none", padding: "0.75rem", borderRadius: "1rem" }}>
-                            <Trash2 size={20} />
-                          </button>
-                        )}
-                      </>
-                    ) : user?.role === "student" ? (
+                    {user?.role === "student" ? (
                       <button
                         onClick={() => { 
-                          const existing = e.submissions?.find(s => s.student_id === user?.id);
                           setTakeExam(e); 
-                          setTakeForm({ content: existing?.content || "" }); 
+                          setTakeForm({ content: "" }); 
                         }}
-                        disabled={isGraded}
+                        disabled={isGraded || isSubmitted}
                         className="btn-primary"
                         style={{ 
                           width: "100%", 
                           justifyContent: "center",
-                          background: isGraded ? "var(--surface-2)" : (isSubmitted ? "var(--foreground)" : "var(--primary)"),
-                          color: isGraded ? "var(--muted-foreground)" : "white",
-                          opacity: isGraded ? 0.6 : 1,
+                          background: (isGraded || isSubmitted) ? "var(--surface-2)" : "var(--primary)",
+                          color: (isGraded || isSubmitted) ? "var(--muted-foreground)" : "white",
+                          opacity: (isGraded || isSubmitted) ? 0.6 : 1,
                           padding: '1rem',
-                          borderRadius: '1.25rem'
+                          borderRadius: '1.25rem',
+                          cursor: (isGraded || isSubmitted) ? 'not-allowed' : 'pointer'
                         }}
                       >
-                        {isGraded ? "Đã hoàn thành & Có điểm" : (isSubmitted ? "Cập nhật bài làm" : "Bắt đầu làm bài thi")}
+                        {isGraded ? "Đã hoàn thành & Có điểm" : (isSubmitted ? "Đã nộp bài - Đang chờ chấm" : "Bắt đầu làm bài thi")}
                       </button>
-                    ) : null}
+                    ) : (
+                      <div style={{ width: '100%', padding: '0.75rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
+                        Chế độ xem (Dành cho Sinh viên)
+                      </div>
+                    )}
+                    {user?.role === "student" && isSubmitted && !isGraded && (
+                      <button 
+                        onClick={() => {
+                          const sub = e.submissions.find(s => s.student_id === user?._id);
+                          setViewSubmission({
+                            exam_title: e.title,
+                            content: sub.content,
+                            submitted_at: sub.submitted_at
+                          });
+                        }}
+                        className="text-btn"
+                        style={{ marginTop: '1rem', width: '100%', textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', border: 'none', background: 'none', cursor: 'pointer' }}
+                      >
+                        Xem lại bài đã nộp →
+                      </button>
+                    )}
                   </div>
                 </div>
               );

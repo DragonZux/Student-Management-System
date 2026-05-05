@@ -3,7 +3,7 @@ import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { Building2, User, Clock, MapPin, Plus } from 'lucide-react';
+import { Building2, User, Clock, MapPin, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { isInRange, popupValidationError } from '@/lib/validation';
@@ -43,7 +43,7 @@ export default function ClassesPage() {
     semester: '2026-Spring',
     room: '',
     capacity: 30,
-    scheduleText: 'Monday 08:00-10:00',
+    schedule: [{ day: 'Monday', start: '08:00', end: '10:00' }],
   });
 
   useEffect(() => {
@@ -83,22 +83,26 @@ export default function ClassesPage() {
     return map;
   }, [teachers]);
 
-  const normalizeSchedule = (text) => {
-    const items = String(text || '')
-      .split(';')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((chunk) => {
-        const match = chunk.match(/^(.*)\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
-        if (!match) return null;
-        const dayPart = match[1].trim();
-        const start = match[2];
-        const end = match[3];
-        if (!dayPart || !start || !end) return null;
-        return { day: dayPart, start, end };
-      })
-      .filter(Boolean);
-    return items;
+  const addScheduleSlot = () => {
+    setForm(p => ({
+      ...p,
+      schedule: [...p.schedule, { day: 'Monday', start: '08:00', end: '10:00' }]
+    }));
+  };
+
+  const removeScheduleSlot = (index) => {
+    setForm(p => ({
+      ...p,
+      schedule: p.schedule.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateScheduleSlot = (index, field, value) => {
+    setForm(p => {
+      const next = [...p.schedule];
+      next[index] = { ...next[index], [field]: value };
+      return { ...p, schedule: next };
+    });
   };
 
   const openCreate = () => {
@@ -110,7 +114,7 @@ export default function ClassesPage() {
       semester: '2026-Spring',
       room: classrooms?.[0]?.code || '',
       capacity: classrooms?.[0]?.capacity || 30,
-      scheduleText: 'Monday 08:00-10:00',
+      schedule: [{ day: 'Monday', start: '08:00', end: '10:00' }],
     });
     setShowForm(true);
   };
@@ -123,7 +127,7 @@ export default function ClassesPage() {
       semester: cls.semester || '2026-Spring',
       room: cls.room || '',
       capacity: cls.capacity ?? 30,
-      scheduleText: (cls.schedule || []).map((s) => `${s.day} ${s.start}-${s.end}`).join('; '),
+      schedule: cls.schedule || [{ day: 'Monday', start: '08:00', end: '10:00' }],
     });
     setShowForm(true);
   };
@@ -136,10 +140,14 @@ export default function ClassesPage() {
       semester: form.semester,
       room: form.room,
       capacity: Number(form.capacity),
-      schedule: normalizeSchedule(form.scheduleText),
+      schedule: form.schedule,
     };
     if (!payload.course_id || !payload.teacher_id || !payload.room || !payload.semester) {
       popupValidationError(setFormError, 'Vui lòng điền đầy đủ các trường bắt buộc.');
+      return;
+    }
+    if (!payload.schedule || payload.schedule.length === 0) {
+      popupValidationError(setFormError, 'Vui lòng thêm ít nhất một lịch học.');
       return;
     }
     try {
@@ -233,8 +241,76 @@ export default function ClassesPage() {
               <input type="number" value={form.capacity} onChange={(e) => setForm((p) => ({ ...p, capacity: e.target.value }))} />
             </div>
             <div className={`${styles.formField} ${styles.fullWidth}`}>
-              <label>Lịch học chi tiết (Ví dụ: Monday 08:00-10:00; Wednesday 13:00-15:00)</label>
-              <input value={form.scheduleText} onChange={(e) => setForm((p) => ({ ...p, scheduleText: e.target.value }))} placeholder="Nhập lịch học theo định dạng 'Thứ Thời Gian'" />
+              <label>Lịch học chi tiết</label>
+              <div className={styles.scheduleBuilder}>
+                <table className={styles.scheduleTable}>
+                  <thead>
+                    <tr>
+                      <th>Thứ</th>
+                      <th>Bắt đầu</th>
+                      <th>Kết thúc</th>
+                      <th style={{ width: '60px' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(form.schedule || []).map((slot, idx) => (
+                      <tr key={idx}>
+                        <td>
+                          <select 
+                            className={styles.tableInput}
+                            value={slot.day} 
+                            onChange={(e) => updateScheduleSlot(idx, 'day', e.target.value)}
+                          >
+                            <option value="Monday">Thứ Hai</option>
+                            <option value="Tuesday">Thứ Ba</option>
+                            <option value="Wednesday">Thứ Tư</option>
+                            <option value="Thursday">Thứ Năm</option>
+                            <option value="Friday">Thứ Sáu</option>
+                            <option value="Saturday">Thứ Bảy</option>
+                            <option value="Sunday">Chủ Nhật</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input 
+                            className={styles.tableInput}
+                            type="time" 
+                            value={slot.start} 
+                            onChange={(e) => updateScheduleSlot(idx, 'start', e.target.value)} 
+                          />
+                        </td>
+                        <td>
+                          <input 
+                            className={styles.tableInput}
+                            type="time" 
+                            value={slot.end} 
+                            onChange={(e) => updateScheduleSlot(idx, 'end', e.target.value)} 
+                          />
+                        </td>
+                        <td>
+                          {form.schedule.length > 1 && (
+                            <button 
+                              type="button" 
+                              className={styles.removeBtn} 
+                              onClick={() => removeScheduleSlot(idx)}
+                              title="Xóa buổi học này"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button 
+                  type="button" 
+                  className={styles.addBtn} 
+                  onClick={addScheduleSlot}
+                >
+                  <Plus size={18} />
+                  Thêm buổi học mới
+                </button>
+              </div>
             </div>
           </div>
           <div className={styles.formActions}>

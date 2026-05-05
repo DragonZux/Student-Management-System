@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import api from '@/lib/api';
-import { Search, Star, MessageSquare, Calendar, User, BookOpen, ExternalLink, Filter, Loader2 } from 'lucide-react';
+import { Search, Star, MessageSquare, Calendar, User, BookOpen, ExternalLink, Filter, Loader2, Quote, TrendingUp, Users } from 'lucide-react';
 import styles from '@/styles/modules/admin/feedback.module.css';
 import PaginationControls from '@/components/ui/PaginationControls';
 import Modal from '@/components/ui/Modal';
@@ -39,6 +39,15 @@ export default function AdminFeedbackPage() {
     return () => clearTimeout(timer);
   }, [page, pageSize, search]);
 
+  const stats = useMemo(() => {
+    if (!feedback.length) return { avg: 0, total: total };
+    const sum = feedback.reduce((acc, curr) => acc + (curr.feedback.rating || 0), 0);
+    return {
+      avg: (sum / feedback.length).toFixed(1),
+      total: total
+    };
+  }, [feedback, total]);
+
   const handleViewDetails = (item) => {
     setSelectedFeedback(item);
   };
@@ -48,11 +57,35 @@ export default function AdminFeedbackPage() {
       <header className={styles.header}>
         <div className="slide-right stagger-1">
           <h1>Quản lý Phản hồi</h1>
-          <p>Xem và phân tích ý kiến đóng góp từ sinh viên về các lớp học.</p>
+          <p>Lắng nghe và cải thiện chất lượng đào tạo từ ý kiến sinh viên.</p>
         </div>
       </header>
 
-      <div className={`${styles.filterBar} scale-in stagger-2`}>
+      <div className={styles.statsGrid}>
+        <div className={`${styles.statCard} slide-up stagger-1`}>
+          <div className={styles.statIcon}><MessageSquare size={24} /></div>
+          <div className={styles.statInfo}>
+            <h3>Tổng số phản hồi</h3>
+            <div className={styles.statValue}>{stats.total}</div>
+          </div>
+        </div>
+        <div className={`${styles.statCard} slide-up stagger-2`}>
+          <div className={styles.statIcon} style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}><Star size={24} /></div>
+          <div className={styles.statInfo}>
+            <h3>Đánh giá trung bình</h3>
+            <div className={styles.statValue}>{stats.avg} <span style={{ fontSize: '1rem', color: 'var(--muted-foreground)' }}>/ 5.0</span></div>
+          </div>
+        </div>
+        <div className={`${styles.statCard} slide-up stagger-3`}>
+          <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}><TrendingUp size={24} /></div>
+          <div className={styles.statInfo}>
+            <h3>Tỉ lệ hài lòng</h3>
+            <div className={styles.statValue}>{Math.round((stats.avg / 5) * 100)}%</div>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${styles.filterBar} slide-up stagger-4`}>
         <div className={styles.searchInput}>
           <Search className={styles.searchIcon} size={20} />
           <input 
@@ -62,21 +95,21 @@ export default function AdminFeedbackPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <button className="btn-secondary flex items-center gap-2">
+        <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '1rem', fontWeight: 700 }}>
           <Filter size={18} /> Lọc kết quả
         </button>
       </div>
 
-      <div className={`${styles.tableContainer} scale-in stagger-3`}>
+      <div className={`${styles.tableContainer} slide-up stagger-5`}>
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-24 gap-4">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem', gap: '1rem' }}>
             <Loader2 className="animate-spin text-primary" size={48} />
-            <p className="text-muted-foreground font-medium">Đang tải dữ liệu phản hồi...</p>
+            <p style={{ color: 'var(--muted-foreground)', fontWeight: 600 }}>Đang tải dữ liệu phản hồi...</p>
           </div>
         ) : feedback.length === 0 ? (
-          <div className="text-center p-24 text-muted-foreground">
-            <MessageSquare size={64} className="mx-auto mb-4 opacity-20" />
-            <p>Không tìm thấy phản hồi nào phù hợp.</p>
+          <div style={{ textAlign: 'center', padding: '6rem', color: 'var(--muted-foreground)' }}>
+            <MessageSquare size={64} style={{ margin: '0 auto 1.5rem', opacity: 0.1 }} />
+            <p style={{ fontWeight: 600 }}>Không tìm thấy phản hồi nào phù hợp.</p>
           </div>
         ) : (
           <>
@@ -88,12 +121,12 @@ export default function AdminFeedbackPage() {
                   <th>Đánh giá</th>
                   <th>Nội dung</th>
                   <th>Ngày gửi</th>
-                  <th>Thao tác</th>
+                  <th style={{ textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {feedback.map((item, idx) => (
-                  <tr key={item.feedback._id} className="table-row-hover">
+                {feedback.map((item) => (
+                  <tr key={item.feedback._id}>
                     <td>
                       <div className={styles.studentInfo}>
                         <span className={styles.studentName}>{item.student.full_name}</span>
@@ -108,7 +141,7 @@ export default function AdminFeedbackPage() {
                     </td>
                     <td>
                       <div className={styles.rating}>
-                        <Star size={16} fill="currentColor" />
+                        <Star size={18} fill="currentColor" />
                         <span>{item.feedback.rating}</span>
                       </div>
                     </td>
@@ -123,10 +156,9 @@ export default function AdminFeedbackPage() {
                       </span>
                     </td>
                     <td>
-                      <div className={styles.actions}>
+                      <div className={styles.actions} style={{ justifyContent: 'flex-end' }}>
                         <button 
                           className={styles.viewBtn} 
-                          title="Xem chi tiết"
                           onClick={() => handleViewDetails(item)}
                         >
                           <ExternalLink size={18} />
@@ -137,13 +169,15 @@ export default function AdminFeedbackPage() {
                 ))}
               </tbody>
             </table>
-            <PaginationControls 
-              currentPage={page}
-              totalPages={Math.ceil(total / pageSize)}
-              onPageChange={setPage}
-              total={total}
-              currentCount={feedback.length}
-            />
+            <div style={{ padding: '1.5rem' }}>
+              <PaginationControls 
+                currentPage={page}
+                totalPages={Math.ceil(total / pageSize)}
+                onPageChange={setPage}
+                total={total}
+                currentCount={feedback.length}
+              />
+            </div>
           </>
         )}
       </div>
@@ -152,55 +186,57 @@ export default function AdminFeedbackPage() {
         isOpen={!!selectedFeedback} 
         onClose={() => setSelectedFeedback(null)}
         title="Chi tiết Phản hồi"
+        maxWidth="800px"
       >
         {selectedFeedback && (
-          <div className="flex flex-col gap-6 p-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-muted rounded-xl">
-                <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">Sinh viên</label>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                    <User size={20} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              <div className={styles.modalDetailCard}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '1rem' }}>Người gửi</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ padding: '0.75rem', background: 'rgba(var(--primary-rgb), 0.1)', borderRadius: '0.75rem', color: 'var(--primary)' }}>
+                    <User size={24} />
                   </div>
                   <div>
-                    <div className="font-bold">{selectedFeedback.student.full_name}</div>
-                    <div className="text-sm text-muted-foreground">{selectedFeedback.student.email}</div>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{selectedFeedback.student.full_name}</div>
+                    <div style={{ color: 'var(--muted-foreground)', fontWeight: 500 }}>{selectedFeedback.student.email}</div>
                   </div>
                 </div>
               </div>
-              <div className="p-4 bg-muted rounded-xl">
-                <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">Học phần</label>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-secondary/10 rounded-lg text-secondary">
-                    <BookOpen size={20} />
+              <div className={styles.modalDetailCard}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '1rem' }}>Học phần</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ padding: '0.75rem', background: 'rgba(var(--secondary-rgb), 0.1)', borderRadius: '0.75rem', color: 'var(--secondary)' }}>
+                    <BookOpen size={24} />
                   </div>
                   <div>
-                    <div className="font-bold">{selectedFeedback.class.course_code}</div>
-                    <div className="text-sm text-muted-foreground">{selectedFeedback.class.course_title}</div>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{selectedFeedback.class.course_code}</div>
+                    <div style={{ color: 'var(--muted-foreground)', fontWeight: 500 }}>{selectedFeedback.class.course_title}</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 bg-surface-1 rounded-2xl border border-border">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2 text-xl font-black text-yellow-500">
+            <div className={styles.quoteContainer}>
+              <div className={styles.quoteIcon}><Quote size={20} /></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.5rem', fontWeight: 900, color: '#f59e0b' }}>
                   <Star fill="currentColor" size={24} />
                   <span>{selectedFeedback.feedback.rating} / 5</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar size={16} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
+                  <Calendar size={18} />
                   {new Date(selectedFeedback.feedback.created_at).toLocaleString('vi-VN')}
                 </div>
               </div>
-              <div className="text-lg leading-relaxed italic text-foreground">
+              <div style={{ fontSize: '1.25rem', lineHeight: '1.8', color: 'var(--foreground)', fontStyle: 'italic', fontWeight: 500 }}>
                 "{selectedFeedback.feedback.comment}"
               </div>
             </div>
 
-            <div className="flex justify-end mt-4">
-              <button className="btn-primary" onClick={() => setSelectedFeedback(null)}>
-                Đóng
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn-primary" style={{ padding: '0.8rem 2.5rem', borderRadius: '1.25rem' }} onClick={() => setSelectedFeedback(null)}>
+                Xác nhận
               </button>
             </div>
           </div>

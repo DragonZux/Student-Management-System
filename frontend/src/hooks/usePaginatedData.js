@@ -75,11 +75,6 @@ export default function usePaginatedData(url, optionsOrCacheKey = {}, legacyLimi
       setLoading(true);
       setError(null);
 
-      // Cancel previous request if still running
-      if (currentRequestRef.current) {
-        // Axios cancel token could be used here, but for now we just track identity
-      }
-
       const params = {
         skip: currentSkip,
         limit: currentLimit,
@@ -92,14 +87,11 @@ export default function usePaginatedData(url, optionsOrCacheKey = {}, legacyLimi
       const adapted = typeof responseAdapterRef.current === 'function'
         ? responseAdapterRef.current(result, { skip: currentSkip, limit: currentLimit, search: currentSearch })
         : normalizeResult(result, currentSkip);
-      const fetchedData = adapted.data || [];
-      const fetchedTotal = Number(adapted.total || 0);
-      const resolvedSkip = Number(adapted.skip ?? currentSkip ?? 0);
-
-      setData(fetchedData);
+      
+      setData(adapted.data || []);
       setRawData(result);
-      setTotal(fetchedTotal);
-      setSkip(resolvedSkip);
+      setTotal(Number(adapted.total || 0));
+      setSkip(Number(adapted.skip ?? currentSkip ?? 0));
     } catch (err) {
       if (err.name !== 'CanceledError') {
         setError(err.message || 'Lỗi khi tải dữ liệu');
@@ -112,15 +104,11 @@ export default function usePaginatedData(url, optionsOrCacheKey = {}, legacyLimi
 
   useEffect(() => {
     fetchData(skip, limit, debouncedSearch);
-  }, [skip, limit, debouncedSearch, fetchData]);
+  }, [skip, limit, debouncedSearch, fetchData, extraParamsKey]);
 
   // Listen for global notification events to trigger realtime refresh
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    
-    // We only auto-refresh if this hook is watching notifications
-    // or if we want global refresh for all paginated data.
-    // For now, let's refresh if it's the notifications endpoint.
     if (!url.includes('notifications')) return undefined;
 
     const handleNotification = () => {
@@ -143,20 +131,14 @@ export default function usePaginatedData(url, optionsOrCacheKey = {}, legacyLimi
     };
   }, [search]);
 
-  const handleSearch = (value) => {
-    setSearch(value);
-  };
+  const handleSearch = (value) => setSearch(value);
 
   const nextPage = () => {
-    if (skip + limit < total) {
-      setSkip(prev => prev + limit);
-    }
+    if (skip + limit < total) setSkip(prev => prev + limit);
   };
 
   const prevPage = () => {
-    if (skip - limit >= 0) {
-      setSkip(prev => prev - limit);
-    }
+    if (skip - limit >= 0) setSkip(prev => prev - limit);
   };
 
   const setPage = (value) => {

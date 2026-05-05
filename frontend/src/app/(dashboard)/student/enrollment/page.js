@@ -95,9 +95,13 @@ export default function StudentEnrollmentPage() {
               <button 
                 onClick={() => handleEnroll(cls._id)}
                 className={styles.enrollBtn}
-                disabled={cls.current_enrollment >= cls.capacity}
+                disabled={cls.current_enrollment >= cls.capacity || cls.is_course_already_enrolled}
               >
-                {cls.current_enrollment >= cls.capacity ? 'Lớp đã đầy' : 'Đăng ký ngay'}
+                {cls.is_course_already_enrolled 
+                  ? 'Đã đăng ký môn này' 
+                  : cls.current_enrollment >= cls.capacity 
+                    ? 'Lớp đã đầy' 
+                    : 'Đăng ký ngay'}
               </button>
             </div>
           );

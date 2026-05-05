@@ -1,4 +1,4 @@
- "use client";
+"use client";
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import { LogOut, AlertCircle, FileText } from 'lucide-react';
@@ -126,12 +126,12 @@ export default function WithdrawalPage() {
                 <select
                   value={selectedEnrollment}
                   onChange={(e) => setSelectedEnrollment(e.target.value)}
-                  style={{ 
-                    width: '100%', 
-                    padding: '1.125rem', 
-                    borderRadius: '1.25rem', 
-                    border: '1px solid rgba(0,0,0,0.1)', 
-                    background: 'white', 
+                  style={{
+                    width: '100%',
+                    padding: '1.125rem',
+                    borderRadius: '1.25rem',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    background: 'white',
                     fontSize: '1rem',
                     color: '#374151',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
@@ -152,18 +152,18 @@ export default function WithdrawalPage() {
 
               <div>
                 <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Lý do rút học phần</label>
-                <textarea 
-                  value={reason} 
-                  onChange={(e) => setReason(e.target.value)} 
-                  style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', minHeight: '160px', fontSize: '1rem', resize: 'vertical' }} 
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border)', background: 'var(--card)', minHeight: '160px', fontSize: '1rem', resize: 'vertical' }}
                   placeholder="Vui lòng nêu lý do chi tiết..."
                   className="input-hover"
                 ></textarea>
               </div>
 
-              <button 
+              <button
                 className="btn-primary"
-                style={{ 
+                style={{
                   padding: '1.125rem', background: '#e11d48', color: 'white', border: 'none', borderRadius: '1.125rem', fontWeight: 800, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', fontSize: '1.05rem',
                   boxShadow: '0 10px 20px -5px rgba(225, 29, 72, 0.3)'
@@ -179,7 +179,7 @@ export default function WithdrawalPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <h2 style={{ fontSize: '1.375rem', fontWeight: 800, margin: '0 0 0.5rem' }}>Lịch sử yêu cầu</h2>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {pagedHistory.map(e => (
               <Card key={e._id} className="glass" style={{ padding: '1.25rem' }}>
@@ -199,7 +199,7 @@ export default function WithdrawalPage() {
                 </div>
               </Card>
             ))}
-            
+
             {historyItems.length === 0 && (
               <div style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '1.5rem', border: '2px dashed var(--border)' }}>
                 <p style={{ color: 'var(--muted-foreground)', fontWeight: 600, margin: 0 }}>Bạn chưa có yêu cầu nào.</p>

@@ -19,6 +19,9 @@ class CourseBase(BaseModel):
     credits: int
     department_id: Optional[str] = None
     prerequisites: List[str] = Field(default_factory=list)
+    weight_attendance: float = 0.1
+    weight_midterm: float = 0.3
+    weight_final: float = 0.6
 
 
 class CourseCreate(CourseBase):
@@ -33,6 +36,9 @@ class CourseUpdate(BaseModel):
     credits: Optional[int] = None
     department_id: Optional[str] = None
     prerequisites: Optional[List[str]] = None
+    weight_attendance: Optional[float] = None
+    weight_midterm: Optional[float] = None
+    weight_final: Optional[float] = None
 
 
 class CourseOut(CourseBase):
@@ -98,16 +104,27 @@ class EnrollmentCreate(EnrollmentBase):
 class EnrollmentUpdate(BaseModel):
     status: Optional[str] = None
     grade: Optional[float] = None
+    score_attendance: Optional[float] = None
+    score_midterm: Optional[float] = None
+    score_final: Optional[float] = None
     teacher_comments: Optional[str] = None
+    letter_grade: Optional[str] = None
+    is_passed: Optional[bool] = None
     withdrawn_at: Optional[datetime] = None
 
 
 class EnrollmentOut(EnrollmentBase):
     id: str = Field(alias="_id")
     grade: Optional[float] = None
+    score_10: Optional[float] = None
+    score_attendance: Optional[float] = None
+    score_midterm: Optional[float] = None
+    score_final: Optional[float] = None
     teacher_comments: Optional[str] = None
     enrolled_at: datetime
     graded_at: Optional[datetime] = None
+    letter_grade: Optional[str] = None
+    is_passed: bool = False
     withdrawn_at: Optional[datetime] = None
 
     class Config:
@@ -178,7 +195,7 @@ class ExamBase(BaseModel):
     description: Optional[str] = None
     scheduled_at: datetime
     duration_minutes: int
-    max_score: float = 100.0
+    max_score: float = 10.0
     grades: List[ExamGrade] = Field(default_factory=list)
     submissions: List[ExamSubmission] = Field(default_factory=list)
 

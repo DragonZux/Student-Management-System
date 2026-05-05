@@ -109,6 +109,12 @@
   gap: 2rem;
 }
 
+.gradeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
 .formField {
   display: flex;
   flex-direction: column;

@@ -16,7 +16,9 @@ export default function TeacherGradingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [grading, setGrading] = useState(null); // enrollment item
-  const [grade, setGrade] = useState('');
+  const [scoreAttendance, setScoreAttendance] = useState('10');
+  const [scoreMidterm, setScoreMidterm] = useState('');
+  const [scoreFinal, setScoreFinal] = useState('');
   const [comments, setComments] = useState('');
   const [formError, setFormError] = useState('');
   const [page, setPage] = useState(1);
@@ -96,25 +98,38 @@ export default function TeacherGradingPage() {
   const openGrade = (it) => {
     setGrading(it);
     setFormError('');
-    setGrade(it?.enrollment?.grade ?? '');
+    setScoreAttendance(it?.enrollment?.score_attendance ?? '10');
+    setScoreMidterm(it?.enrollment?.score_midterm ?? '');
+    setScoreFinal(it?.enrollment?.score_final ?? '');
     setComments(it?.enrollment?.teacher_comments ?? '');
   };
 
   const submit = async () => {
     if (!grading?.enrollment?._id) return;
     setFormError('');
-    const g = toNumber(grade);
-    if (g === null) {
-      popupValidationError(setFormError, 'Điểm không hợp lệ.');
+    
+    const att = toNumber(scoreAttendance);
+    const mid = toNumber(scoreMidterm);
+    const fin = toNumber(scoreFinal);
+
+    if (fin === null) {
+      popupValidationError(setFormError, 'Điểm cuối kỳ là bắt buộc.');
       return;
     }
-    if (!isInRange(g, 0, 100)) {
-      popupValidationError(setFormError, 'Điểm phải trong khoảng 0 đến 100.');
+
+    if (!isInRange(att, 0, 10) || !isInRange(mid, 0, 10) || !isInRange(fin, 0, 10)) {
+      popupValidationError(setFormError, 'Điểm phải nằm trong khoảng từ 0 đến 10.');
       return;
     }
+
     try {
       await api.post(`/teacher/grade/${grading.enrollment._id}`, null, {
-        params: { grade: g, comments: comments || '' },
+        params: { 
+          score_attendance: att,
+          score_midterm: mid,
+          score_final: fin,
+          comments: comments || '' 
+        },
       });
       setGrading(null);
       await loadStudents(selectedClass);
@@ -162,15 +177,34 @@ export default function TeacherGradingPage() {
             <div className={styles.modalBody}>
               {formError && <InlineMessage variant="error">{formError}</InlineMessage>}
               
-              <div className={styles.formField}>
-                <label className={styles.formLabel}>Điểm số tổng kết</label>
-                <input 
-                  className={styles.input}
-                  value={grade} 
-                  onChange={(e) => setGrade(e.target.value)} 
-                  placeholder="Ví dụ: 85"
-                  style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'JetBrains Mono, monospace' }}
-                />
+              <div className={styles.gradeGrid}>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel}>Chuyên cần (10%)</label>
+                  <input 
+                    className={styles.input}
+                    value={scoreAttendance} 
+                    onChange={(e) => setScoreAttendance(e.target.value)} 
+                    placeholder="0-10"
+                  />
+                </div>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel}>Giữa kỳ (30%)</label>
+                  <input 
+                    className={styles.input}
+                    value={scoreMidterm} 
+                    onChange={(e) => setScoreMidterm(e.target.value)} 
+                    placeholder="0-10"
+                  />
+                </div>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel}>Cuối kỳ (60%)</label>
+                  <input 
+                    className={styles.input}
+                    value={scoreFinal} 
+                    onChange={(e) => setScoreFinal(e.target.value)} 
+                    placeholder="0-10"
+                  />
+                </div>
               </div>
 
               <div className={styles.formField}>
@@ -238,8 +272,8 @@ export default function TeacherGradingPage() {
                       background: it.enrollment?.status === 'completed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                       color: it.enrollment?.status === 'completed' ? '#059669' : '#d97706'
                     }}>
-                      {it.enrollment?.status === 'completed' ? 'Hoàn thành' : 'Đang học'} 
-                      {it.enrollment?.grade != null && <span style={{ marginLeft: '0.5rem', fontWeight: 900 }}>[{it.enrollment.grade}]</span>}
+                      {it.enrollment?.status === 'completed' ? 'Đã có điểm' : 'Chờ chấm điểm'} 
+                      {it.enrollment?.score_10 != null && <span style={{ marginLeft: '0.5rem', fontWeight: 900 }}>[{it.enrollment.score_10} | {it.enrollment.letter_grade}]</span>}
                     </span>
                     
                     <button 
