@@ -613,6 +613,34 @@ async def list_audit_logs(
         "limit": limit
     }
 
+@router.get("/audit-stats")
+async def get_audit_stats():
+    db = get_database()
+    
+    # Use timezone-aware UTC now
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Severity logic mirrored from frontend
+    # Warning: delete|withdraw|reject|remove
+    # Critical: password|security|error|fail
+    
+    warning_query = {"action": {"$regex": "delete|withdraw|reject|remove", "$options": "i"}}
+    critical_query = {"action": {"$regex": "password|security|error|fail", "$options": "i"}}
+    
+    # We use a parallel approach for efficiency if possible, or just sequential
+    total = await db.audit_logs.count_documents({})
+    today_count = await db.audit_logs.count_documents({"created_at": {"$gte": today_start}})
+    warning_count = await db.audit_logs.count_documents(warning_query)
+    critical_count = await db.audit_logs.count_documents(critical_query)
+    
+    return {
+        "total": total,
+        "today": today_count,
+        "warning": warning_count,
+        "critical": critical_count
+    }
+
 # --- Feedback/Survey (admin visibility) ---
 
 @router.get("/feedback")

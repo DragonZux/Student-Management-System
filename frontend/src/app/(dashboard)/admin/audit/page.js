@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Clock, User, Activity, Search, Filter, RefreshCw, AlertTriangle, ShieldAlert, FileClock, Eye } from 'lucide-react';
+import api from '@/lib/api';
 import Card from '@/components/ui/Card';
 import InlineMessage from '@/components/ui/InlineMessage';
 import styles from '@/styles/modules/admin/audit.module.css';
@@ -43,12 +44,31 @@ export default function AuditLogsPage() {
     totalPages,
     pageSize,
     setPageSize,
-    refresh,
+    refresh: refreshData,
   } = usePaginatedData('/admin/audit-logs', { cacheKey: 'audit-logs', initialLimit: 50 });
 
   const [query, setQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [globalStats, setGlobalStats] = useState({ total: 0, today: 0, warning: 0, critical: 0 });
+
+  const fetchGlobalStats = useCallback(async () => {
+    try {
+      const response = await api.get('/admin/audit-stats');
+      setGlobalStats(response.data);
+    } catch (err) {
+      console.error('Lỗi khi tải thống kê audit:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGlobalStats();
+  }, [fetchGlobalStats]);
+
+  const refresh = useCallback(() => {
+    refreshData();
+    fetchGlobalStats();
+  }, [refreshData, fetchGlobalStats]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -124,19 +144,19 @@ export default function AuditLogsPage() {
             <div className={styles.heroStats}>
               <div className={styles.heroStat}>
                 <span>Tổng log</span>
-                <strong>{summary.total || total || 0}</strong>
+                <strong>{globalStats.total || total || 0}</strong>
               </div>
               <div className={styles.heroStat}>
                 <span>Hôm nay</span>
-                <strong>{summary.today}</strong>
+                <strong>{globalStats.today}</strong>
               </div>
               <div className={styles.heroStat}>
                 <span>Cảnh báo</span>
-                <strong>{summary.warning}</strong>
+                <strong>{globalStats.warning}</strong>
               </div>
               <div className={styles.heroStat}>
                 <span>Nghiêm trọng</span>
-                <strong>{summary.critical}</strong>
+                <strong>{globalStats.critical}</strong>
               </div>
             </div>
           </div>

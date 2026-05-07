@@ -1,54 +1,298 @@
-/* Login page styles - uses global CSS variables for color consistency */
+/* Login page styles - Optimized for Premium Aesthetics & Project Sync */
 .loginContainer {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3rem 1rem;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--background);
+}
+
+/* Dynamic Mesh Background */
+.backgroundPattern {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 0% 0%, rgba(var(--primary-rgb), 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, rgba(var(--accent-rgb), 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 60%);
 }
 
 .backdropBubble {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.42;
+  filter: blur(80px);
+  opacity: 0.35;
   pointer-events: none;
+  z-index: 1;
+  animation: float 20s ease-in-out infinite alternate;
 }
 
-.cardWrap { max-width: 480px; width: 100%; }
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, -30px) scale(1.1); }
+}
 
-.hero { text-align: center; margin-bottom: 0.75rem; }
+.cardWrap { 
+  max-width: 440px; 
+  width: 100%; 
+  position: relative;
+  z-index: 10;
+}
+
+.hero { 
+  text-align: center; 
+  margin-bottom: 2rem; 
+}
+
 .heroLogo {
-  width: 76px; height: 76px; margin: 0 auto;
-  border-radius: 14px; display:flex; align-items:center; justify-content:center;
+  width: 80px; 
+  height: 80px; 
+  margin: 0 auto;
+  border-radius: 20px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   box-shadow: var(--shadow-primary);
-  transform: rotate(-7deg);
+  margin-bottom: 1.5rem;
+  position: relative;
 }
-.title { margin-top: 12px; font-size: 1.6rem; font-weight: 800; color: var(--foreground); }
-.title span { color: var(--primary); }
-.subtitle { color: var(--muted-foreground); font-weight: 600; font-size: 0.95rem; }
 
-.form { padding-top: 6px; }
-.field { margin-bottom: 14px; }
-.label { display:block; font-size: 12px; font-weight:800; color:var(--muted-foreground); margin-bottom:6px; letter-spacing:0.06em; }
-.inputWrap { position: relative; }
-.inputIcon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted-foreground); opacity:0.75; }
-.input { width:100%; padding:12px 44px 12px 44px; border-radius:12px; border:1px solid var(--border); background:var(--input); color:var(--foreground); font-size:15px; }
-.inputToggle { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted-foreground); cursor:pointer; padding:6px; border-radius:6px; }
-.input:focus { box-shadow: 0 0 0 6px rgba(var(--primary-rgb),0.06); border-color:var(--primary); }
-
-.optionsRow { display:flex; justify-content:space-between; align-items:center; margin:12px 0 18px; }
-.remember { display:flex; align-items:center; gap:8px; color:var(--muted-foreground); font-weight:700; }
-.forgot { background:none; border:none; color:var(--primary); font-weight:800; cursor:pointer; }
-
-.submit { width:100%; padding:12px; border-radius:12px; border:none; color:white; font-weight:800; background:linear-gradient(135deg,var(--primary) 0%,var(--primary-hover) 100%); display:flex; justify-content:center; gap:8px; align-items:center; }
-.submit[disabled] { opacity:0.6; filter:grayscale(0.25); cursor:not-allowed; }
-
-.badges { display:flex; justify-content:center; gap:18px; margin-top:18px; opacity:0.35; font-weight:800; text-transform:uppercase; font-size:12px; }
-.footer { text-align:center; margin-top:16px; color:var(--muted-foreground); opacity:0.8; font-size:0.9rem; }
-
-@media (max-width: 520px) {
-  .cardWrap { padding: 1rem; }
-  .title { font-size: 1.35rem; }
+.heroLogo::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  opacity: 0.3;
+  z-index: -1;
+  filter: blur(8px);
 }
+
+.title { 
+  font-size: 2rem; 
+  font-weight: 900; 
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.subtitle { 
+  color: var(--muted-foreground); 
+  font-weight: 500; 
+  font-size: 1rem;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.form { 
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field { 
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label { 
+  font-size: 0.85rem; 
+  font-weight: 700; 
+  color: var(--foreground);
+  margin-left: 4px;
+}
+
+.inputWrap { 
+  position: relative; 
+}
+
+.inputIcon { 
+  position: absolute; 
+  left: 1.25rem; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  color: var(--muted-foreground); 
+  transition: all 0.3s ease;
+}
+
+.input { 
+  width: 100%; 
+  padding: 0.85rem 1rem 0.85rem 3.25rem !important; 
+  background: rgba(255, 255, 255, 0.5) !important; 
+  border: 1px solid var(--border) !important;
+  border-radius: 1rem !important;
+  font-size: 1rem !important;
+  transition: all 0.3s var(--ease-out-expo) !important;
+}
+
+.dark .input {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+.input:focus { 
+  border-color: var(--primary) !important;
+  background: var(--card) !important;
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1) !important;
+  transform: translateY(-1px);
+}
+
+.input:focus + .inputIcon {
+  color: var(--primary);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.inputToggle { 
+  position: absolute; 
+  right: 0.75rem; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  background: none; 
+  border: none; 
+  color: var(--muted-foreground); 
+  cursor: pointer; 
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.inputToggle:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+}
+
+.optionsRow { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin: 0.5rem 0;
+}
+
+.remember { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.75rem; 
+  color: var(--muted-foreground); 
+  font-weight: 600; 
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.remember:hover {
+  color: var(--foreground);
+}
+
+.remember input {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--input);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.remember input:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.remember input:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.forgot { 
+  background: none; 
+  border: none; 
+  color: var(--primary); 
+  font-weight: 700; 
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.forgot:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.submit { 
+  width: 100%; 
+  padding: 1rem !important; 
+  border-radius: 1rem !important; 
+  border: none; 
+  color: white; 
+  font-weight: 800 !important; 
+  font-size: 1.1rem !important;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); 
+  display: flex; 
+  justify-content: center; 
+  gap: 0.75rem; 
+  align-items: center; 
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -6px rgba(var(--primary-rgb), 0.4);
+}
+
+.submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.submit[disabled] { 
+  opacity: 0.7; 
+  cursor: wait; 
+}
+
+
+.badges { 
+  display: flex; 
+  justify-content: center; 
+  gap: 1.5rem; 
+  margin-top: 2rem; 
+}
+
+.badgeItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted-foreground);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+.footer { 
+  text-align: center; 
+  margin-top: 2rem; 
+  color: var(--muted-foreground); 
+  font-weight: 500;
+  font-size: 0.9rem; 
+}
+
+@media (max-width: 480px) {
+  .cardWrap { padding: 0 1rem; }
+  .title { font-size: 1.75rem; }
+  .heroLogo { width: 70px; height: 70px; }
+}
+
