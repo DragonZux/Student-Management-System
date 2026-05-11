@@ -1,0 +1,206 @@
+/* CyberCard Styles - Cyberpunk card component with variants */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  clip-path: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* DEFAULT VARIANT */
+.variant-default {
+  background: var(--card);
+}
+
+.variant-default.hover-effect:hover {
+  border-color: #00ff88;
+  box-shadow: 0 0 5px #00ff88, 0 0 10px rgba(0, 255, 136, 0.25);
+  transform: translateY(-2px);
+}
+
+/* TERMINAL VARIANT - HUD-style with traffic light header */
+.variant-terminal {
+  background: var(--background);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  padding: 0;
+  clip-path: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-header {
+  height: 1.75rem;
+  background: var(--muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  position: relative;
+  gap: 0.75rem;
+}
+
+.traffic-lights {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+
+.terminal-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--foreground);
+  margin: 0;
+  flex: 1;
+}
+
+.variant-terminal .content {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.variant-terminal .footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--muted);
+}
+
+/* HOLOGRAPHIC VARIANT - Glassmorphic effect */
+.variant-holographic {
+  background: rgba(28, 28, 46, 0.3);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+.variant-holographic.hover-effect:hover {
+  border-color: #00ff88;
+  background: rgba(28, 28, 46, 0.4);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.25);
+}
+
+/* HUD VARIANT - Hardware panel with corner accents */
+.variant-hud {
+  background: var(--card);
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.corner-accent {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #00ff88;
+}
+
+.corner-accent[style*="top: 0"][style*="left: 0"] {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.corner-accent[style*="top: 0"][style*="right: 0"] {
+  top: -1px;
+  right: -1px;
+  border-left: none;
+  border-bottom: none;
+}
+
+.corner-accent[style*="bottom: 0"][style*="left: 0"] {
+  bottom: -1px;
+  left: -1px;
+  border-right: none;
+  border-top: none;
+}
+
+.corner-accent[style*="bottom: 0"][style*="right: 0"] {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+/* HEADER STYLING */
+.header {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.header-content {
+  flex: 1;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--foreground);
+  margin: 0;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* CONTENT */
+.content {
+  flex: 1;
+}
+
+/* FOOTER */
+.footer {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* HOVER EFFECT */
+.hover-effect {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-effect:hover {
+  transform: translateY(-2px);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+}

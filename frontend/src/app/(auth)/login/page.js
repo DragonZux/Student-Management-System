@@ -1,10 +1,12 @@
 "use client";
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Mail, Lock, ArrowRight, Loader2, ShieldCheck, Zap, Eye, EyeOff } from 'lucide-react';
+import { Lock, Loader2, Eye, EyeOff, Terminal, Zap } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import InlineMessage from '@/components/ui/InlineMessage';
-import Card from '@/components/ui/Card';
+import CyberCard from '@/components/ui/CyberCard';
+import CyberButton from '@/components/ui/CyberButton';
+import CyberInput from '@/components/ui/CyberInput';
+import CyberBadge from '@/components/ui/CyberBadge';
 import styles from '@/styles/modules/auth/login.module.css';
 import { hasMinLength, isValidEmail, popupValidationError } from '@/lib/validation';
 
@@ -45,10 +47,13 @@ export default function LoginPage() {
 
   return (
     <div className={styles.loginContainer}>
-      {/* Background Decorations */}
-      <div className={styles.backgroundPattern} />
-      <div className={styles.backdropBubble} style={{ left: '-10%', top: '10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }} />
-      <div className={styles.backdropBubble} style={{ right: '-10%', bottom: '10%', width: '35vw', height: '35vw', background: 'radial-gradient(circle, var(--secondary) 0%, transparent 70%)' }} />
+      {/* Cyberpunk Background Grid Pattern */}
+      <div className={styles.gridPattern} />
+      <div className={styles.scanlines} />
+      
+      {/* Neon glow accents */}
+      <div className={styles.neonGlow} style={{ position: 'absolute', top: '10%', left: '5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
+      <div className={styles.neonGlow} style={{ position: 'absolute', bottom: '10%', right: '5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(255, 0, 255, 0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
 
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
@@ -56,119 +61,143 @@ export default function LoginPage() {
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className={styles.cardWrap}
       >
-        <Card className="glass w-full" style={{ padding: '2.5rem', border: '1px solid var(--glass-border)' }}>
-          <div className={styles.hero}>
-            <motion.div 
-              initial={{ rotate: -20, scale: 0.5, opacity: 0 }}
-              animate={{ rotate: -7, scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className={styles.heroLogo} 
-              aria-hidden
-            >
-              <GraduationCap size={40} color="white" strokeWidth={2.5} />
-            </motion.div>
-            <h1 className={`${styles.title} text-gradient`}>
-              SMS ViệtHub
+        <CyberCard 
+          variant="terminal"
+          title="ACCESS CONTROL"
+          style={{ width: '100%', maxWidth: '450px' }}
+        >
+          {/* Hero Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{ marginBottom: '2rem', textAlign: 'center' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <Terminal size={48} color="#00ff88" strokeWidth={1.5} />
+            </div>
+            <h1 className={styles.title} style={{ 
+              fontSize: '2rem',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: '#00ff88',
+              textShadow: '0 0 15px rgba(0, 255, 136, 0.4)',
+              margin: '0 0 1.5rem 0'
+            }}>
+              ACCESS CONTROL
             </h1>
-            <p className={styles.subtitle}>Hệ thống Quản lý Đào tạo Thông minh & Toàn diện</p>
-          </div>
 
+          {/* Error Message */}
           <AnimatePresence mode="wait">
             {error && (
               <motion.div 
                 initial={{ opacity: 0, y: -10 }} 
                 animate={{ opacity: 1, y: 0 }} 
                 exit={{ opacity: 0, y: -10 }} 
-                style={{ marginBottom: 20 }}
+                style={{ 
+                  marginBottom: '1.5rem',
+                  padding: '1rem',
+                  backgroundColor: 'rgba(255, 51, 102, 0.1)',
+                  border: '1px solid #ff3366',
+                  color: '#ff3366',
+                  fontSize: '0.875rem',
+                  fontFamily: '"Share Tech Mono", monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
               >
-                <InlineMessage variant="error">{error}</InlineMessage>
+                ⚠ {error}
               </motion.div>
             )}
           </AnimatePresence>
+          </motion.div>
 
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="email">Email</label>
-              <div className={styles.inputWrap}>
-                <input 
-                  id="email" 
-                  className={styles.input} 
-                  type="email" 
-                  required 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  placeholder="name@university.edu.vn" 
-                  autoComplete="email" 
-                />
-                <Mail className={styles.inputIcon} size={20} />
-              </div>
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <CyberInput 
+              id="email" 
+              label="USER ID / EMAIL"
+              type="email" 
+              required 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              placeholder="Enter email"
+              autoComplete="email"
+              error={false}
+            />
+
+            <div>
+              <CyberInput 
+                id="password" 
+                label="ACCESS CODE"
+                type={passwordVisible ? 'text' : 'password'} 
+                required 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                placeholder="Enter password"
+                autoComplete="current-password"
+                error={false}
+                prefix={false}
+              />
+              <button 
+                type="button" 
+                onClick={() => setPasswordVisible(v => !v)} 
+                style={{
+                  marginTop: '0.5rem',
+                  background: 'none',
+                  border: 'none',
+                  color: '#00ff88',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  fontFamily: '"Share Tech Mono", monospace',
+                  padding: 0
+                }}
+              >
+                {passwordVisible ? '[ HIDE ]' : '[ SHOW ]'}
+              </button>
             </div>
 
-            <div className={styles.field}>
-              <div className={styles.optionsRow} style={{ margin: 0, marginBottom: 4 }}>
-                <label className={styles.label} htmlFor="password" style={{ margin: 0 }}>Mật khẩu</label>
-                <button type="button" className={styles.forgot}>Quên mật khẩu?</button>
-              </div>
-              <div className={styles.inputWrap}>
-                <input 
-                  id="password" 
-                  className={styles.input} 
-                  type={passwordVisible ? 'text' : 'password'} 
-                  required 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  placeholder="••••••••" 
-                  autoComplete="current-password" 
-                />
-                <Lock className={styles.inputIcon} size={20} />
-                <button 
-                  type="button" 
-                  aria-label={passwordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} 
-                  onClick={() => setPasswordVisible(v => !v)} 
-                  className={styles.inputToggle}
-                >
-                  {passwordVisible ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </div>
-
-            <div className={styles.optionsRow}>
-              <label className={styles.remember}>
-                <input type="checkbox" /> Ghi nhớ đăng nhập
-              </label>
-            </div>
-
-            <motion.button 
-              whileHover={{ scale: 1.01 }} 
-              whileTap={{ scale: 0.98 }} 
-              disabled={isSubmitting} 
+            <CyberButton 
+              variant="glitch" 
+              size="lg"
               type="submit" 
-              className={styles.submit}
+              disabled={isSubmitting}
+              style={{ marginTop: '1rem' }}
             >
               {isSubmitting ? (
                 <Loader2 className="animate-spin" size={20} />
               ) : (
-                <>
-                  <span>Đăng nhập</span>
-                  <ArrowRight size={20} />
-                </>
+                'GRANT ACCESS'
               )}
-            </motion.button>
+            </CyberButton>
           </form>
 
-          <div className={styles.badges}>
-            <div className={styles.badgeItem}><ShieldCheck size={16} color="var(--primary)" /> Bảo mật SSL</div>
-            <div className={styles.badgeItem}><Zap size={16} color="var(--accent)" /> Tốc độ cao</div>
+          {/* Status Badges */}
+          <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <CyberBadge variant="success" size="sm">SYSTEM ONLINE</CyberBadge>
+            <CyberBadge variant="accent" size="sm">ENCRYPTED</CyberBadge>
           </div>
-        </Card>
+        </CyberCard>
 
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
           className={styles.footer}
+          style={{
+            textAlign: 'center',
+            marginTop: '2rem',
+            fontSize: '0.75rem',
+            color: 'var(--muted-foreground)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}
         >
-          &copy; 2026 SMS ViệtHub. All rights reserved.
+          © 2026 SMS ViệtHub • v1.0.0 • CYBERPUNK EDITION
         </motion.div>
       </motion.div>
     </div>

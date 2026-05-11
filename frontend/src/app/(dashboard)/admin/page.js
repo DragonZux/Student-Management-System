@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import Card from '@/components/ui/Card';
+import CyberCard from '@/components/ui/CyberCard';
+import CyberButton from '@/components/ui/CyberButton';
+import CyberBadge from '@/components/ui/CyberBadge';
 import { 
-  Users, ArrowRight, UserPlus, BookPlus, 
+  Users, UserPlus, BookPlus, 
   ShieldCheck, Database, Search, 
-  LayoutGrid, GraduationCap, Globe, 
-  Calendar, CreditCard, Bell, ChevronRight, ClipboardList
+  LayoutGrid, ChevronRight, ClipboardList,
+  AlertCircle, Server, Lock, Bell, Zap
 } from 'lucide-react';
 import styles from '@/styles/modules/admin/dashboard.module.css';
 import AdminStatsPanel from '@/components/admin/AdminStatsPanel';
@@ -47,8 +49,8 @@ export default function AdminDashboard() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2
+        staggerChildren: 0.08,
+        delayChildren: 0.1
       }
     }
   };
@@ -62,6 +64,22 @@ export default function AdminDashboard() {
     }
   };
 
+  const actionButtons = [
+    { href: '/admin/students', icon: UserPlus, label: 'Add Student', sub: 'Enrollment' },
+    { href: '/admin/teachers', icon: Users, label: 'Manage Teachers', sub: 'Staff' },
+    { href: '/admin/courses', icon: BookPlus, label: 'Create Course', sub: 'Curriculum' },
+    { href: '/admin/finance', icon: Zap, label: 'Finance', sub: 'Transactions' },
+    { href: '/admin/audit', icon: ClipboardList, label: 'Audit Log', sub: 'History' },
+    { href: '/admin/withdrawals', icon: ShieldCheck, label: 'Withdrawals', sub: 'Pending' },
+  ];
+
+  const infrastructure = [
+    { label: 'Database', sub: 'MongoDB Atlas', icon: Database, status: 'online' },
+    { label: 'API Server', sub: 'FastAPI', icon: Server, status: 'online' },
+    { label: 'Security', sub: 'Cloudflare', icon: Lock, status: 'online' },
+    { label: 'Notifications', sub: 'Real-time', icon: Bell, status: 'online' },
+  ];
+
   return (
     <motion.div 
       className={styles.container}
@@ -69,97 +87,150 @@ export default function AdminDashboard() {
       initial="hidden"
       animate="visible"
     >
-      {/* Decorative Background */}
-      <div className={styles.bgDecor}>
-        <div className={`${styles.blob} ${styles.blob1}`} />
-        <div className={`${styles.blob} ${styles.blob2}`} />
-      </div>
-      <div className={styles.mesh} />
+      {/* Hero Section */}
+      <motion.section className={styles.heroSection} variants={itemVariants}>
+        <CyberCard variant="terminal" title="ADMIN CONSOLE" style={{ marginBottom: 0 }}>
+          <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: '1rem',
+                color: '#00ff88'
+              }}>
+                System Status: OPERATIONAL
+              </h2>
+              <p style={{
+                color: 'var(--muted-foreground)',
+                fontSize: '0.95rem',
+                lineHeight: 1.6,
+                marginBottom: '1.5rem'
+              }}>
+                SMS ViệtHub running nominally. {loading ? 'Loading...' : `${stats?.unread_notifications || 0} alerts`} pending. {loading ? 'Loading...' : `${stats?.pending_withdrawals || 0} approvals`} required.
+              </p>
 
-      {/* Hero */}
-      <motion.section className={styles.hero} variants={itemVariants}>
-        <div className={styles.heroContent}>
-          <div className="badge badge-primary bg-white/20 text-white border-white/30 px-5 py-2 mb-4">Hệ thống đang trực tuyến</div>
-          <motion.h1 initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }}>Chào buổi sáng, Quản trị viên</motion.h1>
-          <motion.p initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
-            Hệ thống SMS Việt hoạt động ổn định. 
-            Bạn có <strong>{loading ? '...' : (stats?.unread_notifications || 0)}</strong> thông báo và <strong>{loading ? '...' : (stats?.pending_withdrawals || 0)}</strong> yêu cầu chờ xử lý.
-          </motion.p>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <CyberBadge variant="success" size="sm">ONLINE</CyberBadge>
+                <CyberBadge variant="accent" size="sm">SECURE</CyberBadge>
+                <CyberBadge variant="tertiary" size="sm">OPTIMIZED</CyberBadge>
+              </div>
+            </div>
 
-          <div className={styles.heroActions}>
-            <Link href="/admin/audit" prefetch={false} className={`${styles.heroAction} ${styles.heroActionPrimary}`} style={{ textDecoration: 'none' }}>
-              <Search size={18} /> Trung tâm giám sát
-            </Link>
-            <Link href="/calendar" prefetch={false} className={`${styles.heroAction} ${styles.heroActionSecondary}`} style={{ textDecoration: 'none' }}>
-              <Calendar size={18} /> Xem lịch
-            </Link>
-            <Link href="/admin/students" prefetch={false} className={`${styles.heroAction} ${styles.heroActionSecondary}`} style={{ textDecoration: 'none' }}>
-              <UserPlus size={18} /> Thêm sinh viên
-            </Link>
+            <div style={{
+              fontSize: '0.75rem',
+              textAlign: 'right',
+              fontFamily: '"Share Tech Mono", monospace',
+              color: 'var(--muted-foreground)'
+            }}>
+              <div>UPTIME: 99.98%</div>
+              <div>USERS: {stats?.total_users || '---'}</div>
+              <div>LOAD: 42%</div>
+            </div>
           </div>
-        </div>
-
-        <div className={`hidden xl:block ${styles.heroIconFloating}`} aria-hidden>
-          <GraduationCap size={220} strokeWidth={0.6} style={{ opacity: 0.18 }} />
-        </div>
+        </CyberCard>
       </motion.section>
 
+      {/* Stats Panel */}
       <AdminStatsPanel initialStats={stats} initialLoading={loading} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-10">
-        <motion.div className="lg:col-span-8 space-y-8" variants={itemVariants}>
-          <Card title={<div className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-xl text-primary"><LayoutGrid size={20} /></div><span className="text-xl font-black">Phím tắt</span></div>}>
-            <div className={styles.shortcutsGrid}>
-              {[
-                { href: '/admin/students', icon: UserPlus, label: 'Ghi danh', sub: 'Sinh viên mới' },
-                { href: '/admin/teachers', icon: Users, label: 'Giảng viên', sub: 'Hồ sơ' },
-                { href: '/admin/courses', icon: BookPlus, label: 'Môn học', sub: 'Chương trình' },
-                { href: '/admin/finance', icon: CreditCard, label: 'Tài chính', sub: 'Ghi sổ' },
-                { href: '/admin/audit', icon: ClipboardList, label: 'Audit', sub: 'Lịch sử' },
-                { href: '/admin/withdrawals', icon: ShieldCheck, label: 'Rút môn', sub: 'Duyệt' },
-              ].map((btn) => (
+      {/* Main Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
+        {/* Quick Actions */}
+        <motion.div variants={itemVariants}>
+          <CyberCard variant="terminal" title="QUICK ACCESS">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              {actionButtons.map((btn) => (
                 <Link key={btn.href} href={btn.href} prefetch={false} style={{ textDecoration: 'none' }}>
-                  <motion.div className={styles.actionBtn} whileHover={{ y: -6 }} whileTap={{ scale: 0.98 }}>
-                    <div className={styles.actionMeta}>
-                      <div className={styles.actionIcon}><btn.icon size={24} className="text-primary" /></div>
-                      <div className={styles.actionText}>
-                        <div className={styles.actionLabel}>{btn.label}</div>
-                        <div className={styles.actionSub}>{btn.sub}</div>
-                      </div>
+                  <motion.div
+                    className={styles.actionBtn}
+                    whileHover={{ y: -4 }}
+                    whileTap={{ scale: 0.98 }}
+                    style={{
+                      padding: '1.25rem',
+                      background: 'var(--background)',
+                      border: '1px solid #00ff88',
+                      clip: 'inset(0 0 0 0)',
+                      cursor: 'pointer',
+                      transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+                      borderRadius: 0,
+                      position: 'relative'
+                    }}
+                    onHoverStart={(e) => {
+                      if (e.target instanceof HTMLElement) {
+                        e.target.style.boxShadow = '0 0 15px rgba(0, 255, 136, 0.3)';
+                        e.target.style.background = 'rgba(0, 255, 136, 0.05)';
+                      }
+                    }}
+                    onHoverEnd={(e) => {
+                      if (e.target instanceof HTMLElement) {
+                        e.target.style.boxShadow = '';
+                        e.target.style.background = 'var(--background)';
+                      }
+                    }}
+                  >
+                    <btn.icon size={20} color="#00ff88" style={{ marginBottom: '0.5rem' }} />
+                    <div style={{ fontSize: '0.875rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#00ff88' }}>
+                      {btn.label}
                     </div>
-                    <ChevronRight size={18} className={styles.actionArrow} />
+                    <div style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>
+                      {btn.sub}
+                    </div>
                   </motion.div>
                 </Link>
               ))}
             </div>
-          </Card>
-
-          <AdminAuditPreview />
+          </CyberCard>
         </motion.div>
 
-        <motion.div className="lg:col-span-4 space-y-8" variants={itemVariants}>
-          <Card title={<div className="flex items-center gap-3"><div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500"><Globe size={18} /></div><span className="text-xl font-black">Hạ tầng</span></div>}>
-            <div className={styles.statusCard}>
-              {[{ label: 'Cloud DB', sub: 'MongoDB Atlas', icon: Database, color: '#22c55e' },{ label: 'API Edge', sub: 'FastAPI', icon: Search, color: '#22c55e' },{ label: 'Firewall', sub: 'Cloudflare', icon: ShieldCheck, color: 'var(--primary)' },{ label: 'Notif Hub', sub: 'Pusher', icon: Bell, color: 'var(--primary)' }].map((s) => (
-                <div key={s.label} className={styles.statusItem}>
-                  <div className={styles.statusLabel}>
-                    <div className={styles.statusIndicator} style={{ background: s.color }} />
-                    <div className="flex flex-col">
-                      <span className="font-black text-base">{s.label}</span>
-                      <span className="text-[10px] uppercase tracking-widest opacity-40 font-bold">{s.sub}</span>
+        {/* Infrastructure */}
+        <motion.div variants={itemVariants}>
+          <CyberCard variant="hud" title="INFRASTRUCTURE">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {infrastructure.map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '1rem',
+                    background: 'var(--background)',
+                    border: '1px solid var(--border)',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <item.icon size={18} color="#00ff88" />
+                    <div>
+                      <div style={{ fontWeight: 800, textTransform: 'uppercase', color: '#00ff88' }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+                        {item.sub}
+                      </div>
                     </div>
                   </div>
-                  <s.icon size={18} className="text-muted-foreground opacity-30" />
+                  <CyberBadge variant="success" size="sm">
+                    {item.status.toUpperCase()}
+                  </CyberBadge>
                 </div>
               ))}
-
-              <Link href="/admin/audit" prefetch={false} className="btn-primary w-full group" style={{ justifyContent: 'center', padding: '1rem', marginTop: '1rem', fontWeight: 900, borderRadius: '12px' }}>
-                Trung tâm Giám sát <ArrowRight size={18} className="ml-2" />
+              <Link href="/admin/audit" prefetch={false} style={{ textDecoration: 'none', marginTop: '1rem' }}>
+                <CyberButton size="lg" style={{ width: '100%' }}>
+                  Monitoring Center
+                </CyberButton>
               </Link>
             </div>
-          </Card>
+          </CyberCard>
         </motion.div>
       </div>
+
+      {/* Audit Preview */}
+      <motion.div variants={itemVariants} style={{ marginTop: '2rem' }}>
+        <AdminAuditPreview />
+      </motion.div>
     </motion.div>
   );
 }

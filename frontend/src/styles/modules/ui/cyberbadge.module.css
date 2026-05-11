@@ -1,0 +1,90 @@
+/* CyberBadge Styles - Neon-bordered badge component */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: 'Share Tech Mono', monospace;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+}
+
+/* VARIANTS */
+.variant-accent {
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+  border-color: #00ff88;
+}
+
+.variant-accent:hover {
+  box-shadow: 0 0 8px #00ff88;
+  background: rgba(0, 255, 136, 0.15);
+}
+
+.variant-secondary {
+  color: #ff00ff;
+  background: rgba(255, 0, 255, 0.1);
+  border-color: #ff00ff;
+}
+
+.variant-secondary:hover {
+  box-shadow: 0 0 8px #ff00ff;
+  background: rgba(255, 0, 255, 0.15);
+}
+
+.variant-tertiary {
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.1);
+  border-color: #00d4ff;
+}
+
+.variant-tertiary:hover {
+  box-shadow: 0 0 8px #00d4ff;
+  background: rgba(0, 212, 255, 0.15);
+}
+
+.variant-success {
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+  border-color: #00ff88;
+}
+
+.variant-warning {
+  color: #ffaa00;
+  background: rgba(255, 170, 0, 0.1);
+  border-color: #ffaa00;
+}
+
+.variant-danger {
+  color: #ff3366;
+  background: rgba(255, 51, 102, 0.1);
+  border-color: #ff3366;
+}
+
+.variant-danger:hover {
+  box-shadow: 0 0 8px #ff3366;
+  background: rgba(255, 51, 102, 0.15);
+}
+
+/* SIZES */
+.size-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+}
+
+.size-lg {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+/* INTERACTIVE */
+.badge:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}

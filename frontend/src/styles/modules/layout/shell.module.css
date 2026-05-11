@@ -1,112 +1,223 @@
+/* Cyberpunk Dashboard Shell */
+
 .shell {
   display: flex;
   min-height: 100vh;
-  background: radial-gradient(circle at 100% 0%, rgba(var(--primary-rgb), 0.03) 0%, transparent 40%),
-              radial-gradient(circle at 0% 100%, rgba(124, 58, 237, 0.03) 0%, transparent 40%);
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.02) 0%, transparent 50%);
+  position: relative;
+}
+
+/* Grid pattern overlay */
+.shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .main {
   flex: 1;
   padding: 2.5rem 3.5rem;
   overflow-y: auto;
-  scroll-behavior: smooth;
+  position: relative;
+  z-index: 1;
 }
 
+/* HEADER - Terminal aesthetic */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 3.5rem;
+  padding: 1.75rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
+  border: 2px solid #00ff88;
+  border-bottom: 2px solid #00ff88;
+  background: rgba(0, 255, 136, 0.02);
+  clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+  position: relative;
 }
 
-.welcomeSection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #00ff88, transparent);
+  opacity: 0.5;
 }
 
-.statusIndicator {
+/* Status Line */
+.statusLine {
+  position: absolute;
+  top: -2rem;
+  left: 1.75rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-family: "Share Tech Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #00ff88;
 }
 
-.dot {
+.statusDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88, inset 0 0 4px rgba(255, 255, 255, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.statusText {
+  color: #00ff88;
+  font-weight: 700;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  font-family: "Share Tech Mono", monospace;
+}
+
+/* Welcome Section */
+.welcomeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
 }
 
 .greeting {
   margin: 0;
-  font-size: 1.85rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  color: var(--foreground);
+  font-size: 1.75rem;
+  font-weight: 800;
+  font-family: "JetBrains Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #00ff88;
+  text-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
 }
 
+/* Actions */
 .actions {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
+/* Role Badge */
 .roleBadge {
   padding: 0.625rem 1.25rem;
-  border-radius: 1rem;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  background: var(--card);
+  border: 2px solid;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.roleDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary);
-  box-shadow: 0 0 8px var(--primary);
-}
-
-.roleText {
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.15);
+  clip-path: polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px));
   font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--foreground);
+  font-family: "Share Tech Mono", monospace;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.roleBadge:hover {
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Profile Button */
 .profileButton {
   width: 48px;
   height: 48px;
-  border-radius: 1.25rem;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  background: var(--card);
+  border: 2px solid #00ff88;
+  color: #00ff88;
+  font-weight: 800;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 800;
-  font-size: 1.15rem;
-  box-shadow: var(--shadow-primary);
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s var(--ease-out-expo);
+  clip-path: polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px));
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+  font-family: "Share Tech Mono", monospace;
 }
 
 .profileButton:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 12px 20px -4px rgba(var(--primary-rgb), 0.4);
+  background: #00ff88;
+  color: var(--background);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+  transform: translateY(-2px);
 }
 
+/* Logout Button */
+.logoutButton {
+  width: 48px;
+  height: 48px;
+  background: var(--card);
+  border: 2px solid #ff3366;
+  color: #ff3366;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px));
+  box-shadow: 0 0 8px rgba(255, 51, 102, 0.2);
+}
+
+.logoutButton:hover {
+  background: #ff3366;
+  color: var(--background);
+  box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Content Area */
+.contentArea {
+  animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* RESPONSIVE */
 @media (max-width: 1024px) {
   .main {
     padding: 2rem;
+  }
+
+  .header {
+    padding: 1.5rem;
   }
 }
 
@@ -117,13 +228,21 @@
     gap: 1.5rem;
     margin-bottom: 2.5rem;
   }
-  
+
   .actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
   }
 
   .greeting {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+  }
+
+  .statusLine {
+    left: 1.5rem;
+  }
+
+  .main {
+    padding: 1.5rem;
   }
 }
